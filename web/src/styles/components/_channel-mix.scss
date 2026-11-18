@@ -1,0 +1,73 @@
+@use '../abstracts' as *;
+
+// One colour per channel, used by the bars and the legend.
+$channel-colors: (
+  'direct': var(--color-petrol),
+  'ota': var(--color-amber),
+  'gds': var(--color-violet),
+  'wholesale': var(--color-ink-tertiary),
+);
+
+@each $channel, $color in $channel-colors {
+  .channel-color--#{$channel} {
+    background: $color;
+  }
+}
+
+.channel-mix__rows {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  align-items: center;
+  gap: $space-10;
+}
+
+.channel-mix__row-label {
+  font-size: $font-size-12;
+  color: var(--color-ink-secondary);
+}
+
+// A 100% bar split into channel shares.
+.stacked-share-bar {
+  display: flex;
+  gap: $space-2;
+  height: 22px;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.stacked-share-bar__part {
+  @include tabular-numbers;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  font-size: 10.5px;
+  font-weight: $font-weight-semibold;
+  color: var(--color-surface);
+  transition: width $duration-chart $easing-chart;
+}
+
+// The grey part needs the darker text to stay readable in both themes.
+.stacked-share-bar__part.channel-color--wholesale {
+  color: var(--color-background);
+}
+
+.channel-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $space-12;
+  font-size: 11.5px;
+  color: var(--color-ink-secondary);
+}
+
+.channel-legend__item {
+  display: flex;
+  align-items: center;
+  gap: $space-6;
+}
+
+.channel-legend__swatch {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+}

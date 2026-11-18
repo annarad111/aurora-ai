@@ -1,0 +1,67 @@
+@use '../abstracts' as *;
+
+// Shared frame of every card in the evidence panel.
+.evidence-card {
+  @include enters-on-arrival;
+  display: flex;
+  flex-direction: column;
+  gap: $space-14;
+  padding: 18px;
+  border-radius: $radius-panel;
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
+  transition: box-shadow $duration-fast;
+}
+
+// Outlined when the fact it illustrates is hovered or selected anywhere on the page.
+.evidence-card--highlighted {
+  box-shadow: var(--shadow-focus-ring);
+}
+
+.evidence-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: $space-8;
+}
+
+.evidence-card__titles {
+  display: flex;
+  flex-direction: column;
+  gap: $space-2;
+}
+
+.evidence-card__title {
+  font-weight: $font-weight-semibold;
+}
+
+.evidence-card__title-with-badge {
+  display: flex;
+  align-items: center;
+  gap: $space-8;
+}
+
+.evidence-card__subtitle {
+  font-size: $font-size-12;
+  color: var(--color-ink-tertiary);
+}
+
+.evidence-card__note {
+  margin: 0;
+  font-size: $font-size-11;
+  color: var(--color-ink-tertiary);
+}
+
+// Text link at the bottom of a card that opens a provenance.
+.evidence-card__link {
+  @include unstyled-button;
+  @include focus-visible-ring;
+  align-self: flex-start;
+  color: var(--color-petrol);
+  font-size: 12.5px;
+  font-weight: $font-weight-medium;
+
+  &:hover {
+    color: var(--color-violet);
+  }
+}

@@ -1,0 +1,38 @@
+@use '../abstracts' as *;
+
+.booking-pace__rows {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr) 44px;
+  align-items: center;
+  gap: $space-10;
+  font-size: $font-size-12;
+}
+
+.booking-pace__label {
+  color: var(--color-ink-secondary);
+}
+
+.booking-pace__track {
+  display: block;
+}
+
+.booking-pace__bar {
+  display: block;
+  height: 10px;
+  border-radius: 5px;
+  transition: width $duration-chart $easing-chart;
+}
+
+.booking-pace__bar--on-the-books {
+  background: var(--color-petrol);
+}
+
+.booking-pace__bar--last-year {
+  background: var(--color-line);
+}
+
+.booking-pace__value {
+  @include tabular-numbers;
+  text-align: right;
+  font-weight: $font-weight-semibold;
+}

@@ -6,13 +6,15 @@ import type { FactInteraction } from './fact-links';
 interface MainFindingProps {
   insight: InsightData;
   interaction: FactInteraction;
+  /** Opens the provenance of the headline number in the evidence panel. */
+  onShowCalculation: () => void;
 }
 
 /**
  * The executive summary: the only strongly coloured element of the answer.
  * Its chips are the shortcuts into the investigation.
  */
-export function MainFinding({ insight, interaction }: MainFindingProps) {
+export function MainFinding({ insight, interaction, onShowCalculation }: MainFindingProps) {
   const isNegative = insight.impactEur < 0;
 
   return (
@@ -50,6 +52,9 @@ export function MainFinding({ insight, interaction }: MainFindingProps) {
               </button>
             );
           })}
+          <button type="button" className="main-finding__calculation-link" onClick={onShowCalculation}>
+            How was this calculated?
+          </button>
         </div>
       </div>
     </section>

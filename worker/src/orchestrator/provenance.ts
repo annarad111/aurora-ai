@@ -11,7 +11,8 @@ import {
   type StreamEventOfType,
 } from '@aurora/shared';
 import type { AnalysisContext } from './analysis-context';
-import { describeNights, findCancelledBlock, findChannelLine, readKpi, relativeChange } from './derived-facts';
+import { buildContextNote } from './context-notes';
+import { countCancelledRoomsIn, describeNights, findCancelledBlock, findChannelLine, readKpi, relativeChange } from './derived-facts';
 
 // ---------------------------------------------------------------------------
 // "How was this calculated?" for every fact id the answer can mention:
@@ -20,6 +21,9 @@ import { describeNights, findCancelledBlock, findChannelLine, readKpi, relativeC
 // ---------------------------------------------------------------------------
 
 export type ProvenancePayload = Omit<StreamEventOfType<'provenance'>, 'type' | 'runId' | 'sequence'>;
+
+/** The calculation part of a provenance event; the context note is added by buildProvenance. */
+type CalculationDetails = Omit<ProvenancePayload, 'contextLabel' | 'contextText'>;
 
 type InputRow = ProvenancePayload['inputs'][number];
 const row = (label: string, value: string): InputRow => ({ label, value });
@@ -54,6 +58,17 @@ export function listKnownFactIds(analysis: AnalysisContext): string[] {
 }
 
 export function buildProvenance(factId: string, analysis: AnalysisContext): ProvenancePayload | null {
+  const calculation = buildCalculationDetails(factId, analysis);
+  if (!calculation) return null;
+  const contextNote = buildContextNote(factId, analysis);
+  return {
+    ...calculation,
+    contextLabel: contextNote?.contextLabel ?? calculation.title,
+    contextText: contextNote?.contextText || `${calculation.title}: ${calculation.displayValue}.`,
+  };
+}
+
+function buildCalculationDetails(factId: string, analysis: AnalysisContext): CalculationDetails | null {
   const { hotel, period, paceWindow } = analysis;
   const { overview, drivers, channelMix, pace } = analysis.results;
   const periodSource = `hotel_id = ${hotel.id} · ${period.from} … ${period.to}`;
@@ -297,7 +312,7 @@ export function buildProvenance(factId: string, analysis: AnalysisContext): Prov
   }
 }
 
-function buildSegmentVolumeProvenance(segment: Segment, analysis: AnalysisContext): ProvenancePayload | null {
+function buildSegmentVolumeProvenance(segment: Segment, analysis: AnalysisContext): CalculationDetails | null {
   const { drivers, overview } = analysis.results;
   if (!drivers || !SEGMENTS.includes(segment)) return null;
   const variance = drivers.segments.find((candidate) => candidate.segment === segment);
@@ -312,9 +327,9 @@ function buildSegmentVolumeProvenance(segment: Segment, analysis: AnalysisContex
   ];
 
   const cancelledBlock = overview ? findCancelledBlock(overview) : null;
-  const segmentPerformance = overview?.segments.find((candidate) => candidate.segment === segment);
-  if (cancelledBlock && segmentPerformance && segmentPerformance.roomsCancelled > 0) {
-    inputs.push(row('Cancelled room nights', `${formatCount(segmentPerformance.roomsCancelled)}, block on ${describeNights(cancelledBlock)}`));
+  const isBiggestLoss = drivers.segments.every((candidate) => candidate.volumeEffect >= variance.volumeEffect);
+  if (overview && cancelledBlock && isBiggestLoss && roomDifference < 0) {
+    inputs.push(row(`Cancelled, ${describeNights(cancelledBlock)}`, `${formatCount(countCancelledRoomsIn(overview, cancelledBlock))} room nights`));
   }
 
   return {

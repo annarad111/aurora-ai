@@ -19,6 +19,7 @@
 
 @use 'layout/workspace';
 
+@use 'components/buttons';
 @use 'components/sidebar';
 @use 'components/theme-switch';
 @use 'components/conversation-header';
@@ -33,5 +34,13 @@
 @use 'components/main-finding';
 @use 'components/kpi-card';
 @use 'components/explanation';
+@use 'components/contextual-insight';
 @use 'components/run-banner';
 @use 'components/follow-ups';
+
+// The evidence panel
+@use 'components/evidence-card';
+@use 'components/revenue-bridge';
+@use 'components/channel-mix';
+@use 'components/booking-pace';
+@use 'components/provenance-card';

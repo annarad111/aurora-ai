@@ -71,6 +71,18 @@
   gap: $space-8;
 }
 
+.main-finding__calculation-link {
+  @include unstyled-button;
+  @include focus-visible-ring;
+  height: 34px;
+  padding: 0 $space-6;
+  color: var(--color-ai-ink);
+  font-size: $font-size-13;
+  font-weight: $font-weight-medium;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 // --- Chips ---------------------------------------------------------------
 
 .insight-chip {

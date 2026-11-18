@@ -43,6 +43,13 @@ export function findCancelledBlock(overview: HotelOverviewOutput): DateRange | n
   return { from: blockNights[0]!, to: blockNights[blockNights.length - 1]! };
 }
 
+/** Room nights cancelled for the nights of a range (e.g. the cancelled block). Used by every text that quotes this number. */
+export function countCancelledRoomsIn(overview: HotelOverviewOutput, range: DateRange): number {
+  return overview.dailyOccupancy
+    .filter((night) => night.date >= range.from && night.date <= range.to)
+    .reduce((total, night) => total + night.roomsCancelled, 0);
+}
+
 export function findChannelLine(channelMix: ChannelMixOutput, channel: ChannelMixOutput['channels'][number]['channel']) {
   const line = channelMix.channels.find((candidate) => candidate.channel === channel);
   if (!line) throw new Error(`The channel mix has no ${channel} line`);

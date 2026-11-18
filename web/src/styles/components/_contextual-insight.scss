@@ -1,0 +1,54 @@
+@use '../abstracts' as *;
+
+// Opens under the explanation when a figure is selected.
+.contextual-insight {
+  @include enters-on-arrival(250ms);
+  display: flex;
+  flex-direction: column;
+  gap: $space-12;
+  padding: $space-16 18px;
+  border-radius: $radius-panel;
+  border: 1px solid var(--color-petrol);
+  background: var(--color-surface);
+}
+
+.contextual-insight__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $space-12;
+}
+
+.contextual-insight__titles {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: $space-8;
+}
+
+.contextual-insight__eyebrow {
+  @include eyebrow($color: var(--color-petrol));
+}
+
+.contextual-insight__label {
+  @include tabular-numbers;
+  padding: $space-2 $space-8;
+  border-radius: $radius-badge;
+  background: var(--color-primary-soft);
+  color: var(--color-petrol);
+  font-size: $font-size-12;
+  font-weight: $font-weight-semibold;
+}
+
+.contextual-insight__text {
+  margin: 0;
+  font-size: $font-size-15;
+  line-height: 1.6;
+  text-wrap: pretty;
+}
+
+.contextual-insight__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $space-8;
+}

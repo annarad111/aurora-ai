@@ -118,6 +118,10 @@ export const provenanceEventSchema = z.object({
   formula: z.string(),
   inputs: z.array(z.object({ label: z.string(), value: z.string() })),
   sourceQuery: z.string(),
+  /** Short name for the contextual insight card: "204 lost room nights". */
+  contextLabel: z.string(),
+  /** One or two sentences that put the figure in context, written from the same tool output. */
+  contextText: z.string(),
 });
 
 export const followupsEventSchema = z.object({

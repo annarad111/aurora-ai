@@ -2,6 +2,8 @@ import type { RunCompletion } from '../../stream/run-reducer';
 
 interface FollowUpsProps {
   questions: string[];
+  /** The selected figure, when the questions are about it ("Suggested next, based on Occupancy 62.0%"). */
+  basedOnLabel: string | null;
   completion: RunCompletion | null;
   onAskQuestion: (question: string) => void;
 }
@@ -12,10 +14,10 @@ const PROVIDER_LABELS: Record<RunCompletion['provider'], string> = {
 };
 
 /** Suggested next questions, plus a line saying how the answer was produced. */
-export function FollowUps({ questions, completion, onAskQuestion }: FollowUpsProps) {
+export function FollowUps({ questions, basedOnLabel, completion, onAskQuestion }: FollowUpsProps) {
   return (
     <div className="follow-ups">
-      <span className="follow-ups__label">Suggested next</span>
+      <span className="follow-ups__label">{basedOnLabel ? `Suggested next, based on ${basedOnLabel}` : 'Suggested next'}</span>
       <div className="follow-ups__list">
         {questions.map((question) => (
           <button key={question} type="button" className="follow-up" onClick={() => onAskQuestion(question)}>

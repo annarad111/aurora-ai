@@ -79,6 +79,7 @@ worker/
       insight-plan.ts           which tools a question needs (keyword rules for now)
       scripted-narrative-writer.ts  the words around the numbers, from templates (LLM in step 8)
       provenance.ts             "How was this calculated?" for every fact id
+      context-notes.ts          the sentence of the contextual insight card, from the same tool output
       tool-events.ts            KPI cards and chart payloads sent after each tool
   scripts/                      tools:demo and the seed SQL generator (run with tsx)
 docs/
@@ -98,7 +99,10 @@ web/
       useInsightRun.ts          hook: start, stop (AbortController), retry, reset
     features/
       conversation/             AnswerView, RunTimeline, StreamedExplanation, RunBanner, FollowUps, Composer
-      insights/                 MainFinding, KpiCard, fact-links (which elements light up together)
+      insights/                 MainFinding, KpiCard, ContextualInsightCard, fact-links (which elements light up
+                                together), context-followups (questions that change with the selected figure)
+      evidence/                 RevenueBridgeCard (+ revenue-bridge-geometry, tested), ChannelMixCard,
+                                BookingPaceCard, ProvenanceCard ("How was this calculated?")
       empty-state/              SuggestedQuestions (idle screen)
     lib/                        metric-display (value, delta, status icon), class-names
     design-system/
