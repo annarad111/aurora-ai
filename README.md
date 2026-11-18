@@ -35,6 +35,31 @@ curl -N -X POST http://localhost:8787/api/chat \
   -d '{"question":"Why is my hotel revenue below target this month?","hotelId":"sablon-bru"}'
 ```
 
+## Live
+
+- App: https://aurora.radulescuana111.workers.dev
+- MCP: https://aurora.radulescuana111.workers.dev/mcp (bearer token, see [docs/mcp-usage.md](docs/mcp-usage.md))
+
+## Deploy
+
+One-time setup (already done for the live Worker):
+
+```bash
+npx wrangler login
+npx wrangler d1 create aurora-db           # put the printed id in wrangler.jsonc (both places)
+npm run db:migrate:remote                  # schema + demo data into the Cloudflare database
+npx wrangler secret put MCP_TOKEN --env ai # a long random string; enables /mcp
+```
+
+Every release:
+
+```bash
+npm test && npm run deploy                 # builds the React app, deploys the "ai" environment as "aurora"
+```
+
+The production MCP token is kept in `.secrets/production.env` on the machine that set it (git-ignored).
+To rotate it, put a new value there and run `npx wrangler secret put MCP_TOKEN --env ai` again.
+
 ## How the language model is used
 
 The model never computes or types a number.

@@ -27,8 +27,8 @@
     {
       "binding": "DB",
       "database_name": "aurora-db",
-      // Placeholder for local development. Step 10 replaces it with the id from `wrangler d1 create aurora-db`.
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      // Created with `wrangler d1 create aurora-db`. `wrangler dev` keeps its own local copy (.wrangler/).
+      "database_id": "8fafa7ec-34b8-4781-ba1f-ea7a4bb238fe",
       "migrations_dir": "worker/migrations"
     }
   ],
@@ -53,6 +53,8 @@
   "env": {
     // Wrangler does not copy bindings and vars into an environment, so they are repeated here.
     "ai": {
+      // Deployed as "aurora" (not "aurora-ai"): https://aurora.<subdomain>.workers.dev
+      "name": "aurora",
       // Workers AI always runs on Cloudflare, even in `wrangler dev`, so this needs a login.
       "ai": {
         "binding": "AI"
@@ -61,7 +63,7 @@
         {
           "binding": "DB",
           "database_name": "aurora-db",
-          "database_id": "00000000-0000-0000-0000-000000000000",
+          "database_id": "8fafa7ec-34b8-4781-ba1f-ea7a4bb238fe",
           "migrations_dir": "worker/migrations"
         }
       ],
