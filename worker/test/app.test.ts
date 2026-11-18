@@ -9,6 +9,8 @@ function createTestDependencies(): AppDependencies {
     toolContext: createDemoToolContext(),
     config: { today: '2026-11-17', stepDelayMs: 0, textTokenDelayMs: 0, narrativeProvider: 'scripted', aiModel: 'none', aiTimeoutMs: 0 },
     languageModel: null,
+    mcpToken: null,
+    rateLimiters: { chat: null, mcp: null },
     waitUntil: () => {},
   };
 }

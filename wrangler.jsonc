@@ -4,10 +4,15 @@
   // Two setups:
   //   default      (npm run dev)     templates only, no Cloudflare account needed, works offline
   //   env "ai"     (npm run dev:ai)  Workers AI chooses the tools and writes the text; needs `npx wrangler login`
+  //
+  // Secrets are not in this file: MCP_TOKEN lives in .dev.vars locally (see .dev.vars.example)
+  // and is set with `wrangler secret put MCP_TOKEN` for a deployed Worker.
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "aurora",
   "main": "worker/src/index.ts",
   "compatibility_date": "2025-09-01",
+  // The Agents SDK's MCP handler uses AsyncLocalStorage (node:async_hooks).
+  "compatibility_flags": ["nodejs_compat"],
 
   "assets": {
     // Built by `npm run build` (Vite). Unknown paths fall back to index.html, so client routes work.
@@ -26,6 +31,12 @@
       "database_id": "00000000-0000-0000-0000-000000000000",
       "migrations_dir": "worker/migrations"
     }
+  ],
+
+  // Per-client request limits (see worker/src/http/rate-limit.ts). Period must be 10 or 60 seconds.
+  "ratelimits": [
+    { "name": "CHAT_RATE_LIMITER", "namespace_id": "1001", "simple": { "limit": 20, "period": 60 } },
+    { "name": "MCP_RATE_LIMITER", "namespace_id": "1002", "simple": { "limit": 60, "period": 60 } }
   ],
 
   "vars": {
@@ -53,6 +64,10 @@
           "database_id": "00000000-0000-0000-0000-000000000000",
           "migrations_dir": "worker/migrations"
         }
+      ],
+      "ratelimits": [
+        { "name": "CHAT_RATE_LIMITER", "namespace_id": "1001", "simple": { "limit": 20, "period": 60 } },
+        { "name": "MCP_RATE_LIMITER", "namespace_id": "1002", "simple": { "limit": 60, "period": 60 } }
       ],
       "vars": {
         // The model chooses the tools and writes the text; rules and templates take over if it fails.

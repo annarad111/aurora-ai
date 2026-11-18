@@ -1,9 +1,11 @@
 import type { WorkerConfig } from './env';
 import type { LanguageModel } from './llm/language-model';
 import { errorResponse } from './http/json-response';
+import type { RequestRateLimiter } from './http/rate-limit';
 import { handleChat } from './routes/chat';
 import { handleHealth } from './routes/health';
 import { handleHotelOverview } from './routes/hotels';
+import { handleMcp } from './routes/mcp';
 import type { ToolContext } from './tools/tool-context';
 
 /**
@@ -15,6 +17,10 @@ export interface AppDependencies {
   config: WorkerConfig;
   /** The model that chooses tools and writes the text. Null means templates only. */
   languageModel: LanguageModel | null;
+  /** Shared secret for /mcp. Null disables the endpoint. */
+  mcpToken: string | null;
+  /** Per-client request limits. Null means no limit (tests, or the binding is not configured). */
+  rateLimiters: { chat: RequestRateLimiter | null; mcp: RequestRateLimiter | null };
   /** Keeps work running after the response has started (the streamed answer). */
   waitUntil: (work: Promise<unknown>) => void;
   /** Static files of the React app. Absent in tests. */
@@ -41,7 +47,11 @@ export async function handleRequest(request: Request, dependencies: AppDependenc
       return request.method === 'GET' ? await handleHotelOverview(decodeURIComponent(overviewMatch[1]!), url, dependencies) : methodNotAllowed();
     }
 
-    if (pathname.startsWith('/api/') || pathname === '/mcp' || pathname.startsWith('/mcp/')) {
+    if (pathname === '/mcp') {
+      return await handleMcp(request, dependencies);
+    }
+
+    if (pathname.startsWith('/api/') || pathname.startsWith('/mcp/')) {
       return errorResponse(404, 'not_found', `No route for ${request.method} ${pathname}`);
     }
 

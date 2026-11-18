@@ -9,6 +9,7 @@ First time only:
 ```bash
 npm install
 npm run db:migrate:local   # creates the local D1 database (.wrangler/) with the schema and the demo data
+cp .dev.vars.example .dev.vars   # then put a long random string in MCP_TOKEN (enables /mcp locally)
 ```
 
 Every day:
@@ -23,6 +24,7 @@ npm run build        # production build of the React app
 npm run tools:demo             # run the 4 tools on the demo data, print the key numbers
 npm run tools:demo -- --json   # same, full JSON output
 npm run db:seed:generate       # rewrite worker/migrations/0002_seed.sql after changing packages/demo-data
+npm run mcp:try                # connect to /mcp as an MCP client, list the tools, call one
 ```
 
 Try the stream by hand while `npm run dev:api` runs:
@@ -56,6 +58,9 @@ The headline, chips, KPI cards, charts and provenance are always deterministic; 
 | `POST /api/chat` | `{ question, hotelId }` → Server-Sent Events: `run_started`, `step`, `kpi`, `chart`, `insight`, `text_delta`, `provenance`, `followups`, `done` (or `error`) |
 | `GET /api/hotels/:id/overview?from=&to=` | The overview tool as plain JSON, no AI. Defaults to month to date. |
 | `GET /api/health` | Worker and database status |
+| `/mcp` | The four tools for external agents (MCP, Streamable HTTP). Bearer token, 60 requests/min. See [docs/mcp-usage.md](docs/mcp-usage.md). |
+
+`POST /api/chat` is limited to 20 answers per minute per client.
 
 ## Where things are
 
@@ -101,6 +106,8 @@ worker/
       narrative-guard.ts        rejects digits outside placeholders; fills in the values
       prompts.ts                Aurora's instructions to the model
     llm/                        LanguageModel interface, Workers AI implementation
+    mcp/aurora-mcp-server.ts    the MCP server: registers every registry tool (createMcpHandler, stateless)
+    http/                       JSON responses, bearer token check, rate limiting
       provenance.ts             "How was this calculated?" for every fact id
       context-notes.ts          the sentence of the contextual insight card, from the same tool output
       tool-events.ts            KPI cards and chart payloads sent after each tool

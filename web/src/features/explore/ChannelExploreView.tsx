@@ -19,7 +19,8 @@ export function ChannelExploreView({ channelMix }: ChannelExploreViewProps) {
   const currentYear = channelMix.period.from.slice(0, 4);
   const toRow = (comparison: ChannelMixOutput['comparisonPeriods'][number]): ChannelRow => ({
     label: comparison.label,
-    sharesByChannel: { direct: 0, ota: 0, gds: 0, wholesale: 0, ...comparison.revenueShareByChannel },
+    // The schema guarantees every channel is present (Zod 4 records with enum keys are exhaustive).
+    sharesByChannel: comparison.revenueShareByChannel,
     commissionShareOfRevenue: comparison.commissionShareOfRevenue,
     isCurrentPeriod: false,
   });

@@ -20,7 +20,8 @@
     "db:seed:generate": "npm run db:seed:generate --workspace worker",
     "db:migrate:local": "wrangler d1 migrations apply aurora-db --local",
     "dev:ai": "concurrently --names api,web --prefix-colors magenta,cyan \"npm:dev:api:ai\" \"npm:dev:web\"",
-    "dev:api:ai": "npm run build --workspace web && wrangler dev --env ai --port 8787"
+    "dev:api:ai": "npm run build --workspace web && wrangler dev --env ai --port 8787",
+    "mcp:try": "npm run mcp:try --workspace worker --"
   },
   "devDependencies": {
     "typescript": "^5.8.0",

@@ -1,6 +1,7 @@
 import { chatRequestSchema } from '@aurora/shared';
 import type { AppDependencies } from '../app';
 import { errorResponse } from '../http/json-response';
+import { enforceRateLimit } from '../http/rate-limit';
 import { KeywordInsightPlanner, LanguageModelInsightPlanner } from '../orchestrator/insight-planners';
 import { LanguageModelNarrativeWriter } from '../orchestrator/language-model-narrative-writer';
 import { runInsight } from '../orchestrator/run-insight';
@@ -15,6 +16,9 @@ import { SSE_RESPONSE_HEADERS, SseEventStream } from '../sse/sse-event-stream';
  * background while the client reads.
  */
 export async function handleChat(request: Request, dependencies: AppDependencies): Promise<Response> {
+  const rateLimited = await enforceRateLimit(dependencies.rateLimiters.chat, request, 'chat');
+  if (rateLimited) return rateLimited;
+
   let body: unknown;
   try {
     body = await request.json();

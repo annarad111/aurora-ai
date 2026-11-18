@@ -14,6 +14,8 @@ export default {
       toolContext: { repository: new D1HotelDataRepository(env.DB), today: config.today },
       config,
       languageModel,
+      mcpToken: env.MCP_TOKEN?.trim() || null,
+      rateLimiters: { chat: env.CHAT_RATE_LIMITER ?? null, mcp: env.MCP_RATE_LIMITER ?? null },
       waitUntil: (work) => executionContext.waitUntil(work),
       assets: env.ASSETS,
     });
