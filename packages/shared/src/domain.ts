@@ -66,15 +66,19 @@ export const dailyStatSchema = z.object({
 });
 export type DailyStat = z.infer<typeof dailyStatSchema>;
 
-/** Table `targets`: the budget, per month and segment. */
-export const segmentTargetSchema = z.object({
+/**
+ * Table `targets`: the budget, per day and segment.
+ * Daily rather than monthly, so a month-to-date period compares against exactly
+ * the budget of those days, and a group block can be budgeted on its own dates.
+ */
+export const dailyTargetSchema = z.object({
   hotelId: z.string(),
-  month: isoMonthSchema,
+  date: isoDateSchema,
   segment: segmentSchema,
-  roomRevenueTarget: z.number().nonnegative(),
   roomsTarget: z.number().int().nonnegative(),
+  roomRevenueTarget: z.number().nonnegative(),
 });
-export type SegmentTarget = z.infer<typeof segmentTargetSchema>;
+export type DailyTarget = z.infer<typeof dailyTargetSchema>;
 
 /** Table `channels`: the commission each distribution channel charges. */
 export const channelCommissionSchema = z.object({

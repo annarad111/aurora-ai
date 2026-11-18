@@ -72,6 +72,37 @@ export function formatPercentagePoints(ratioDifference: number, { decimals = 1 }
   return `${signPrefix(roundedPoints, 'always')}${formatUnsignedNumber(Math.abs(roundedPoints), decimals)} pp`;
 }
 
+const MONTH_SHORT_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+function readDateParts(isoDate: string): { year: number; month: number; day: number } {
+  const [year, month, day] = isoDate.split('-').map(Number) as [number, number, number];
+  return { year, month, day };
+}
+
+/**
+ * Human label for an inclusive date range.
+ *   a whole calendar month   -> "Sep 2026"
+ *   inside one month         -> "1–17 Nov 2026"
+ *   across months            -> "28 Oct – 3 Nov 2026"
+ */
+export function formatPeriodLabel(range: { from: string; to: string }): string {
+  const start = readDateParts(range.from);
+  const end = readDateParts(range.to);
+  const endMonthName = MONTH_SHORT_NAMES[end.month - 1];
+  const lastDayOfEndMonth = new Date(Date.UTC(end.year, end.month, 0)).getUTCDate();
+
+  const isSameMonth = start.year === end.year && start.month === end.month;
+  if (isSameMonth && start.day === 1 && end.day === lastDayOfEndMonth) {
+    return `${endMonthName} ${end.year}`;
+  }
+  if (isSameMonth) {
+    return start.day === end.day ? `${end.day} ${endMonthName} ${end.year}` : `${start.day}–${end.day} ${endMonthName} ${end.year}`;
+  }
+  const startMonthName = MONTH_SHORT_NAMES[start.month - 1];
+  const startYearSuffix = start.year === end.year ? '' : ` ${start.year}`;
+  return `${start.day} ${startMonthName}${startYearSuffix} – ${end.day} ${endMonthName} ${end.year}`;
+}
+
 /** 1170 -> "1,170"; with signDisplay "always": −245 -> "−245". */
 export function formatCount(count: number, { signDisplay = 'negative_only' }: Pick<FormatOptions, 'signDisplay'> = {}): string {
   const roundedCount = roundToDecimals(count, 0);

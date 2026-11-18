@@ -47,12 +47,16 @@ export const segmentPerformanceSchema = z.object({
   roomsTarget: z.number(),
   roomsSoldLastYear: z.number(),
   roomRevenue: z.number(),
+  roomsCancelled: z.number(),
 });
 
 export const dailyOccupancySchema = z.object({
   date: isoDateSchema,
   occupancy: z.number(),
+  occupancyTarget: z.number().nullable(),
   occupancyLastYear: z.number(),
+  /** Room nights cancelled for this night. A spike marks a cancelled group block. */
+  roomsCancelled: z.number(),
 });
 
 export const hotelOverviewOutputSchema = z.object({
@@ -124,6 +128,8 @@ export const channelMixOutputSchema = z.object({
   channels: z.array(channelShareSchema),
   totalCommissionCost: z.number(),
   commissionShareOfRevenue: z.number(),
+  /** Commission paid now minus what the same revenue would cost with last year's channel shares. */
+  extraCommissionFromMixShift: z.number(),
   netRevpar: z.number(),
   netRevparTarget: z.number().nullable(),
   comparisonPeriods: z.array(channelMixSnapshotSchema),

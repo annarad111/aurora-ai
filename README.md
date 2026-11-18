@@ -8,8 +8,10 @@ AI-first revenue assistant for hotel revenue managers. Independent concept for t
 npm install
 npm run dev      # http://localhost:5173
 npm run build    # typecheck + production build
-npm test         # Vitest for packages/shared and packages/analytics
+npm test         # Vitest for all packages
 npm run typecheck
+npm run tools:demo             # run the 4 tools on the demo data, print the key numbers
+npm run tools:demo -- --json   # same, full JSON output
 ```
 
 ## Where things are
@@ -31,6 +33,15 @@ packages/
     status.ts                   on track / watch / off track from direction + thresholds
     findings.ts                 analysis results -> findings ranked by euro impact
     aggregate.ts, dates.ts      grouping daily rows, inclusive date ranges
+  demo-data/src/                deterministic demo dataset (fixed seed, fixed "today" = 17 Nov 2026)
+    story.ts                    THE PLANTED STORY: every number the demo is built around
+    generate-demo-dataset.ts    turns the story into daily_stats, targets and on_the_books rows
+    allocate.ts                 splits whole numbers without losing any (largest remainder, matrix fitting)
+worker/
+  src/
+    db/                         HotelDataRepository interface + in-memory implementation (D1 comes in step 4)
+    tools/                      the 4 tools + registry.ts (one source for chat and MCP)
+  scripts/print-tool-outputs.ts the `npm run tools:demo` script
 docs/
   design/design_handoff_aurora_ai_chat/   design reference (open Aurora v2.dc.html in a browser)
   implementation-plan.md                  the step-by-step plan and what to check after each step

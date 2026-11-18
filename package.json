@@ -5,13 +5,16 @@
   "workspaces": [
     "packages/shared",
     "packages/analytics",
+    "packages/demo-data",
+    "worker",
     "web"
   ],
   "scripts": {
     "dev": "npm run dev --workspace web",
     "build": "npm run build --workspace web",
     "test": "npm run test --workspaces --if-present",
-    "typecheck": "npm run typecheck --workspaces --if-present"
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "tools:demo": "npm run tools:demo --workspace worker --"
   },
   "devDependencies": {
     "typescript": "^5.8.0",

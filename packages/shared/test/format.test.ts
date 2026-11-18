@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { formatCount, formatEuro, formatEuroCompact, formatPercent, formatPercentagePoints, MINUS_SIGN } from '../src/format';
+import {
+  formatCount,
+  formatEuro,
+  formatEuroCompact,
+  formatPercent,
+  formatPercentagePoints,
+  formatPeriodLabel,
+  MINUS_SIGN,
+} from '../src/format';
 
 describe('formatting matches the design', () => {
   it('uses the typographic minus sign, not a hyphen', () => {
@@ -37,6 +45,13 @@ describe('formatting matches the design', () => {
   it('formats percentage points, always with a sign', () => {
     expect(formatPercentagePoints(0.62 - 0.75)).toBe('−13.0 pp');
     expect(formatPercentagePoints(0.48 - 0.35, { decimals: 0 })).toBe('+13 pp');
+  });
+
+  it('formats period labels', () => {
+    expect(formatPeriodLabel({ from: '2026-09-01', to: '2026-09-30' })).toBe('Sep 2026');
+    expect(formatPeriodLabel({ from: '2026-11-01', to: '2026-11-17' })).toBe('1–17 Nov 2026');
+    expect(formatPeriodLabel({ from: '2026-10-28', to: '2026-11-03' })).toBe('28 Oct – 3 Nov 2026');
+    expect(formatPeriodLabel({ from: '2025-12-30', to: '2026-01-02' })).toBe('30 Dec 2025 – 2 Jan 2026');
   });
 
   it('formats counts', () => {

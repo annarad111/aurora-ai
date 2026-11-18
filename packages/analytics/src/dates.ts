@@ -33,6 +33,35 @@ export function addDays(isoDate: IsoDate, dayCount: number): IsoDate {
   return utcMillisecondsToIsoDate(isoDateToUtcMilliseconds(isoDate) + dayCount * MILLISECONDS_PER_DAY);
 }
 
+/**
+ * Same calendar date in another year: 2026-11-10 -> 2025-11-10.
+ * 29 February becomes 28 February when the target year has no leap day.
+ */
+export function shiftDateByYears(isoDate: IsoDate, yearCount: number): IsoDate {
+  const [year, month, day] = isoDate.split('-').map(Number) as [number, number, number];
+  const targetYear = year + yearCount;
+  const lastDayOfTargetMonth = new Date(Date.UTC(targetYear, month, 0)).getUTCDate();
+  const targetDay = Math.min(day, lastDayOfTargetMonth);
+  return `${targetYear}-${String(month).padStart(2, '0')}-${String(targetDay).padStart(2, '0')}`;
+}
+
+export function shiftRangeByYears(range: DateRange, yearCount: number): DateRange {
+  return { from: shiftDateByYears(range.from, yearCount), to: shiftDateByYears(range.to, yearCount) };
+}
+
+/** Day of the week, 0 = Sunday … 6 = Saturday. */
+export function dayOfWeek(isoDate: IsoDate): number {
+  return new Date(isoDateToUtcMilliseconds(isoDate)).getUTCDay();
+}
+
+/** The full calendar month that contains the date: 2026-11-17 -> 2026-11-01 … 2026-11-30. */
+export function calendarMonthOf(isoDate: IsoDate): DateRange {
+  const [year, month] = isoDate.split('-').map(Number) as [number, number];
+  const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  const monthPrefix = `${year}-${String(month).padStart(2, '0')}`;
+  return { from: `${monthPrefix}-01`, to: `${monthPrefix}-${String(lastDay).padStart(2, '0')}` };
+}
+
 export function isDateInRange(isoDate: IsoDate, range: DateRange): boolean {
   return isoDate >= range.from && isoDate <= range.to;
 }

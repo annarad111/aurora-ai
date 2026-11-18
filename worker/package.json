@@ -1,0 +1,22 @@
+{
+  "name": "worker",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Cloudflare Worker: tools, chat orchestrator, MCP server. Step 3 contains the tools and the data repository.",
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p scripts",
+    "tools:demo": "tsx scripts/print-tool-outputs.ts"
+  },
+  "dependencies": {
+    "@aurora/analytics": "*",
+    "@aurora/demo-data": "*",
+    "@aurora/shared": "*",
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.20.0",
+    "@types/node": "^22.15.0"
+  }
+}
