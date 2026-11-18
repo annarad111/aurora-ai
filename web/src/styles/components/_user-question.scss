@@ -1,0 +1,17 @@
+@use '../abstracts' as *;
+
+// The user's question, right aligned, in an ink-coloured bubble.
+.user-question {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.user-question__bubble {
+  margin: 0;
+  max-width: 80%;
+  padding: $space-10 $space-16;
+  border-radius: $radius-panel $radius-panel $space-4 $radius-panel;
+  background: var(--color-ink);
+  color: var(--color-background);
+  overflow-wrap: anywhere;
+}

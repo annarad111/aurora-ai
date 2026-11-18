@@ -15,6 +15,7 @@
 @use 'base/reset';
 @use 'base/typography';
 @use 'base/animations';
+@use 'base/utilities';
 
 @use 'layout/workspace';
 
@@ -25,3 +26,12 @@
 @use 'components/idle-state';
 @use 'components/composer';
 @use 'components/evidence-panel';
+
+// The answer, in the order it appears on screen
+@use 'components/user-question';
+@use 'components/run-timeline';
+@use 'components/main-finding';
+@use 'components/kpi-card';
+@use 'components/explanation';
+@use 'components/run-banner';
+@use 'components/follow-ups';

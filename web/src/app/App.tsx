@@ -1,41 +1,69 @@
-import { useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
+import { AnswerView } from '../features/conversation/AnswerView';
 import { Composer } from '../features/conversation/Composer';
-import type { RunPhase } from '../features/conversation/run-phase';
 import { SuggestedQuestions } from '../features/empty-state/SuggestedQuestions';
+import type { FactInteraction } from '../features/insights/fact-links';
+import { useInsightRun } from '../stream/useInsightRun';
 import { ConversationHeader } from './layout/ConversationHeader';
 import { EvidencePanel } from './layout/EvidencePanel';
 import { Sidebar } from './layout/Sidebar';
+import { CURRENT_PROPERTY } from './workspace-content';
 
 export function App() {
-  // Step 1 only has the idle phase. Step 5 replaces this with the run reducer,
-  // which is driven by the events streamed from /api/chat.
-  const [runPhase] = useState<RunPhase>('idle');
+  const insightRun = useInsightRun(CURRENT_PROPERTY.hotelId);
+  const { state: run } = insightRun;
+  const conversationBody = useRef<HTMLDivElement>(null);
 
-  function handleAskQuestion(question: string) {
-    // Not connected yet: step 5 starts a streamed run here.
-    console.info('[Aurora] Question received (streaming is added in step 5):', question);
-  }
+  // Linked highlighting: what the pointer is over, and what the user clicked.
+  const [hoveredFactId, setHoveredFactId] = useState<string | null>(null);
+  const [focusedFactId, setFocusedFactId] = useState<string | null>(null);
 
-  function handleStartNewAnalysis() {
-    // Step 5: reset the run back to idle.
-  }
+  const factInteraction = useMemo<FactInteraction>(
+    () => ({
+      activeFactId: hoveredFactId ?? focusedFactId,
+      focusedFactId,
+      hoverFact: setHoveredFactId,
+      // Clicking the selected fact again clears the selection.
+      focusFact: (factId) => setFocusedFactId((currentFactId) => (currentFactId === factId ? null : factId)),
+    }),
+    [hoveredFactId, focusedFactId],
+  );
 
-  function handleStop() {
-    // Step 5: abort the running stream.
-  }
+  const clearSelection = useCallback(() => {
+    setHoveredFactId(null);
+    setFocusedFactId(null);
+  }, []);
+
+  const handleAskQuestion = useCallback(
+    (question: string) => {
+      clearSelection();
+      insightRun.start(question);
+      conversationBody.current?.scrollTo({ top: 0 });
+    },
+    [clearSelection, insightRun],
+  );
+
+  const handleStartNewAnalysis = useCallback(() => {
+    clearSelection();
+    insightRun.reset();
+  }, [clearSelection, insightRun]);
 
   return (
     <div className="workspace">
       <Sidebar onStartNewAnalysis={handleStartNewAnalysis} onAskQuestion={handleAskQuestion} />
 
       <main className="workspace__conversation" aria-label="Conversation">
-        <ConversationHeader runPhase={runPhase} />
-        <div className="conversation-body">
+        <ConversationHeader runPhase={run.phase} />
+        <div className="conversation-body" ref={conversationBody}>
           <div className="conversation-body__content">
-            {runPhase === 'idle' && <SuggestedQuestions onAskQuestion={handleAskQuestion} />}
+            {run.phase === 'idle' ? (
+              <SuggestedQuestions onAskQuestion={handleAskQuestion} />
+            ) : (
+              <AnswerView run={run} interaction={factInteraction} onAskQuestion={handleAskQuestion} onRetry={insightRun.retry} />
+            )}
           </div>
         </div>
-        <Composer isStreaming={runPhase === 'streaming'} onAskQuestion={handleAskQuestion} onStop={handleStop} />
+        <Composer isStreaming={run.phase === 'streaming'} onAskQuestion={handleAskQuestion} onStop={insightRun.stop} />
       </main>
 
       <EvidencePanel />

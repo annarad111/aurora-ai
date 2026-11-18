@@ -89,12 +89,18 @@ web/
   src/
     main.tsx                    entry: mounts <App> inside <ThemeProvider>, imports styles/main.scss
     app/
-      App.tsx                   the three-column workspace
+      App.tsx                   the three-column workspace; owns the run and the hover/selection state
       workspace-content.ts      static demo content (property, suggestions, recent questions)
       layout/                   Sidebar, ThemeSwitch, ConversationHeader, EvidencePanel
+    stream/
+      parse-sse.ts              response body -> validated stream events (fetch + ReadableStream)
+      run-reducer.ts            pure reducer: events + Start/Stop/Reset -> the answer on screen
+      useInsightRun.ts          hook: start, stop (AbortController), retry, reset
     features/
-      conversation/             Composer, run-phase (idle / streaming / done / cancelled)
+      conversation/             AnswerView, RunTimeline, StreamedExplanation, RunBanner, FollowUps, Composer
+      insights/                 MainFinding, KpiCard, fact-links (which elements light up together)
       empty-state/              SuggestedQuestions (idle screen)
+    lib/                        metric-display (value, delta, status icon), class-names
     design-system/
       ThemeProvider.tsx         light / dark / system, saved in localStorage
       icons.tsx                 inline SVG icons

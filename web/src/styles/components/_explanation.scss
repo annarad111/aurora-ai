@@ -1,0 +1,40 @@
+@use '../abstracts' as *;
+
+// The streamed explanation.
+.explanation {
+  font-size: $font-size-15;
+  line-height: $line-height-answer;
+  text-wrap: pretty;
+}
+
+// A figure inside the text: a button that looks like highlighted, underlined text.
+.figure-link {
+  @include unstyled-button;
+  @include tabular-numbers;
+  @include focus-visible-ring;
+  display: inline;
+  padding: 1px 5px;
+  margin: 0 1px;
+  border-bottom: 1.5px dashed var(--color-petrol);
+  border-radius: $radius-bar;
+  background: var(--color-primary-soft);
+  font-weight: $font-weight-semibold;
+  line-height: inherit;
+  transition: background-color $duration-fast;
+}
+
+.figure-link--active,
+.figure-link[aria-pressed='true'] {
+  background: var(--color-ai-soft);
+}
+
+// Blinking violet caret at the end of the text while it is still being written.
+.explanation__caret {
+  display: inline-block;
+  width: 2px;
+  height: 1.1em;
+  margin-left: $space-2;
+  vertical-align: -0.2em;
+  background: var(--color-violet);
+  animation: aurora-caret-blink 1s step-end infinite;
+}

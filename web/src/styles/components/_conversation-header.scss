@@ -56,3 +56,7 @@
 .run-status--cancelled .run-status__dot {
   background: var(--color-amber);
 }
+
+.run-status--error .run-status__dot {
+  background: var(--color-coral);
+}

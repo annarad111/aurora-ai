@@ -1,0 +1,78 @@
+@use '../abstracts' as *;
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: $space-10;
+}
+
+.kpi-card {
+  @include unstyled-button;
+  @include focus-visible-ring;
+  @include enters-on-arrival;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: $space-6;
+  padding: $space-14;
+  border-radius: $radius-card;
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
+  text-align: left;
+  transition: box-shadow $duration-fast;
+
+  &:hover {
+    box-shadow: var(--shadow-focus-ring);
+  }
+}
+
+// Lit up when its figure, chip or (step 6) chart bar is hovered or selected.
+.kpi-card--highlighted {
+  box-shadow: var(--shadow-focus-ring);
+}
+
+.kpi-card__label {
+  font-size: $font-size-12;
+  color: var(--color-ink-secondary);
+}
+
+.kpi-card__value {
+  @include tabular-numbers;
+  font-size: $font-size-24;
+  font-weight: $font-weight-semibold;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.kpi-card__reference {
+  font-size: $font-size-11;
+  color: var(--color-ink-tertiary);
+}
+
+// --- Status badge: icon + text + colour ------------------------------------
+
+.status-badge {
+  @include tabular-numbers;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: $space-2 $space-8;
+  border-radius: $radius-badge;
+  font-size: $font-size-12;
+  font-weight: $font-weight-semibold;
+}
+
+.status-badge--on-track {
+  background: var(--color-status-on-track-soft);
+  color: var(--color-status-on-track);
+}
+
+.status-badge--watch {
+  background: var(--color-status-watch-soft);
+  color: var(--color-status-watch);
+}
+
+.status-badge--off-track {
+  background: var(--color-status-off-track-soft);
+  color: var(--color-status-off-track);
+}

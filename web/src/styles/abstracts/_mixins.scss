@@ -34,6 +34,11 @@
   font-variant-numeric: tabular-nums;
 }
 
+// Every block that appears while the answer streams in slides up and fades in.
+@mixin enters-on-arrival($duration: $duration-enter) {
+  animation: aurora-enter $duration ease-out;
+}
+
 @mixin below-breakpoint($breakpoint) {
   @media (max-width: $breakpoint) {
     @content;

@@ -1,0 +1,36 @@
+@use '../abstracts' as *;
+
+// "Stopped. Everything received so far is kept." and error messages.
+.run-banner {
+  @include enters-on-arrival(250ms);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $space-12;
+  flex-wrap: wrap;
+  padding: $space-10 $space-14;
+  border-radius: $radius-button;
+  font-size: $font-size-13;
+}
+
+.run-banner--stopped {
+  --banner-accent: var(--color-amber);
+  background: var(--color-amber-soft);
+  color: var(--color-amber-ink);
+}
+
+.run-banner--error {
+  --banner-accent: var(--color-coral);
+  background: var(--color-coral-soft);
+  color: var(--color-coral);
+}
+
+.run-banner__action {
+  @include unstyled-button;
+  @include focus-visible-ring;
+  height: 30px;
+  padding: 0 $space-12;
+  border-radius: 8px;
+  border: 1px solid var(--banner-accent);
+  font-weight: $font-weight-semibold;
+}
