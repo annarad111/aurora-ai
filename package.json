@@ -3,11 +3,18 @@
   "private": true,
   "description": "Aurora: AI-first revenue assistant for hotels (independent concept for the Juyo assessment)",
   "workspaces": [
+    "packages/shared",
+    "packages/analytics",
     "web"
   ],
   "scripts": {
     "dev": "npm run dev --workspace web",
     "build": "npm run build --workspace web",
+    "test": "npm run test --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.0",
+    "vitest": "^3.2.0"
   }
 }

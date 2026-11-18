@@ -8,11 +8,29 @@ AI-first revenue assistant for hotel revenue managers. Independent concept for t
 npm install
 npm run dev      # http://localhost:5173
 npm run build    # typecheck + production build
+npm test         # Vitest for packages/shared and packages/analytics
+npm run typecheck
 ```
 
 ## Where things are
 
 ```
+packages/
+  shared/src/                   contracts used by both worker and web (Zod schemas + inferred types)
+    domain.ts                   hotels, daily_stats, targets, channels, on_the_books
+    metric-meta.ts              per-KPI direction (higher/lower is better) and status thresholds
+    findings.ts                 a fact with its euro impact; the only input for the narrative
+    tools.ts                    input/output of the 4 MCP tools
+    stream-events.ts            the SSE events of POST /api/chat
+    format.ts                   €, %, pp and counts, written the same way everywhere
+  analytics/src/                pure, deterministic maths (no HTTP, no LLM, no React)
+    kpi.ts                      occupancy, ADR, RevPAR, Net RevPAR, pickup
+    variance.ts                 revenue gap = volume + mix + pure price (exact)
+    channels.ts                 channel mix, commission cost, cost of the mix shift
+    pace.ts                     on the books vs last year
+    status.ts                   on track / watch / off track from direction + thresholds
+    findings.ts                 analysis results -> findings ranked by euro impact
+    aggregate.ts, dates.ts      grouping daily rows, inclusive date ranges
 docs/
   design/design_handoff_aurora_ai_chat/   design reference (open Aurora v2.dc.html in a browser)
   implementation-plan.md                  the step-by-step plan and what to check after each step

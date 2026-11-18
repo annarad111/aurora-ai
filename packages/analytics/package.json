@@ -1,0 +1,17 @@
+{
+  "name": "@aurora/analytics",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Pure, deterministic revenue analytics. No HTTP, no LLM, no React.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@aurora/shared": "*"
+  }
+}
