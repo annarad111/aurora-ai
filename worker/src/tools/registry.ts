@@ -3,7 +3,9 @@ import type { z } from 'zod';
 import { analyzeRevenueDrivers } from './analyze-revenue-drivers';
 import { getBookingPace } from './get-booking-pace';
 import { getChannelMix } from './get-channel-mix';
+import { getGroupBlocks } from './get-group-blocks';
 import { getHotelOverview } from './get-hotel-overview';
+import { queryPerformance } from './query-performance';
 import { ToolInputError, type ToolContext } from './tool-context';
 
 // ---------------------------------------------------------------------------
@@ -70,6 +72,28 @@ export const TOOL_REGISTRY: { [Name in ToolName]: ToolDefinition<Name> } = {
     inputSchema: TOOL_SCHEMAS.get_booking_pace.input,
     outputSchema: TOOL_SCHEMAS.get_booking_pace.output,
     run: getBookingPace,
+  },
+  query_performance: {
+    name: 'query_performance',
+    title: 'Performance query',
+    description:
+      'General question about past performance: occupancy, ADR, RevPAR, Net RevPAR, room revenue, room nights and ' +
+      'cancellations for any period, split by night, day of the week, weekend vs weekday (Fri–Sat nights), segment ' +
+      'or channel, optionally filtered by segment, channel or weekend/weekday, and optionally compared with last year. ' +
+      'Use it for "what was occupancy on 5 November", "ADR on weekends by channel", "revenue by segment in October".',
+    inputSchema: TOOL_SCHEMAS.query_performance.input,
+    outputSchema: TOOL_SCHEMAS.query_performance.output,
+    run: queryPerformance,
+  },
+  get_group_blocks: {
+    name: 'get_group_blocks',
+    title: 'Group blocks',
+    description:
+      'Named group blocks (congresses, tour groups) with their nights, rooms per night, segment and status ' +
+      '(confirmed or cancelled, with the cancellation date) for any period, past or future.',
+    inputSchema: TOOL_SCHEMAS.get_group_blocks.input,
+    outputSchema: TOOL_SCHEMAS.get_group_blocks.output,
+    run: getGroupBlocks,
   },
 };
 

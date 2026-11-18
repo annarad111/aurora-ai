@@ -6,3 +6,4 @@ export * from './channels';
 export * from './pace';
 export * from './status';
 export * from './findings';
+export * from './breakdown';

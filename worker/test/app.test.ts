@@ -86,7 +86,7 @@ describe('GET /api/workspace', () => {
     expect(workspace.hotel).toMatchObject({ name: 'Hotel Sablon', roomCount: 111 });
     expect(workspace.period).toEqual({ from: '2026-11-01', to: '2026-11-17' });
     expect(workspace.suggestedQuestions.map((suggestion) => suggestion.topic)).toEqual(['Revenue', 'Channels', 'Pace', 'Segments']);
-    expect(workspace.mcp.toolCount).toBe(4);
+    expect(workspace.mcp.toolCount).toBe(6);
   });
 
   it('lists the questions asked in the chat as "Recent", newest first and without duplicates', async () => {

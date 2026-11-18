@@ -12,6 +12,7 @@ import {
 } from '@aurora/shared';
 import type { AnalysisContext } from './analysis-context';
 import { buildContextNote } from './context-notes';
+import { buildDataProvenance, followupsForDataQuestion, listDataFactIds } from './data-answers';
 import { exploreViewForFact, followupsForFact } from './followups';
 import { describeDate, describeNights, findCancelledBlock, findChannelLine, readKpi, relativeChange } from './derived-facts';
 
@@ -55,10 +56,15 @@ export function listKnownFactIds(analysis: AnalysisContext): string[] {
     'commission_mix_shift',
     'booking_pace',
     'pace_pickup',
+    ...listDataFactIds(analysis),
   ];
 }
 
 export function buildProvenance(factId: string, analysis: AnalysisContext): ProvenancePayload | null {
+  // Data answers (query.… and block.… facts) carry their own context text and have no Explore view.
+  const dataProvenance = buildDataProvenance(factId, analysis);
+  if (dataProvenance) return { ...dataProvenance, exploreView: null, followupQuestions: followupsForDataQuestion(analysis) };
+
   const calculation = buildCalculationDetails(factId, analysis);
   if (!calculation) return null;
   const contextNote = buildContextNote(factId, analysis);

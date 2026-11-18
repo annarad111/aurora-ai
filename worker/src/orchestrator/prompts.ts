@@ -1,4 +1,4 @@
-import { TOOL_NAMES } from '@aurora/shared';
+import { TOOL_NAMES, type DateRange, type IsoDate } from '@aurora/shared';
 import type { CatalogueEntry } from './figure-catalogue';
 
 // ---------------------------------------------------------------------------
@@ -6,12 +6,19 @@ import type { CatalogueEntry } from './figure-catalogue';
 // rules can be reviewed and changed without touching the orchestrator.
 // ---------------------------------------------------------------------------
 
-export const PLANNER_SYSTEM_PROMPT = [
-  'You are Aurora, an analyst for hotel revenue managers.',
-  'Decide which read-only analysis tools are needed to answer the question. Call every tool you need, once each.',
-  'The hotel and the period are already fixed by the workspace, so tools take no arguments.',
-  'Questions about why revenue is off target usually need the overview, the revenue drivers and the channel mix, and pace for the outlook.',
-].join(' ');
+/** The planner's instructions, with today's date so "this month" and "yesterday" can be turned into dates. */
+export function buildPlannerSystemPrompt(today: IsoDate, monthToDatePeriod: DateRange): string {
+  return [
+    'You are Aurora, an analyst for hotel revenue managers. Call the read-only tools needed to answer the question.',
+    `Today is ${today}. "This month" means ${monthToDatePeriod.from} to ${monthToDatePeriod.to}. Dates are YYYY-MM-DD; ranges include both ends.`,
+    'Weekend means Friday and Saturday nights. The hotel is set automatically: never pass a hotelId.',
+    'Choose like this:',
+    '- Why revenue is above or below target, or what drives the gap: call get_hotel_overview, analyze_revenue_drivers, get_channel_mix and get_booking_pace, each with the period.',
+    '- Bookings for future nights: call get_booking_pace with stayFrom and stayTo.',
+    '- Group blocks, congresses or events: call get_group_blocks with the period.',
+    '- Any other question about past performance (a date, a period, weekends, a split by night, weekday, segment or channel, a comparison with last year): call query_performance once with the right arguments.',
+  ].join('\n');
+}
 
 export const NARRATIVE_SYSTEM_PROMPT = [
   'You are Aurora, an analyst for hotel revenue managers. You explain results in plain, direct English.',

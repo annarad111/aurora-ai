@@ -1,10 +1,11 @@
 import { z } from 'zod';
+import { breakdownDimensionSchema, dayTypeSchema } from './breakdown';
 import { channelSchema, dateRangeSchema, groupBlockSchema, hotelSchema, isoDateSchema, segmentSchema } from './domain';
 import { findingSchema } from './findings';
 import { metricIdSchema, metricStatusSchema } from './metric-meta';
 
 // ---------------------------------------------------------------------------
-// Input and output contracts of the four read-only tools.
+// Input and output contracts of the read-only tools.
 //
 // The same schemas are used by:
 //   - the chat orchestrator, which calls the tools directly (step 4)
@@ -17,6 +18,8 @@ export const TOOL_NAMES = [
   'analyze_revenue_drivers',
   'get_channel_mix',
   'get_booking_pace',
+  'query_performance',
+  'get_group_blocks',
 ] as const;
 export const toolNameSchema = z.enum(TOOL_NAMES);
 export type ToolName = z.infer<typeof toolNameSchema>;
@@ -168,10 +171,81 @@ export const bookingPaceOutputSchema = z.object({
 });
 export type BookingPaceOutput = z.infer<typeof bookingPaceOutputSchema>;
 
+// --- query_performance ------------------------------------------------------
+
+/** Longest period one query may cover, to keep answers small. */
+const MAXIMUM_QUERY_NIGHTS = 400;
+
+export const queryPerformanceInputSchema = z.object({
+  hotelId: hotelIdSchema,
+  period: dateRangeSchema.refine(
+    (range) => (Date.parse(range.to) - Date.parse(range.from)) / 86_400_000 < MAXIMUM_QUERY_NIGHTS,
+    `A query may cover at most ${MAXIMUM_QUERY_NIGHTS} nights`,
+  ),
+  /** How to split the period. "day_type" splits weekend (Friday and Saturday nights) from weekday nights. */
+  groupBy: breakdownDimensionSchema.default('none'),
+  /** Only these segments (all when absent). */
+  segments: z.array(segmentSchema).min(1).optional(),
+  /** Only these channels (all when absent). */
+  channels: z.array(channelSchema).min(1).optional(),
+  /** Only weekend or only weekday nights (all when absent). */
+  dayType: dayTypeSchema.optional(),
+  /** Adds the same nights one year earlier to every row. */
+  compareWithLastYear: z.boolean().default(false),
+});
+export type QueryPerformanceInput = z.infer<typeof queryPerformanceInputSchema>;
+
+const performanceValuesSchema = z.object({
+  nights: z.number(),
+  roomsAvailable: z.number(),
+  roomsSold: z.number(),
+  roomRevenue: z.number(),
+  cancellations: z.number(),
+  commissionCost: z.number(),
+  occupancy: z.number(),
+  adr: z.number(),
+  revpar: z.number(),
+  netRevpar: z.number(),
+});
+export type PerformanceValues = z.infer<typeof performanceValuesSchema>;
+
+export const performanceRowSchema = performanceValuesSchema.extend({
+  /** Stable key: "2026-11-05", "saturday", "weekend", "corporate", "ota", "total". */
+  key: z.string(),
+  label: z.string(),
+  lastYear: performanceValuesSchema.nullable(),
+});
+export type PerformanceRow = z.infer<typeof performanceRowSchema>;
+
+export const queryPerformanceOutputSchema = z.object({
+  period: dateRangeSchema,
+  groupBy: breakdownDimensionSchema,
+  filters: z.object({
+    segments: z.array(segmentSchema).nullable(),
+    channels: z.array(channelSchema).nullable(),
+    dayType: dayTypeSchema.nullable(),
+  }),
+  rows: z.array(performanceRowSchema),
+  totals: performanceRowSchema,
+  /** The query in words, for provenance: which rows were read and how they were grouped. */
+  sourceQuery: z.string(),
+});
+export type QueryPerformanceOutput = z.infer<typeof queryPerformanceOutputSchema>;
+
+// --- get_group_blocks ---------------------------------------------------------
+
+export const groupBlocksOutputSchema = z.object({
+  period: dateRangeSchema,
+  blocks: z.array(groupBlockSchema),
+});
+export type GroupBlocksOutput = z.infer<typeof groupBlocksOutputSchema>;
+
 /** Maps each tool name to its input and output schema. The tool registry (step 3) builds on this. */
 export const TOOL_SCHEMAS = {
   get_hotel_overview: { input: periodToolInputSchema, output: hotelOverviewOutputSchema },
   analyze_revenue_drivers: { input: periodToolInputSchema, output: revenueDriversOutputSchema },
   get_channel_mix: { input: periodToolInputSchema, output: channelMixOutputSchema },
   get_booking_pace: { input: bookingPaceInputSchema, output: bookingPaceOutputSchema },
+  query_performance: { input: queryPerformanceInputSchema, output: queryPerformanceOutputSchema },
+  get_group_blocks: { input: periodToolInputSchema, output: groupBlocksOutputSchema },
 } as const;

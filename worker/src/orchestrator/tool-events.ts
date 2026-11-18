@@ -64,5 +64,17 @@ export function buildEventsAfterTool(tool: ToolName, analysis: AnalysisContext):
     case 'get_booking_pace':
       if (!pace) return [];
       return [{ type: 'chart', chart: { kind: 'booking_pace', data: pace }, factIds: ['booking_pace', 'pace_pickup'] }];
+
+    case 'query_performance': {
+      // The table of the query that just ran (the latest one).
+      const queries = analysis.results.queries ?? [];
+      const latest = queries.at(-1);
+      if (!latest) return [];
+      return [{ type: 'chart', chart: { kind: 'performance_table', data: latest.output }, factIds: [] }];
+    }
+
+    case 'get_group_blocks':
+      // Blocks are listed in the text; each one links to its provenance.
+      return [];
   }
 }

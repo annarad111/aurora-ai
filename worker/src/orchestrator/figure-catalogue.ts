@@ -1,5 +1,6 @@
 import { formatCount, formatEuro, formatPercent, SEGMENT_LABELS } from '@aurora/shared';
 import type { AnalysisContext } from './analysis-context';
+import { buildDataCatalogue } from './data-answers';
 import {
   describeNights,
   findBiggestVolumeLoss,
@@ -157,5 +158,5 @@ export function buildFigureCatalogue(analysis: AnalysisContext): CatalogueEntry[
     );
   }
 
-  return entries;
+  return [...entries, ...buildDataCatalogue(analysis)];
 }

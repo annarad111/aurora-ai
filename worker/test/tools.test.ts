@@ -129,9 +129,9 @@ describe('get_booking_pace', async () => {
 });
 
 describe('the registry', () => {
-  it('has exactly the four tools, each with a description for the model', () => {
+  it('has the six tools, each with a description for the model', () => {
     expect(TOOL_DEFINITIONS.map((tool) => tool.name).sort()).toEqual(
-      ['analyze_revenue_drivers', 'get_booking_pace', 'get_channel_mix', 'get_hotel_overview'].sort(),
+      ['analyze_revenue_drivers', 'get_booking_pace', 'get_channel_mix', 'get_group_blocks', 'get_hotel_overview', 'query_performance'].sort(),
     );
     TOOL_DEFINITIONS.forEach((tool) => expect(tool.description.length).toBeGreaterThan(60));
   });
@@ -150,5 +150,41 @@ describe('the registry', () => {
     await expect(
       callTool('analyze_revenue_drivers', { hotelId: DEMO_HOTEL.id, period: { from: '2025-11-01', to: '2025-11-17' } }, context),
     ).rejects.toThrow(/no budget/);
+  });
+});
+
+describe('query_performance', async () => {
+  const weekendByChannel = await callTool(
+    'query_performance',
+    { hotelId: DEMO_HOTEL.id, period: DEMO_CURRENT_PERIOD, groupBy: 'channel', dayType: 'weekend', compareWithLastYear: true },
+    context,
+  );
+
+  it('keeps the filters in the total: weekend nights only, so the total is the sum of the rows', () => {
+    const roomsInRows = weekendByChannel.rows.reduce((total, row) => total + row.roomsSold, 0);
+    const revenueInRows = weekendByChannel.rows.reduce((total, row) => total + row.roomRevenue, 0);
+    expect(weekendByChannel.totals.roomsSold).toBe(roomsInRows);
+    expect(weekendByChannel.totals.roomRevenue).toBeCloseTo(revenueInRows, 6);
+    // 1–17 Nov 2026 has four Friday and Saturday nights (6, 7, 13 and 14 Nov), and the total uses only those.
+    expect(weekendByChannel.totals.nights).toBe(4);
+  });
+
+  it('compares with the same calendar dates last year, whose weekend nights differ', () => {
+    weekendByChannel.rows.forEach((row) => expect(row.lastYear).not.toBeNull());
+    // 1 Nov 2025 was a Saturday: 1, 7, 8, 14 and 15 Nov 2025 are five weekend nights.
+    expect(weekendByChannel.totals.lastYear?.nights).toBe(5);
+  });
+
+  it('matches the overview on the whole period', async () => {
+    const total = await callTool('query_performance', { hotelId: DEMO_HOTEL.id, period: DEMO_CURRENT_PERIOD }, context);
+    expect(total.totals.roomsSold).toBe(1170);
+    expect(total.totals.roomRevenue).toBe(208_260);
+    expect(total.totals.occupancy).toBeCloseTo(0.62, 3);
+  });
+
+  it('refuses a period that starts after today, pointing to the pace tool', async () => {
+    await expect(
+      callTool('query_performance', { hotelId: DEMO_HOTEL.id, period: { from: '2026-11-21', to: '2026-11-30' } }, context),
+    ).rejects.toThrow(/get_booking_pace/);
   });
 });

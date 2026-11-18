@@ -1,6 +1,7 @@
 import { classifyMetricStatus } from '@aurora/analytics';
 import { formatCount, formatEuro, formatPercent, SEGMENT_LABELS, type Segment, type ToolName } from '@aurora/shared';
 import type { AnalysisContext } from './analysis-context';
+import { explainDataQuestion, explainGroupBlocks, writeDataInsight, writeGroupBlocksInsight } from './data-answers';
 import { followupsForIntent } from './followups';
 import {
   describeNights,
@@ -42,6 +43,8 @@ export class ScriptedNarrativeWriter implements NarrativeWriter {
       channel_cost: ['get_channel_mix'],
       booking_pace: ['get_booking_pace'],
       segment_shift: ['analyze_revenue_drivers'],
+      data_question: ['query_performance'],
+      group_blocks: ['get_group_blocks'],
     };
     return dependencies[intent];
   }
@@ -56,6 +59,10 @@ export class ScriptedNarrativeWriter implements NarrativeWriter {
         return writeBookingPaceInsight(analysis);
       case 'segment_shift':
         return writeSegmentShiftInsight(analysis);
+      case 'data_question':
+        return writeDataInsight(analysis);
+      case 'group_blocks':
+        return writeGroupBlocksInsight(analysis);
     }
   }
 
@@ -65,6 +72,8 @@ export class ScriptedNarrativeWriter implements NarrativeWriter {
       channel_cost: explainChannelCost,
       booking_pace: explainBookingPace,
       segment_shift: explainSegmentShift,
+      data_question: explainDataQuestion,
+      group_blocks: explainGroupBlocks,
     };
     return { provider: 'scripted', segments: [...explanations[intent](analysis)] };
   }

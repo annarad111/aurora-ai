@@ -2,7 +2,7 @@ import { formatPeriodLabel } from '@aurora/shared';
 import type { ProvenanceData, RunState } from '../../stream/run-reducer';
 
 /** The four Explore overlay views. Each figure's provenance says which one explains it. */
-export type InsightView = ProvenanceData['exploreView'];
+export type InsightView = NonNullable<ProvenanceData['exploreView']>;
 
 /** The figure whose follow-up questions the overlay footer shows when nothing else is selected. */
 export const MAIN_FACT_OF_VIEW: Record<InsightView, string> = {

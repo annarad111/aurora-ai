@@ -1,9 +1,11 @@
 import { BookingPaceCard } from '../../features/evidence/BookingPaceCard';
 import { ChannelMixCard } from '../../features/evidence/ChannelMixCard';
+import { PerformanceTableCard } from '../../features/evidence/PerformanceTableCard';
 import { ProvenanceCard } from '../../features/evidence/ProvenanceCard';
 import { RevenueBridgeCard } from '../../features/evidence/RevenueBridgeCard';
 import type { InsightView } from '../../features/explore/explore-views';
 import type { FactInteraction } from '../../features/insights/fact-links';
+import { BREAKDOWN_METRICS, type BreakdownMetric } from '@aurora/shared';
 import type { ProvenanceData, RunState } from '../../stream/run-reducer';
 
 interface EvidencePanelProps {
@@ -24,7 +26,11 @@ export function EvidencePanel({ run, interaction, openProvenance, onShowProvenan
   const revenueBridge = run.charts.revenue_bridge?.kind === 'revenue_bridge' ? run.charts.revenue_bridge.data : null;
   const channelMix = run.charts.channel_mix?.kind === 'channel_mix' ? run.charts.channel_mix.data : null;
   const bookingPace = run.charts.booking_pace?.kind === 'booking_pace' ? run.charts.booking_pace.data : null;
-  const hasCharts = Boolean(revenueBridge || channelMix || bookingPace);
+  const performanceTable = run.charts.performance_table?.kind === 'performance_table' ? run.charts.performance_table.data : null;
+  const hasCharts = Boolean(revenueBridge || channelMix || bookingPace || performanceTable);
+  // The answer's lead metric is the last part of its first fact id (query.0.<row>.<metric>).
+  const leadMetric = run.insight?.factIds[0]?.split('.').at(-1);
+  const initialMetric: BreakdownMetric = BREAKDOWN_METRICS.includes(leadMetric as BreakdownMetric) ? (leadMetric as BreakdownMetric) : 'room_revenue';
 
   return (
     <aside className="evidence-panel workspace__evidence-panel" aria-label="Evidence panel">
@@ -39,6 +45,9 @@ export function EvidencePanel({ run, interaction, openProvenance, onShowProvenan
                 Charts appear here as Aurora works. Click any number to see where it comes from.
               </span>
             </div>
+          )}
+          {performanceTable && (
+            <PerformanceTableCard key={run.runId} output={performanceTable} initialMetric={initialMetric} interaction={interaction} />
           )}
           {revenueBridge && (
             <RevenueBridgeCard drivers={revenueBridge} interaction={interaction} onExpand={() => onOpenExplore('bridge')} />

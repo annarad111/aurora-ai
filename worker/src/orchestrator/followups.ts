@@ -1,6 +1,7 @@
 import { SEGMENT_LABELS, type Segment } from '@aurora/shared';
 import type { AnalysisContext } from './analysis-context';
 import { describeNights, findBiggestVolumeLoss, findCancelledBlock, findShareShift } from './derived-facts';
+import { followupsForDataQuestion } from './data-answers';
 import type { InsightIntent } from './insight-plan';
 
 // ---------------------------------------------------------------------------
@@ -86,5 +87,8 @@ export function followupsForIntent(intent: InsightIntent, analysis: AnalysisCont
         'Are other group blocks at risk this quarter?',
         'What are OTA commissions costing us this month?',
       ];
+    case 'data_question':
+    case 'group_blocks':
+      return followupsForDataQuestion(analysis);
   }
 }

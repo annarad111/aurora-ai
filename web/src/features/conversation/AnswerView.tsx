@@ -39,7 +39,11 @@ export function AnswerView({ run, interaction, onAskQuestion, onRetry, onShowPro
       <RunTimeline steps={run.steps} phase={run.phase} completion={run.completion} />
 
       {run.insight && (
-        <MainFinding insight={run.insight} interaction={interaction} onShowCalculation={() => onShowProvenance('revenue_gap')} />
+        <MainFinding
+          insight={run.insight}
+          interaction={interaction}
+          onShowCalculation={() => onShowProvenance(run.insight?.factIds[0] ?? 'revenue_gap')}
+        />
       )}
 
       {run.kpis.length > 0 && <KpiGrid kpis={run.kpis} interaction={interaction} />}

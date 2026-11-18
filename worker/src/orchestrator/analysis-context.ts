@@ -3,11 +3,15 @@ import type {
   BookingPaceOutput,
   ChannelMixOutput,
   DateRange,
+  GroupBlocksOutput,
   Hotel,
   HotelOverviewOutput,
   IsoDate,
+  QueryPerformanceInput,
+  QueryPerformanceOutput,
   RevenueDriversOutput,
 } from '@aurora/shared';
+import type { DataQuestionFocus } from './insight-plan';
 
 /** The tool outputs collected during one run. A tool that was not called stays undefined. */
 export interface ToolResults {
@@ -15,6 +19,9 @@ export interface ToolResults {
   drivers?: RevenueDriversOutput;
   channelMix?: ChannelMixOutput;
   pace?: BookingPaceOutput;
+  /** Data questions: every query_performance call, in order. */
+  queries?: Array<{ input: QueryPerformanceInput; output: QueryPerformanceOutput }>;
+  groupBlocks?: GroupBlocksOutput;
 }
 
 /** Everything the narrative, KPI and provenance builders can read. */
@@ -27,6 +34,8 @@ export interface AnalysisContext {
   /** Future stay dates checked for pace. */
   paceWindow: DateRange;
   results: ToolResults;
+  /** Data questions: the metric the answer leads with, and how rows are ranked. */
+  dataFocus?: DataQuestionFocus;
 }
 
 /** 1st of the month to today. */

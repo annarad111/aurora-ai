@@ -126,3 +126,8 @@
 .insight-chip__dot--watch {
   background: var(--color-amber);
 }
+
+// Data answers have no status: a neutral petrol dot.
+.insight-chip__dot--neutral {
+  background: var(--color-petrol);
+}

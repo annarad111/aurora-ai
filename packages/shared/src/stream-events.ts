@@ -4,6 +4,7 @@ import {
   bookingPaceOutputSchema,
   channelMixOutputSchema,
   hotelOverviewOutputSchema,
+  queryPerformanceOutputSchema,
   revenueDriversOutputSchema,
   toolNameSchema,
 } from './tools';
@@ -65,7 +66,8 @@ export const kpiEventSchema = z.object({
 export const insightChipSchema = z.object({
   factId: z.string(),
   label: z.string(),
-  status: metricStatusSchema,
+  /** Absent for plain data answers, which have no target to be on or off track against. */
+  status: metricStatusSchema.optional(),
 });
 
 /** The main finding: the executive summary, shown before the details. */
@@ -73,7 +75,8 @@ export const insightEventSchema = z.object({
   ...eventEnvelope,
   type: z.literal('insight'),
   headline: z.string(),
-  impactEur: z.number(),
+  /** Effect on revenue vs target. Null for plain data answers ("occupancy on 5 November"). */
+  impactEur: z.number().nullable(),
   factIds: z.array(z.string()),
   chips: z.array(insightChipSchema),
 });
@@ -96,6 +99,7 @@ export const chartPayloadSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('channel_mix'), data: channelMixOutputSchema }),
   z.object({ kind: z.literal('booking_pace'), data: bookingPaceOutputSchema }),
   z.object({ kind: z.literal('occupancy_trend'), data: hotelOverviewOutputSchema }),
+  z.object({ kind: z.literal('performance_table'), data: queryPerformanceOutputSchema }),
 ]);
 export type ChartPayload = z.infer<typeof chartPayloadSchema>;
 export type ChartKind = ChartPayload['kind'];
@@ -122,8 +126,8 @@ export const provenanceEventSchema = z.object({
   contextLabel: z.string(),
   /** One or two sentences that put the figure in context, written from the same tool output. */
   contextText: z.string(),
-  /** The Explore overlay view that best explains this figure. */
-  exploreView: z.enum(['occupancy', 'bridge', 'channel', 'pace']),
+  /** The Explore overlay view that best explains this figure; null when there is none (data answers). */
+  exploreView: z.enum(['occupancy', 'bridge', 'channel', 'pace']).nullable(),
   /** Questions to suggest when this figure is selected, written from the data (dates, segments). */
   followupQuestions: z.array(z.string()).max(4),
 });

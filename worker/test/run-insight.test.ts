@@ -101,14 +101,15 @@ describe('other questions use fewer tools', () => {
   it('routes questions to an intent by keyword', () => {
     expect(detectIntent('What are OTA commissions costing us this month?')).toBe('channel_cost');
     expect(detectIntent('Are we on pace for the last 10 days of November?')).toBe('booking_pace');
-    expect(detectIntent('Which segment moved most vs last year?')).toBe('segment_shift');
+    expect(detectIntent('Which segments replaced the lost MICE nights?')).toBe('segment_shift');
     expect(detectIntent('Why is my hotel revenue below target this month?')).toBe('revenue_gap');
   });
 
   it.each([
     ['What are OTA commissions costing us this month?', ['get_hotel_overview', 'get_channel_mix']],
     ['Are we on pace for the last 10 days of November?', ['get_hotel_overview', 'get_booking_pace']],
-    ['Which segment moved most vs last year?', ['get_hotel_overview', 'analyze_revenue_drivers']],
+    ['Which segments replaced the lost MICE nights?', ['get_hotel_overview', 'analyze_revenue_drivers']],
+    ['Which segment moved most vs last year?', ['query_performance']],
   ])('"%s" calls %j and finishes', async (question, expectedTools) => {
     const events = await collectRun(question);
     expect([...new Set(eventsOfType(events, 'step').map((step) => step.tool))]).toEqual(expectedTools);

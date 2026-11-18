@@ -1,0 +1,88 @@
+@use '../abstracts' as *;
+
+// The result of a free-form data question, in the evidence panel.
+
+.metric-picker {
+  flex: none;
+  height: 28px;
+  padding: 0 $space-8;
+  border-radius: $radius-button-small;
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
+  color: var(--color-ink-secondary);
+  font-size: $font-size-12;
+  cursor: pointer;
+}
+
+.performance-table {
+  display: flex;
+  flex-direction: column;
+  gap: $space-2;
+  max-height: 460px;
+  overflow: auto;
+}
+
+.performance-table__row {
+  @include unstyled-button;
+  @include focus-visible-ring;
+  display: grid;
+  grid-template-columns: minmax(70px, 1.1fr) minmax(0, 1.4fr) auto auto;
+  align-items: center;
+  gap: $space-8;
+  padding: 5px $space-6;
+  border-radius: $radius-badge;
+  font-size: $font-size-12;
+  transition: background-color $duration-fast;
+
+  &:hover {
+    background: var(--color-sunken);
+  }
+}
+
+.performance-table__row--highlighted {
+  background: var(--color-ai-soft);
+}
+
+.performance-table__row--total {
+  margin-top: $space-4;
+  border-top: 1px solid var(--color-line);
+  border-radius: 0 0 $radius-badge $radius-badge;
+  font-weight: $font-weight-semibold;
+}
+
+.performance-table__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--color-ink-secondary);
+}
+
+.performance-table__track {
+  display: block;
+  height: 8px;
+}
+
+.performance-table__bar {
+  display: block;
+  height: 100%;
+  border-radius: $radius-bar;
+  background: var(--color-petrol);
+  transition: width $duration-chart $easing-chart;
+}
+
+.performance-table__value {
+  @include tabular-numbers;
+  text-align: right;
+  font-weight: $font-weight-semibold;
+}
+
+.performance-table__change {
+  @include tabular-numbers;
+  min-width: 52px;
+  text-align: right;
+  color: var(--color-status-on-track);
+}
+
+.performance-table__change--down {
+  color: var(--color-status-off-track);
+}

@@ -9,18 +9,21 @@ import { LanguageModelNarrativeWriter } from '../src/orchestrator/language-model
 import { checkAndRenderNarrative } from '../src/orchestrator/narrative-guard';
 import { runInsight } from '../src/orchestrator/run-insight';
 
+/** A scripted answer. Tool calls without arguments can be given as names only. */
+type FakeAnswer = Omit<LanguageModelResponse, 'toolCalls'> & { toolCalls?: LanguageModelResponse['toolCalls'] };
+
 /** A model that answers from a script: each call takes the next answer (or throws it). */
 class ScriptedFakeModel implements LanguageModel {
   readonly modelId = 'fake-model';
   readonly requests: LanguageModelRequest[] = [];
-  constructor(private readonly answers: Array<LanguageModelResponse | Error>) {}
+  constructor(private readonly answers: Array<FakeAnswer | Error>) {}
 
   async complete(request: LanguageModelRequest): Promise<LanguageModelResponse> {
     this.requests.push(request);
     const answer = this.answers.shift();
     if (!answer) throw new LanguageModelError('No more scripted answers');
     if (answer instanceof Error) throw answer;
-    return answer;
+    return { ...answer, toolCalls: answer.toolCalls ?? answer.toolNames.map((name) => ({ name, arguments: {} })) };
   }
 }
 
@@ -30,7 +33,7 @@ const GOOD_EXPLANATION =
   'ADR is {adr_vs_target}, but OTA share rose to {ota_share}, so Net RevPAR is down {net_revpar_change}. ' +
   'Pace for {pace_window} is {pace_vs_last_year}.';
 
-const ALL_TOOLS: LanguageModelResponse = {
+const ALL_TOOLS: FakeAnswer = {
   text: '',
   toolNames: ['get_booking_pace', 'get_hotel_overview', 'analyze_revenue_drivers', 'get_channel_mix'],
 };
@@ -174,7 +177,7 @@ describe('a run with the language model', () => {
   it('gives the model the tool list for planning, and the figure catalogue for writing', async () => {
     const model = new ScriptedFakeModel([ALL_TOOLS, { text: GOOD_EXPLANATION, toolNames: [] }]);
     await runWithModel(model);
-    expect(model.requests[0]?.tools?.map((tool) => tool.name)).toHaveLength(4);
+    expect(model.requests[0]?.tools?.map((tool) => tool.name)).toHaveLength(6);
     expect(model.requests[1]?.user).toContain('{revenue_gap} = "€33,917"');
     expect(model.requests[1]?.system).toContain('Never write a digit');
   });
@@ -192,7 +195,7 @@ describe('a run with the language model', () => {
   });
 
   it('falls back to the templates when the model breaks the rules twice', async () => {
-    const answerWithNumbers: LanguageModelResponse = { text: 'Revenue is 34k below target because of 245 fewer nights and many other numbers like 16%.', toolNames: [] };
+    const answerWithNumbers: FakeAnswer = { text: 'Revenue is 34k below target because of 245 fewer nights and many other numbers like 16%.', toolNames: [] };
     const model = new ScriptedFakeModel([ALL_TOOLS, answerWithNumbers, answerWithNumbers]);
     const { done, explanation } = await runWithModel(model);
     expect(done).toMatchObject({ provider: 'scripted', fallbackReason: 'The model answer did not pass the number guard' });
@@ -211,5 +214,54 @@ describe('a run with the language model', () => {
     const { done, explanation } = await runWithModel(model, 'What are OTA commissions costing us this month?');
     expect(done?.toolsChosenBy).toBe('llm');
     expect(explanation).toMatch(/^OTA share of room revenue is 48%/);
+  });
+});
+
+describe('free-form data questions through the model', () => {
+  it('runs query_performance with the arguments the model chose, and the hotel set by Aurora', async () => {
+    const model = new ScriptedFakeModel([
+      {
+        text: '',
+        toolNames: ['query_performance'],
+        toolCalls: [
+          {
+            name: 'query_performance',
+            arguments: { hotelId: 'another-hotel', period: { from: '2026-11-01', to: '2026-11-17' }, groupBy: 'channel', dayType: 'weekend' },
+          },
+        ],
+      },
+      new LanguageModelError('Timeout'),
+    ]);
+    const { events, explanation, done } = await runWithModel(model, 'What was ADR on weekends by channel this month?');
+    expect(done).toMatchObject({ toolsChosenBy: 'llm', provider: 'scripted' });
+    const chart = events.find((event): event is StreamEventOfType<'chart'> => event.type === 'chart');
+    expect(chart?.chart.kind).toBe('performance_table');
+    // The model asked for another hotel; Aurora ran the query for the workspace hotel anyway.
+    expect(explanation).toMatch(/^ADR by channel for weekend nights, 1–17 Nov 2026: /);
+  });
+
+  it('gives the model each tool with its JSON Schema, without hotelId', async () => {
+    const model = new ScriptedFakeModel([new LanguageModelError('Quota'), new LanguageModelError('Quota')]);
+    await runWithModel(model, 'What was occupancy on 5 November?');
+    const queryTool = model.requests[0]?.tools?.find((tool) => tool.name === 'query_performance');
+    const properties = (queryTool?.parameters as { properties: Record<string, unknown> }).properties;
+    expect(Object.keys(properties)).toEqual(expect.arrayContaining(['period', 'groupBy', 'segments', 'channels', 'dayType', 'compareWithLastYear']));
+    expect(properties).not.toHaveProperty('hotelId');
+  });
+
+  it('falls back to the keyword parser when the model sends unusable arguments', async () => {
+    const model = new ScriptedFakeModel([
+      { text: '', toolNames: ['query_performance'], toolCalls: [{ name: 'query_performance', arguments: { period: 'last week' } }] },
+      new LanguageModelError('Timeout'),
+    ]);
+    const { done, explanation } = await runWithModel(model, 'What was occupancy on 5 November?');
+    expect(done?.toolsChosenBy).toBe('keywords');
+    expect(explanation).toMatch(/^For 5 Nov 2026, occupancy was \d+\.\d%/);
+  });
+
+  it('reads arguments from tool calls the model wrote as JSON text', () => {
+    const content = '[{"type": "function", "name": "query_performance", "parameters": {"period": {"from": "2026-11-01", "to": "2026-11-17"}, "groupBy": "segment"}}]';
+    const result = readWorkersAiResult({ response: content }, ['query_performance']);
+    expect(result.toolCalls).toEqual([{ name: 'query_performance', arguments: { period: { from: '2026-11-01', to: '2026-11-17' }, groupBy: 'segment' } }]);
   });
 });

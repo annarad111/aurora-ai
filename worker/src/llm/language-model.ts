@@ -9,6 +9,14 @@
 export interface LanguageModelTool {
   name: string;
   description: string;
+  /** JSON Schema of the arguments. Without it the tool takes no arguments. */
+  parameters?: Record<string, unknown>;
+}
+
+/** One tool call the model asked for. Arguments are untrusted: they are validated before use. */
+export interface LanguageModelToolCall {
+  name: string;
+  arguments: unknown;
 }
 
 export interface LanguageModelRequest {
@@ -25,6 +33,8 @@ export interface LanguageModelResponse {
   text: string;
   /** Names of the tools the model asked to call, in order. */
   toolNames: string[];
+  /** The same calls with their arguments. */
+  toolCalls: LanguageModelToolCall[];
 }
 
 export interface LanguageModel {

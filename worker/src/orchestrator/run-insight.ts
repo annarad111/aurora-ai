@@ -1,8 +1,9 @@
-import type { ToolName } from '@aurora/shared';
+import { queryPerformanceInputSchema, type ToolName } from '@aurora/shared';
 import type { EmitStreamEvent } from '../sse/sse-event-stream';
 import { callTool } from '../tools/registry';
 import { requireHotel, ToolInputError, type ToolContext } from '../tools/tool-context';
 import { monthToDate, paceWindowFor, type AnalysisContext, type ToolResults } from './analysis-context';
+import type { RunStepPlan } from './insight-plan';
 import { KeywordInsightPlanner, type InsightPlanner } from './insight-planners';
 import type { NarrativeWriter } from './narrative-writer';
 import { pause } from './pause';
@@ -57,14 +58,15 @@ export async function runInsight(options: RunInsightOptions): Promise<void> {
 
   try {
     const hotel = await requireHotel(toolContext, hotelId);
-    const plan = await planner.plan(question, signal);
+    const plan = await planner.plan(question, signal, { today: toolContext.today });
     if (signal.aborted) return;
     const analysis: AnalysisContext = {
       question,
       hotel,
-      period: monthToDate(toolContext.today),
-      paceWindow: paceWindowFor(toolContext.today),
+      period: plan.periodOverride ?? monthToDate(toolContext.today),
+      paceWindow: plan.paceWindowOverride ?? paceWindowFor(toolContext.today),
       results: {},
+      ...(plan.dataFocus ? { dataFocus: plan.dataFocus } : {}),
     };
 
     for (const step of plan.steps) {
@@ -82,7 +84,7 @@ export async function runInsight(options: RunInsightOptions): Promise<void> {
       if (signal.aborted) return;
 
       try {
-        await runToolIntoResults(step.tool, analysis, toolContext);
+        await runToolIntoResults(step, analysis, toolContext);
       } catch (error) {
         await emit({ type: 'step', stepId: step.stepId, label: step.label, tool: step.tool, status: 'failed' });
         throw error;
@@ -153,10 +155,10 @@ export async function runInsight(options: RunInsightOptions): Promise<void> {
   }
 }
 
-async function runToolIntoResults(tool: ToolName, analysis: AnalysisContext, toolContext: ToolContext): Promise<void> {
+async function runToolIntoResults(step: RunStepPlan, analysis: AnalysisContext, toolContext: ToolContext): Promise<void> {
   const hotelId = analysis.hotel.id;
   const periodInput = { hotelId, period: analysis.period };
-  switch (tool) {
+  switch (step.tool) {
     case 'get_hotel_overview':
       analysis.results.overview = await callTool('get_hotel_overview', periodInput, toolContext);
       return;
@@ -173,6 +175,16 @@ async function runToolIntoResults(tool: ToolName, analysis: AnalysisContext, too
         toolContext,
       );
       return;
+    case 'query_performance': {
+      // The hotel always comes from the run, never from the question or the model.
+      const input = queryPerformanceInputSchema.parse({ ...step.input, hotelId });
+      const output = await callTool('query_performance', input, toolContext);
+      analysis.results.queries = [...(analysis.results.queries ?? []), { input, output }];
+      return;
+    }
+    case 'get_group_blocks':
+      analysis.results.groupBlocks = await callTool('get_group_blocks', { period: analysis.period, ...step.input, hotelId }, toolContext);
+      return;
   }
 }
 
@@ -182,6 +194,8 @@ function hasResultFor(tool: ToolName, results: ToolResults): boolean {
     analyze_revenue_drivers: results.drivers,
     get_channel_mix: results.channelMix,
     get_booking_pace: results.pace,
+    query_performance: results.queries?.[0],
+    get_group_blocks: results.groupBlocks,
   };
   return resultForTool[tool] !== undefined;
 }
