@@ -80,6 +80,16 @@ over. The `done` event reports who chose the tools, who wrote the text, and why 
 Tested live with `@cf/meta/llama-3.3-70b-instruct-fp8-fast`: the model chose the tools in 8 of 8 runs and
 wrote a guard-passing text in 7 of 8 (one timeout at 15 s fell back to the templates). Answers take 6–10 s.
 
+## Conversation memory
+
+A short question such as "and November?" or "what about weekends?" builds on the previous answer.
+
+- Every `done` event carries a `context`: what the answer covered (intent, period, and for data questions the exact `query_performance` arguments and the main metric). It holds no figures.
+- The browser keeps the last 4 turns (question + context) and sends them as `history` with the next question. Nothing about the conversation is stored on the server; "New analysis" or another hotel starts over.
+- `worker/src/orchestrator/follow-up.ts` decides first, with fixed rules: a question that opens with "and / what about / only…", points back ("the same nights"), or has at most 4 words is a follow-up. It keeps the previous query and changes only what the new question mentions (period, split, filters, metric, vs last year). After an analysis, "and October?" reruns the same analysis for October; "why?" after a data question explains the gap for that period.
+- When the rules don't apply, the model planner sees the earlier questions and what was looked up for them. The narrative writer is told which question a follow-up continues, so "and November?" is answered as "ADR by channel for November".
+- `done.followUpOf` names the earlier question; the UI shows it above the question bubble.
+
 ## Security (demo level)
 
 - No keys in the frontend. Workers AI runs through the binding; the MCP token is a Worker secret.

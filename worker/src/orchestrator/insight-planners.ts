@@ -3,6 +3,7 @@ import {
   periodToolInputSchema,
   queryPerformanceInputSchema,
   TOOL_NAMES,
+  type ConversationTurn,
   type DateRange,
   type IsoDate,
   type ToolName,
@@ -11,17 +12,29 @@ import { z } from 'zod';
 import type { LanguageModel, LanguageModelToolCall } from '../llm/language-model';
 import { TOOL_DEFINITIONS } from '../tools/registry';
 import { monthToDate } from './analysis-context';
+import { isFollowUpQuestion, planFollowUp } from './follow-up';
 import { dataQuestionPlan, groupBlocksPlan, planFromToolNames, planInsightRun, type InsightPlan } from './insight-plan';
 import { buildPlannerRequest, buildPlannerSystemPrompt } from './prompts';
 import { parseDataQuestion, parseMetric } from './question-parser';
 
 export interface PlannedRun extends InsightPlan {
   plannedBy: 'llm' | 'keywords';
+  /** The earlier question this one was read as a follow-up to. */
+  followUpOf?: string;
 }
 
 /** What a planner needs to know besides the question. */
 export interface PlanningContext {
   today: IsoDate;
+  /** Earlier questions of the conversation, oldest first. */
+  history?: ConversationTurn[];
+}
+
+/** A follow-up resolved by the deterministic rules, or null. Both planners try this first. */
+function planAsFollowUp(question: string, context: PlanningContext): PlannedRun | null {
+  const previousTurn = context.history?.at(-1);
+  const plan = planFollowUp(question, previousTurn, context.today);
+  return plan && previousTurn ? { ...plan, plannedBy: 'keywords', followUpOf: previousTurn.question } : null;
 }
 
 /** Decides which tools a question needs, and with which arguments. */
@@ -32,7 +45,7 @@ export interface InsightPlanner {
 /** Keyword rules. Instant and deterministic; also the fallback of the model planner. */
 export class KeywordInsightPlanner implements InsightPlanner {
   async plan(question: string, _signal: AbortSignal, context: PlanningContext): Promise<PlannedRun> {
-    return { ...planInsightRun(question, context.today), plannedBy: 'keywords' };
+    return planAsFollowUp(question, context) ?? { ...planInsightRun(question, context.today), plannedBy: 'keywords' };
   }
 }
 
@@ -139,11 +152,14 @@ export class LanguageModelInsightPlanner implements InsightPlanner {
   ) {}
 
   async plan(question: string, signal: AbortSignal, context: PlanningContext): Promise<PlannedRun> {
+    const followUp = planAsFollowUp(question, context);
+    if (followUp) return followUp;
+    const previousTurn = context.history?.at(-1);
     try {
       const response = await this.model.complete(
         {
           system: buildPlannerSystemPrompt(context.today, monthToDate(context.today)),
-          user: buildPlannerRequest(question),
+          user: buildPlannerRequest(question, context.history ?? []),
           tools: TOOL_DEFINITIONS.map((tool) => ({
             name: tool.name,
             description: tool.description,
@@ -158,7 +174,9 @@ export class LanguageModelInsightPlanner implements InsightPlanner {
         // Include the start of what the model said instead, to diagnose prompt or format problems.
         throw new Error(`The model called no known tool. It answered: ${JSON.stringify(response.text.slice(0, 300))}`);
       }
-      return { ...planFromToolCalls(response.toolCalls, question, context.today), plannedBy: 'llm' };
+      const plan = planFromToolCalls(response.toolCalls, question, context.today);
+      // The model saw the earlier questions; a short question it answered with their help is a follow-up too.
+      return { ...plan, plannedBy: 'llm', ...(previousTurn && isFollowUpQuestion(question) ? { followUpOf: previousTurn.question } : {}) };
     } catch (error) {
       console.warn('[Aurora] tool planning fell back to keyword rules:', error instanceof Error ? error.message : error);
       return this.fallback.plan(question, signal, context);

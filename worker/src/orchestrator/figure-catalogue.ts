@@ -105,7 +105,7 @@ export function buildFigureCatalogue(analysis: AnalysisContext): CatalogueEntry[
         key: 'pure_price_effect',
         factId: 'pure_price',
         text: formatEuro(Math.abs(drivers.purePriceEffect)),
-        meaning: `revenue ${drivers.purePriceEffect >= 0 ? 'added' : 'lost'} by selling at a ${drivers.purePriceEffect >= 0 ? 'higher' : 'lower'} rate than planned. Write: "the higher rate ${drivers.purePriceEffect >= 0 ? 'added' : 'cost'} {pure_price_effect}"`,
+        meaning: `revenue ${drivers.purePriceEffect >= 0 ? 'added' : 'lost'} by selling at a ${drivers.purePriceEffect >= 0 ? 'higher' : 'lower'} rate than planned. Write: "the ${drivers.purePriceEffect >= 0 ? 'higher rate added' : 'lower rate cost'} {pure_price_effect}"`,
       },
       {
         key: 'mix_effect',

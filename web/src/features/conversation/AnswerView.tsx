@@ -33,6 +33,11 @@ export function AnswerView({ run, interaction, onAskQuestion, onRetry, onShowPro
   return (
     <>
       <div className="user-question">
+        {run.completion?.followUpOf && (
+          <p className="user-question__context">
+            Follow-up to “{run.completion.followUpOf}”
+          </p>
+        )}
         <p className="user-question__bubble">{run.question}</p>
       </div>
 

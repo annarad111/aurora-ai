@@ -48,7 +48,7 @@ export class LanguageModelNarrativeWriter implements NarrativeWriter {
         const response = await this.model.complete(
           {
             system: NARRATIVE_SYSTEM_PROMPT,
-            user: buildNarrativeRequest(analysis.question, catalogue, problemsWithPreviousAnswer),
+            user: buildNarrativeRequest(analysis.question, catalogue, problemsWithPreviousAnswer, analysis.followUpOf),
             maxTokens: 450,
             temperature: 0.3,
           },

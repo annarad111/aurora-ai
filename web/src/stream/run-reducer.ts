@@ -42,6 +42,8 @@ export interface RunCompletion {
   toolsChosenBy?: 'llm' | 'keywords';
   /** Why the templates wrote the text although the model was asked. */
   fallbackReason?: string;
+  /** The earlier question this one was read as a follow-up to. */
+  followUpOf?: string;
 }
 
 export interface RunError {
@@ -172,6 +174,7 @@ function applyStreamEvent(state: RunState, event: StreamEvent): RunState {
           verifiedFigureCount: event.verifiedFigureCount,
           ...(event.toolsChosenBy ? { toolsChosenBy: event.toolsChosenBy } : {}),
           ...(event.fallbackReason ? { fallbackReason: event.fallbackReason } : {}),
+          ...(event.followUpOf ? { followUpOf: event.followUpOf } : {}),
         },
       };
 

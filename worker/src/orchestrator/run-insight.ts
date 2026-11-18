@@ -1,10 +1,11 @@
-import { queryPerformanceInputSchema, type ToolName } from '@aurora/shared';
+import { queryPerformanceInputSchema, type ConversationTurn, type IsoDate, type ToolName } from '@aurora/shared';
 import type { EmitStreamEvent } from '../sse/sse-event-stream';
 import { callTool } from '../tools/registry';
 import { requireHotel, ToolInputError, type ToolContext } from '../tools/tool-context';
 import { monthToDate, paceWindowFor, type AnalysisContext, type ToolResults } from './analysis-context';
+import { describeAnsweredContext } from './follow-up';
 import type { RunStepPlan } from './insight-plan';
-import { KeywordInsightPlanner, type InsightPlanner } from './insight-planners';
+import { KeywordInsightPlanner, type InsightPlanner, type PlannedRun } from './insight-planners';
 import type { NarrativeWriter } from './narrative-writer';
 import { pause } from './pause';
 import { buildProvenance, listKnownFactIds } from './provenance';
@@ -41,6 +42,19 @@ export interface RunInsightOptions {
   planner?: InsightPlanner;
   /** Writes the explanation. Defaults to the templates. */
   narrativeWriter?: NarrativeWriter;
+  /** Earlier questions of the conversation and what their answers covered, oldest first. */
+  history?: ConversationTurn[];
+}
+
+/**
+ * Pace looks at the rest of the current month. When the analysis is about an
+ * earlier month ("why was October below target?"), that outlook is about other
+ * nights, so it is left out.
+ */
+export function withoutPaceForPastPeriods<Plan extends PlannedRun>(plan: Plan, today: IsoDate): Plan {
+  const isEarlierMonth = plan.periodOverride && plan.periodOverride.to < monthToDate(today).from;
+  if (!isEarlierMonth || plan.intent === 'booking_pace') return plan;
+  return { ...plan, steps: plan.steps.filter((step) => step.tool !== 'get_booking_pace') };
 }
 
 /** Splits text into words, keeping the trailing spaces, so streamed words join back exactly. */
@@ -58,7 +72,10 @@ export async function runInsight(options: RunInsightOptions): Promise<void> {
 
   try {
     const hotel = await requireHotel(toolContext, hotelId);
-    const plan = await planner.plan(question, signal, { today: toolContext.today });
+    const plan = withoutPaceForPastPeriods(
+      await planner.plan(question, signal, { today: toolContext.today, history: options.history ?? [] }),
+      toolContext.today,
+    );
     if (signal.aborted) return;
     const analysis: AnalysisContext = {
       question,
@@ -67,6 +84,7 @@ export async function runInsight(options: RunInsightOptions): Promise<void> {
       paceWindow: plan.paceWindowOverride ?? paceWindowFor(toolContext.today),
       results: {},
       ...(plan.dataFocus ? { dataFocus: plan.dataFocus } : {}),
+      ...(plan.followUpOf ? { followUpOf: plan.followUpOf } : {}),
     };
 
     for (const step of plan.steps) {
@@ -143,6 +161,8 @@ export async function runInsight(options: RunInsightOptions): Promise<void> {
       toolsChosenBy: plan.plannedBy,
       ...(narrative.fallbackReason ? { fallbackReason: narrative.fallbackReason } : {}),
       verifiedFigureCount,
+      context: describeAnsweredContext(plan, analysis),
+      ...(plan.followUpOf ? { followUpOf: plan.followUpOf } : {}),
     });
   } catch (error) {
     if (signal.aborted) return;

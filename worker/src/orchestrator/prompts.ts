@@ -1,5 +1,6 @@
-import { TOOL_NAMES, type DateRange, type IsoDate } from '@aurora/shared';
+import { TOOL_NAMES, type ConversationTurn, type DateRange, type IsoDate } from '@aurora/shared';
 import type { CatalogueEntry } from './figure-catalogue';
+import { describeTurnForModel } from './follow-up';
 
 // ---------------------------------------------------------------------------
 // Aurora's instructions to the language model. Kept in one file so tone and
@@ -17,6 +18,7 @@ export function buildPlannerSystemPrompt(today: IsoDate, monthToDatePeriod: Date
     '- Bookings for future nights: call get_booking_pace with stayFrom and stayTo.',
     '- Group blocks, congresses or events: call get_group_blocks with the period.',
     '- Any other question about past performance (a date, a period, weekends, a split by night, weekday, segment or channel, a comparison with last year): call query_performance once with the right arguments.',
+    'If earlier questions are listed and the new one builds on them ("and October?", "only OTA"), keep everything from the last one that the new question does not change.',
   ].join('\n');
 }
 
@@ -36,14 +38,18 @@ export const NARRATIVE_SYSTEM_PROMPT = [
   '9. Only state causes that are in the list. For a plain data question, describe the numbers; do not explain them.',
 ].join('\n');
 
-export function buildPlannerRequest(question: string): string {
-  return `Question from the revenue manager: "${question}"\nAvailable tools: ${TOOL_NAMES.join(', ')}.`;
+export function buildPlannerRequest(question: string, history: ConversationTurn[] = []): string {
+  const earlier =
+    history.length > 0 ? ['Earlier questions in this conversation, oldest first, with what Aurora looked up:', ...history.map(describeTurnForModel), ''] : [];
+  return [...earlier, `Question from the revenue manager: "${question}"`, `Available tools: ${TOOL_NAMES.join(', ')}.`].join('\n');
 }
 
-export function buildNarrativeRequest(question: string, catalogue: CatalogueEntry[], problemsWithPreviousAnswer: string[]): string {
+export function buildNarrativeRequest(question: string, catalogue: CatalogueEntry[], problemsWithPreviousAnswer: string[], followUpOf?: string): string {
   const figureLines = catalogue.map((entry) => `{${entry.key}} = "${entry.text}" (${entry.meaning})`);
   const lines = [
     `Question: "${question}"`,
+    // A short follow-up ("and November?") means little alone; the earlier question says what is being asked.
+    ...(followUpOf ? [`It follows up the earlier question "${followUpOf}": answer that question again, with the change the new one asks for.`] : []),
     '',
     'Placeholders you may use (the value is shown so you understand it; write the placeholder, not the value):',
     ...figureLines,

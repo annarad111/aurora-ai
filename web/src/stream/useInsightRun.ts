@@ -1,3 +1,4 @@
+import { MAXIMUM_HISTORY_TURNS, type ConversationTurn } from '@aurora/shared';
 import { useCallback, useEffect, useReducer, useRef } from 'react';
 import { readStreamEvents } from './parse-sse';
 import { initialRunState, runReducer, type RunState } from './run-reducer';
@@ -12,7 +13,7 @@ export interface InsightRun {
   stop: () => void;
   /** Asks the same question again. */
   retry: () => void;
-  /** Back to the idle screen. */
+  /** Back to the idle screen, and forgets the conversation. */
   reset: () => void;
 }
 
@@ -34,11 +35,17 @@ async function readErrorMessage(response: Response): Promise<string> {
 export function useInsightRun(hotelId: string | null): InsightRun {
   const [state, dispatch] = useReducer(runReducer, initialRunState);
   const activeRequest = useRef<AbortController | null>(null);
+  // Conversation memory: each finished answer adds what it covered, and the
+  // next question is sent with it, so "and October?" knows what came before.
+  const conversation = useRef<ConversationTurn[]>([]);
+  // What the current run was sent with, so Retry asks with the same history.
+  const historyOfCurrentRun = useRef<ConversationTurn[]>([]);
 
-  const start = useCallback(
-    (question: string) => {
+  const ask = useCallback(
+    (question: string, history: ConversationTurn[]) => {
       const trimmedQuestion = question.trim();
       if (!trimmedQuestion || !hotelId) return;
+      historyOfCurrentRun.current = history;
 
       activeRequest.current?.abort();
       const abortController = new AbortController();
@@ -50,7 +57,7 @@ export function useInsightRun(hotelId: string | null): InsightRun {
           const response = await fetch(CHAT_ENDPOINT, {
             method: 'POST',
             headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({ question: trimmedQuestion, hotelId }),
+            body: JSON.stringify({ question: trimmedQuestion, hotelId, history }),
             signal: abortController.signal,
           });
           if (!response.ok || !response.body) {
@@ -63,6 +70,9 @@ export function useInsightRun(hotelId: string | null): InsightRun {
             if (abortController.signal.aborted) return;
             dispatch({ type: 'event_received', event });
             if (event.type === 'done' || event.type === 'error') receivedFinalEvent = true;
+            if (event.type === 'done' && event.context) {
+              conversation.current = [...history, { question: trimmedQuestion, context: event.context }].slice(-MAXIMUM_HISTORY_TURNS);
+            }
           }
           if (!receivedFinalEvent && !abortController.signal.aborted) {
             dispatch({ type: 'connection_failed', message: 'The connection closed before the answer was complete.' });
@@ -77,6 +87,8 @@ export function useInsightRun(hotelId: string | null): InsightRun {
     [hotelId],
   );
 
+  const start = useCallback((question: string) => ask(question, conversation.current), [ask]);
+
   const stop = useCallback(() => {
     // Aborting the request also closes the stream on the server, which stops the run there.
     activeRequest.current?.abort();
@@ -85,10 +97,16 @@ export function useInsightRun(hotelId: string | null): InsightRun {
 
   const reset = useCallback(() => {
     activeRequest.current?.abort();
+    conversation.current = [];
     dispatch({ type: 'reset' });
   }, []);
 
-  const retry = useCallback(() => start(state.question), [start, state.question]);
+  const retry = useCallback(() => ask(state.question, historyOfCurrentRun.current), [ask, state.question]);
+
+  // Another hotel starts a new conversation.
+  useEffect(() => {
+    conversation.current = [];
+  }, [hotelId]);
 
   // Leaving the page stops the run.
   useEffect(() => () => activeRequest.current?.abort(), []);

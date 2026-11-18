@@ -1,9 +1,12 @@
 import { z } from 'zod';
+import { breakdownMetricSchema } from './breakdown';
+import { dateRangeSchema } from './domain';
 import { metricIdSchema, metricStatusSchema } from './metric-meta';
 import {
   bookingPaceOutputSchema,
   channelMixOutputSchema,
   hotelOverviewOutputSchema,
+  queryPerformanceInputSchema,
   queryPerformanceOutputSchema,
   revenueDriversOutputSchema,
   toolNameSchema,
@@ -138,6 +141,35 @@ export const followupsEventSchema = z.object({
   questions: z.array(z.string()).min(1).max(4),
 });
 
+export const INSIGHT_INTENTS = ['revenue_gap', 'channel_cost', 'booking_pace', 'segment_shift', 'data_question', 'group_blocks'] as const;
+export const insightIntentSchema = z.enum(INSIGHT_INTENTS);
+export type InsightIntent = z.infer<typeof insightIntentSchema>;
+
+/**
+ * What an answer covered, so the next question can build on it
+ * ("and October?", "what about weekends?"). Sent back by the browser with
+ * the next question; it holds no data, only what was asked for.
+ */
+export const answeredContextSchema = z.object({
+  intent: insightIntentSchema,
+  /** The nights analysed or queried (future stay dates for pace). */
+  period: dateRangeSchema,
+  /** For data questions: the exact query, without the hotel. */
+  query: queryPerformanceInputSchema.omit({ hotelId: true }).optional(),
+  primaryMetric: breakdownMetricSchema.optional(),
+});
+export type AnsweredContext = z.infer<typeof answeredContextSchema>;
+
+/** One earlier question of the conversation and what its answer covered. */
+export const conversationTurnSchema = z.object({
+  question: z.string().max(280),
+  context: answeredContextSchema,
+});
+export type ConversationTurn = z.infer<typeof conversationTurnSchema>;
+
+/** How many earlier turns the browser sends. Only the last one is used for planning; the rest give the model context. */
+export const MAXIMUM_HISTORY_TURNS = 4;
+
 export const doneEventSchema = z.object({
   ...eventEnvelope,
   type: z.literal('done'),
@@ -150,6 +182,10 @@ export const doneEventSchema = z.object({
   fallbackReason: z.string().optional(),
   /** How many figures in the text were matched to tool output. */
   verifiedFigureCount: z.number().int().nonnegative(),
+  /** What this answer covered; the browser sends it back with the next question. */
+  context: answeredContextSchema.optional(),
+  /** Set when the question was read as a follow-up to this earlier question. */
+  followUpOf: z.string().optional(),
 });
 
 export const errorEventSchema = z.object({
@@ -183,5 +219,7 @@ export type StreamEventOfType<EventType extends StreamEventType> = Extract<Strea
 export const chatRequestSchema = z.object({
   question: z.string().trim().min(1).max(280),
   hotelId: z.string().min(1).max(64),
+  /** Earlier questions of this conversation, oldest first. */
+  history: z.array(conversationTurnSchema).max(MAXIMUM_HISTORY_TURNS).default([]),
 });
 export type ChatRequest = z.infer<typeof chatRequestSchema>;

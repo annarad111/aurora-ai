@@ -3,7 +3,18 @@
 // The user's question, right aligned, in an ink-coloured bubble.
 .user-question {
   display: flex;
-  justify-content: flex-end;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: $space-4;
+}
+
+// "Follow-up to …": the earlier question this one builds on.
+.user-question__context {
+  margin: 0;
+  max-width: 80%;
+  color: var(--color-ink-tertiary);
+  font-size: $font-size-12;
+  text-align: right;
 }
 
 .user-question__bubble {

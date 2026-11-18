@@ -22,7 +22,8 @@ import { isAboutPace, isAboutTheTargetGap, parseDataQuestion, parseGroupBlockQue
 // the tools and arguments itself, and these rules are the fallback.
 // ---------------------------------------------------------------------------
 
-export type InsightIntent = 'revenue_gap' | 'channel_cost' | 'booking_pace' | 'segment_shift' | 'data_question' | 'group_blocks';
+export type { InsightIntent } from '@aurora/shared';
+import type { InsightIntent } from '@aurora/shared';
 
 export interface RunStepPlan {
   stepId: string;
@@ -75,7 +76,7 @@ export function detectIntent(question: string): keyof typeof TOOLS_FOR_INTENT {
   return INTENT_KEYWORDS.find((rule) => rule.pattern.test(question))?.intent ?? 'revenue_gap';
 }
 
-function analysisPlan(intent: keyof typeof TOOLS_FOR_INTENT): InsightPlan {
+export function analysisPlan(intent: keyof typeof TOOLS_FOR_INTENT): InsightPlan {
   return { intent, steps: TOOLS_FOR_INTENT[intent].map((tool) => STEP_FOR_TOOL[tool]) };
 }
 

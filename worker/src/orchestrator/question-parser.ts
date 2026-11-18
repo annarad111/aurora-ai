@@ -123,7 +123,7 @@ const CHANNEL_WORDS: Record<Channel, RegExp> = {
   wholesale: /\bwholesale\b|\btour operators?\b/,
 };
 
-function parseFilters(question: string, groupBy: BreakdownDimension | null): { segments?: Segment[]; channels?: Channel[] } {
+export function parseFilters(question: string, groupBy: BreakdownDimension | null): { segments?: Segment[]; channels?: Channel[] } {
   const text = question.toLowerCase();
   const segments = groupBy === 'segment' ? [] : SEGMENTS.filter((segment) => SEGMENT_WORDS[segment].test(text));
   const channels = groupBy === 'channel' ? [] : CHANNELS.filter((channel) => CHANNEL_WORDS[channel].test(text));

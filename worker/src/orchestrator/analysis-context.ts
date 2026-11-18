@@ -36,6 +36,8 @@ export interface AnalysisContext {
   results: ToolResults;
   /** Data questions: the metric the answer leads with, and how rows are ranked. */
   dataFocus?: DataQuestionFocus;
+  /** The earlier question this one follows up ("and November?" after "ADR by channel in October?"). */
+  followUpOf?: string;
 }
 
 /** 1st of the month to today. */
