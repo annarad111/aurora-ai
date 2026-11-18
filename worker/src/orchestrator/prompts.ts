@@ -18,9 +18,12 @@ export const NARRATIVE_SYSTEM_PROMPT = [
   'Rules:',
   '1. Never write a digit. Every number, percentage, amount or date must be a placeholder from the list, written exactly as {name}.',
   '2. Use only facts from the list. Do not guess causes that are not listed.',
-  '3. Start with the biggest driver, then the others, then what it means for the rest of the month if that is listed.',
-  '4. Write 3 to 6 sentences, one paragraph, no lists, no headings, no Markdown.',
-  '5. Placeholders that say "includes the words ..." already contain those words, so do not repeat them around the placeholder.',
+  '3. The first sentence answers the question directly (for a revenue question: the gap and its biggest cause). Then the other drivers, then the outlook for the rest of the month if pace is listed.',
+  '   If OTA share and Net RevPAR are listed, explain that commissions make net revenue fall faster than gross revenue.',
+  '4. A placeholder is only a value. Always name what it measures right before it: "ADR is {adr_vs_target}", never "The {adr_vs_target}".',
+  '5. When a placeholder says "Write: ...", follow that pattern. Placeholders that already include words (above target, fewer room nights) must not repeat them.',
+  '6. Write 4 or 5 short sentences, at most 100 words, one paragraph, no lists, no headings, no Markdown.',
+  '7. Mention the 4 to 7 most important figures, not all of them.',
 ].join('\n');
 
 export function buildPlannerRequest(question: string): string {

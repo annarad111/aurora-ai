@@ -107,6 +107,30 @@ describe('reading Workers AI responses', () => {
 
   it('refuses an empty response', () => {
     expect(() => readWorkersAiResult(null)).toThrow(LanguageModelError);
+    expect(() => readWorkersAiResult({ response: '' })).toThrow(/neither text nor tool calls/);
+  });
+
+  it('reads the OpenAI format the same model sometimes uses', () => {
+    const result = readWorkersAiResult({ object: 'chat.completion', choices: [{ message: { role: 'assistant', content: 'Revenue is {revenue_gap} below target.' } }] });
+    expect(result.text).toBe('Revenue is {revenue_gap} below target.');
+  });
+
+  // The exact shape Llama 3.3 returned on Workers AI during testing.
+  it('accepts tool calls the model wrote as JSON text, but only for offered tools', () => {
+    const content =
+      '["{\\"type\\": \\"function\\", \\"name\\": \\"get_hotel_overview\\", \\"parameters\\": {}}", ' +
+      '"{\\"type\\": \\"function\\", \\"name\\": \\"analyze_revenue_drivers\\", \\"parameters\\": {}}", ' +
+      '"{\\"type\\": \\"function\\", \\"name\\": \\"delete_everything\\", \\"parameters\\": {}}"]';
+    const result = readWorkersAiResult(
+      { object: 'chat.completion', choices: [{ message: { content } }] },
+      ['get_hotel_overview', 'analyze_revenue_drivers', 'get_channel_mix', 'get_booking_pace'],
+    );
+    expect(result.toolNames).toEqual(['get_hotel_overview', 'analyze_revenue_drivers']);
+  });
+
+  it('never treats prose as a tool call', () => {
+    const result = readWorkersAiResult({ response: 'I would look at get_channel_mix first.' }, ['get_channel_mix']);
+    expect(result.toolNames).toEqual([]);
   });
 });
 

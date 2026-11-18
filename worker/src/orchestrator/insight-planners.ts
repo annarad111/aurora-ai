@@ -47,7 +47,10 @@ export class LanguageModelInsightPlanner implements InsightPlanner {
         signal,
       );
       const chosenTools = response.toolNames.filter(isToolName);
-      if (chosenTools.length === 0) throw new Error('The model called no known tool');
+      if (chosenTools.length === 0) {
+        // Include the start of what the model said instead, to diagnose prompt or format problems.
+        throw new Error(`The model called no known tool. It answered: ${JSON.stringify(response.text.slice(0, 300))}`);
+      }
       return { ...planFromToolNames(chosenTools), plannedBy: 'llm' };
     } catch (error) {
       console.warn('[Aurora] tool planning fell back to keyword rules:', error instanceof Error ? error.message : error);

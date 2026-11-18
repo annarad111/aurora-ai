@@ -3,10 +3,29 @@ import { LanguageModelError, withTimeout, type LanguageModel, type LanguageModel
 /** A model on Workers AI that supports function calling. Can be changed with the AI_MODEL variable. */
 export const DEFAULT_WORKERS_AI_MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
 
-/** What Workers AI returns for text generation, as far as we rely on it. */
+type WorkersAiToolCall = { name?: unknown; function?: { name?: unknown } };
+
+/**
+ * What Workers AI returns for text generation, as far as we rely on it.
+ * The same model answers in one of two formats:
+ *   Workers AI format   { response, tool_calls }
+ *   OpenAI format       { choices: [{ message: { content, tool_calls } }] }
+ */
 interface WorkersAiTextResult {
   response?: unknown;
-  tool_calls?: Array<{ name?: unknown; function?: { name?: unknown } }>;
+  tool_calls?: WorkersAiToolCall[];
+  choices?: Array<{ message?: { content?: unknown; tool_calls?: WorkersAiToolCall[] } }>;
+}
+
+/**
+ * Llama sometimes writes its tool calls as JSON text instead of real tool calls:
+ *   ["{\"type\": \"function\", \"name\": \"get_hotel_overview\", \"parameters\": {}}", …]
+ * We accept a tool name only when it appears as a JSON "name" value and is one
+ * of the names we offered, so ordinary prose can never trigger a tool.
+ */
+export function findToolNamesWrittenAsText(text: string, offeredToolNames: readonly string[]): string[] {
+  const writtenNames = [...text.matchAll(/\\?"name\\?"\s*:\s*\\?"([a-z_]+)\\?"/g)].map((match) => match[1]!);
+  return [...new Set(writtenNames.filter((name) => offeredToolNames.includes(name)))];
 }
 
 /**
@@ -46,19 +65,39 @@ export class WorkersAiLanguageModel implements LanguageModel {
     }
 
     const rawResult = await withTimeout(runModel(this.modelId, inputs), this.timeoutMs, signal);
-    return readWorkersAiResult(rawResult);
+    return readWorkersAiResult(rawResult, request.tools?.map((tool) => tool.name) ?? []);
   }
 }
 
-/** Accepts both tool-call shapes Workers AI models use: `{ name }` and `{ function: { name } }`. */
-export function readWorkersAiResult(rawResult: unknown): LanguageModelResponse {
+/**
+ * Reads text and tool calls from either response format, and both tool-call
+ * shapes (`{ name }` and `{ function: { name } }`). When tools were offered and
+ * none came back as real tool calls, tool calls written as text are accepted too.
+ */
+export function readWorkersAiResult(rawResult: unknown, offeredToolNames: readonly string[] = []): LanguageModelResponse {
   if (typeof rawResult !== 'object' || rawResult === null) {
     throw new LanguageModelError('The model returned an empty response');
   }
   const result = rawResult as WorkersAiTextResult;
-  const text = typeof result.response === 'string' ? result.response : '';
-  const toolNames = (result.tool_calls ?? [])
+  const message = result.choices?.[0]?.message;
+
+  const rawText = typeof result.response === 'string' ? result.response : typeof message?.content === 'string' ? message.content : '';
+  const toolCalls = [...(result.tool_calls ?? []), ...(message?.tool_calls ?? [])];
+  let toolNames = toolCalls
     .map((toolCall) => toolCall.name ?? toolCall.function?.name)
     .filter((name): name is string => typeof name === 'string');
+  let text = rawText;
+
+  if (toolNames.length === 0 && offeredToolNames.length > 0) {
+    const namesWrittenAsText = findToolNamesWrittenAsText(rawText, offeredToolNames);
+    if (namesWrittenAsText.length > 0) {
+      toolNames = namesWrittenAsText;
+      text = '';
+    }
+  }
+
+  if (text === '' && toolNames.length === 0) {
+    throw new LanguageModelError(`The model returned neither text nor tool calls: ${JSON.stringify(rawResult).slice(0, 400)}`);
+  }
   return { text, toolNames };
 }

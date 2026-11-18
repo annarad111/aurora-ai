@@ -53,13 +53,13 @@ export function buildFigureCatalogue(analysis: AnalysisContext): CatalogueEntry[
         key: 'adr_vs_target',
         factId: 'adr',
         text: `${percentText(adrChange)} ${adrChange >= 0 ? 'above' : 'below'} target`,
-        meaning: 'average daily rate compared with target (includes the words above/below target)',
+        meaning: 'ADR compared with target, already includes "above/below target". Write: "ADR is {adr_vs_target}"',
       },
       {
         key: 'revpar_change',
         factId: 'revpar',
         text: percentText(revparChange),
-        meaning: `how much RevPAR is ${revparChange < 0 ? 'below' : 'above'} target, as a percentage`,
+        meaning: `percentage RevPAR is ${revparChange < 0 ? 'below' : 'above'} target. Write: "RevPAR is {revpar_change} ${revparChange < 0 ? 'below' : 'above'} target"`,
       },
     );
     const cancelledBlock = findCancelledBlock(overview);
@@ -83,31 +83,31 @@ export function buildFigureCatalogue(analysis: AnalysisContext): CatalogueEntry[
         key: 'room_nights_difference',
         factId: 'volume',
         text: `${formatCount(Math.abs(roomNightDifference))} ${roomNightDifference < 0 ? 'fewer' : 'more'} room nights`,
-        meaning: 'room nights sold compared with the plan (includes the words fewer/more room nights)',
+        meaning: 'room nights sold compared with the plan, already includes "fewer/more room nights". Write: "you sold {room_nights_difference} than planned"',
       },
       {
         key: 'volume_effect',
         factId: 'volume',
         text: formatEuro(Math.abs(drivers.volumeEffect)),
-        meaning: `revenue ${drivers.volumeEffect < 0 ? 'lost' : 'gained'} through volume (room nights)`,
+        meaning: `revenue ${drivers.volumeEffect < 0 ? 'lost' : 'gained'} through volume (room nights). Write: "volume ${drivers.volumeEffect < 0 ? 'cost' : 'added'} {volume_effect}"`,
       },
       {
         key: 'biggest_segment_shortfall',
         factId: `volume_${biggestLoss.segment}`,
         text: `${formatCount(Math.abs(biggestLoss.roomsSoldActual - biggestLoss.roomsSoldTarget))} room nights`,
-        meaning: `how many room nights ${SEGMENT_LABELS[biggestLoss.segment]} is below its target; the largest volume loss of any segment`,
+        meaning: `how many room nights ${SEGMENT_LABELS[biggestLoss.segment]} is below its target; the largest volume loss of any segment. Write: "${SEGMENT_LABELS[biggestLoss.segment]} is {biggest_segment_shortfall} below target"`,
       },
       {
         key: 'pure_price_effect',
         factId: 'pure_price',
         text: formatEuro(Math.abs(drivers.purePriceEffect)),
-        meaning: `revenue ${drivers.purePriceEffect >= 0 ? 'added' : 'lost'} by selling at a higher/lower rate than planned`,
+        meaning: `revenue ${drivers.purePriceEffect >= 0 ? 'added' : 'lost'} by selling at a ${drivers.purePriceEffect >= 0 ? 'higher' : 'lower'} rate than planned. Write: "the higher rate ${drivers.purePriceEffect >= 0 ? 'added' : 'cost'} {pure_price_effect}"`,
       },
       {
         key: 'mix_effect',
         factId: 'mix',
         text: formatEuro(Math.abs(drivers.mixEffect)),
-        meaning: `revenue ${drivers.mixEffect < 0 ? 'lost' : 'gained'} because the segment mix moved from ${SEGMENT_LABELS[losing.segment]} to ${SEGMENT_LABELS[gaining.segment]}`,
+        meaning: `revenue ${drivers.mixEffect < 0 ? 'lost' : 'gained'} because the segment mix moved from ${SEGMENT_LABELS[losing.segment]} to ${SEGMENT_LABELS[gaining.segment]}. Write: "the shift from ${SEGMENT_LABELS[losing.segment]} to ${SEGMENT_LABELS[gaining.segment]} ${drivers.mixEffect < 0 ? 'cost' : 'added'} {mix_effect}"`,
       },
     );
   }
@@ -117,7 +117,7 @@ export function buildFigureCatalogue(analysis: AnalysisContext): CatalogueEntry[
     entries.push(
       { key: 'ota_share', factId: 'ota_share', text: formatPercent(ota.revenueShare, { decimals: 0 }), meaning: 'OTA share of room revenue this period' },
       { key: 'ota_share_last_year', text: formatPercent(ota.revenueShareLastYear, { decimals: 0 }), meaning: 'OTA share of room revenue last year' },
-      { key: 'commission_cost', factId: 'commission_cost', text: formatEuro(channelMix.totalCommissionCost), meaning: 'commission paid to channels this period' },
+      { key: 'commission_cost', factId: 'commission_cost', text: formatEuro(channelMix.totalCommissionCost), meaning: 'commission paid to booking channels this period. Write: "commissions cost {commission_cost}"' },
       {
         key: 'commission_from_shift',
         factId: 'commission_mix_shift',
@@ -131,7 +131,7 @@ export function buildFigureCatalogue(analysis: AnalysisContext): CatalogueEntry[
         key: 'net_revpar_change',
         factId: 'net_revpar',
         text: percentText(netChange),
-        meaning: `how much Net RevPAR (after commissions) is ${netChange < 0 ? 'below' : 'above'} target, as a percentage`,
+        meaning: `percentage Net RevPAR (RevPAR after commissions) is ${netChange < 0 ? 'below' : 'above'} target. Write: "Net RevPAR is {net_revpar_change} ${netChange < 0 ? 'below' : 'above'} target"`,
       });
     }
   }
@@ -143,7 +143,7 @@ export function buildFigureCatalogue(analysis: AnalysisContext): CatalogueEntry[
         key: 'pace_vs_last_year',
         factId: 'booking_pace',
         text: `${percentText(pace.changeVsLastYear, 0)} ${pace.changeVsLastYear < 0 ? 'behind' : 'ahead of'} last year`,
-        meaning: 'rooms on the books for those dates compared with the same point last year (includes behind/ahead of last year)',
+        meaning: 'bookings for those dates compared with the same point last year, already includes "behind/ahead of last year". Write: "pace for {pace_window} is {pace_vs_last_year}"',
       },
       {
         key: 'pickup_last_7_days',
