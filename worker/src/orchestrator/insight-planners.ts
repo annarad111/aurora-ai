@@ -10,12 +10,12 @@ import {
 } from '@aurora/shared';
 import { z } from 'zod';
 import type { LanguageModel, LanguageModelToolCall } from '../llm/language-model';
-import { TOOL_DEFINITIONS } from '../tools/registry';
+import { CHAT_TOOL_DEFINITIONS } from '../tools/registry';
 import { monthToDate } from './analysis-context';
 import { isFollowUpQuestion, planFollowUp } from './follow-up';
 import { dataQuestionPlan, groupBlocksPlan, planFromToolNames, planInsightRun, type InsightPlan } from './insight-plan';
 import { buildPlannerRequest, buildPlannerSystemPrompt } from './prompts';
-import { parseDataQuestion, parseMetric } from './question-parser';
+import { parseDataQuestion, parseMetric, parsePeriod } from './question-parser';
 
 export interface PlannedRun extends InsightPlan {
   plannedBy: 'llm' | 'keywords';
@@ -133,10 +133,14 @@ export function planFromToolCalls(calls: LanguageModelToolCall[], question: stri
     .find((period: DateRange) => period.to <= today && (period.from !== defaultPeriod.from || period.to !== defaultPeriod.to));
   const paceCall = knownCalls.find((call) => call.name === 'get_booking_pace');
   const paceArguments = paceCall ? bookingPaceInputSchema.safeParse({ ...argumentsOf(paceCall), hotelId: VALIDATION_HOTEL_ID }) : null;
+  // Dates written in the question are read exactly by the parser, so they win over the model's.
+  const futurePeriodInQuestion = parsePeriod(question, today);
   const paceWindowOverride =
-    paceArguments?.success && paceArguments.data.stayFrom > today && paceArguments.data.stayFrom <= paceArguments.data.stayTo
-      ? { from: paceArguments.data.stayFrom, to: paceArguments.data.stayTo }
-      : undefined;
+    paceCall && futurePeriodInQuestion && futurePeriodInQuestion.from > today
+      ? futurePeriodInQuestion
+      : paceArguments?.success && paceArguments.data.stayFrom > today && paceArguments.data.stayFrom <= paceArguments.data.stayTo
+        ? { from: paceArguments.data.stayFrom, to: paceArguments.data.stayTo }
+        : undefined;
   return { ...plan, ...(periodOverride ? { periodOverride } : {}), ...(paceWindowOverride ? { paceWindowOverride } : {}) };
 }
 
@@ -160,7 +164,7 @@ export class LanguageModelInsightPlanner implements InsightPlanner {
         {
           system: buildPlannerSystemPrompt(context.today, monthToDate(context.today)),
           user: buildPlannerRequest(question, context.history ?? []),
-          tools: TOOL_DEFINITIONS.map((tool) => ({
+          tools: CHAT_TOOL_DEFINITIONS.map((tool) => ({
             name: tool.name,
             description: tool.description,
             parameters: toolParametersFor(tool.inputSchema as z.ZodType),

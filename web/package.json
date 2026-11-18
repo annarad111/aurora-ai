@@ -11,9 +11,10 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@aurora/analytics": "*",
+    "@aurora/shared": "*",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0",
-    "@aurora/shared": "*"
+    "react-dom": "^19.1.0"
   },
   "devDependencies": {
     "@types/react": "^19.1.0",

@@ -1,6 +1,6 @@
 # Using Aurora's analyses from any agent (MCP)
 
-Aurora's four analyses are published as a **Model Context Protocol** server at `/mcp`.
+Aurora's seven tools are published as a **Model Context Protocol** server at `/mcp`.
 They are the same tools the chat uses, from the same registry (`worker/src/tools/registry.ts`),
 so any MCP client (Claude Desktop, Claude Code, MCP Inspector, your own agent) gets the same
 numbers as the Aurora UI.
@@ -11,9 +11,13 @@ numbers as the Aurora UI.
 | `analyze_revenue_drivers` | The revenue gap split exactly into volume, mix and pure price, per segment, with findings ranked by euro impact |
 | `get_channel_mix` | Revenue share per channel vs last year and previous months, commission paid, Net RevPAR |
 | `get_booking_pace` | Rooms on the books for future nights vs the same point last year, pickup of the last 7 days |
+| `query_performance` | Any past metric for any period, split by night, weekday, weekend/weekday, segment or channel, with filters and last year |
+| `get_group_blocks` | Named group blocks (congresses, tour groups) with nights, rooms and status, cancelled ones with their date |
+| `simulate_scenario` | What-if for future stay dates: win back part of the pace gap, change the rate of rooms still to sell, move OTA bookings to direct; revenue, commission and net revenue before and after |
 
 All tools are read-only (`readOnlyHint: true`). The server's instructions tell the client the demo
-hotel id (`sablon-bru`), the fixed "today" (2026-11-17) and the date format.
+hotel id (`sablon-bru`), the fixed "today" (2026-11-17) and the date format. `simulate_scenario`
+only calculates; it never changes data.
 
 ## Endpoint and access
 

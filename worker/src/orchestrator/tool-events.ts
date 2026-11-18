@@ -76,5 +76,9 @@ export function buildEventsAfterTool(tool: ToolName, analysis: AnalysisContext):
     case 'get_group_blocks':
       // Blocks are listed in the text; each one links to its provenance.
       return [];
+
+    case 'simulate_scenario':
+      // Not used by the chat: the what-if runs in the simulator.
+      return [];
   }
 }

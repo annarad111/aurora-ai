@@ -45,6 +45,22 @@ function inferYear(month: number, day: number, explicitYear: string | undefined,
 export function parsePeriod(question: string, today: IsoDate): DateRange | null {
   const text = question.toLowerCase();
 
+  // "the last 10 days of November", "the first week of December", "the rest of the month"
+  const partOfMonth = new RegExp(`\\b(last|final|first) (\\d{1,2}|week|ten) (?:days|nights)? ?of (?:the )?(month|${MONTH_PATTERN})`).exec(text);
+  if (partOfMonth) {
+    const monthText = partOfMonth[3]!;
+    const month = monthText === 'month' ? Number(today.slice(5, 7)) : monthNumberOf(monthText);
+    const wholeMonth = calendarMonthOf(isoDate(inferYear(month, 28, undefined, today), month, 1));
+    const length = partOfMonth[2] === 'week' ? 7 : partOfMonth[2] === 'ten' ? 10 : Number(partOfMonth[2]);
+    return partOfMonth[1] === 'first'
+      ? { from: wholeMonth.from, to: addDays(wholeMonth.from, length - 1) }
+      : { from: addDays(wholeMonth.to, -(length - 1)), to: wholeMonth.to };
+  }
+  const restOfMonth = new RegExp(`\\brest of (?:the )?(month|${MONTH_PATTERN})`).exec(text);
+  if (restOfMonth && (restOfMonth[1] === 'month' || monthNumberOf(restOfMonth[1]!) === Number(today.slice(5, 7)))) {
+    return { from: addDays(today, 1), to: calendarMonthOf(today).to };
+  }
+
   const dayRange = new RegExp(`\\b(\\d{1,2})\\s*[–-]\\s*(\\d{1,2})\\s+${MONTH_PATTERN}(?:\\s+(\\d{4}))?`).exec(text);
   if (dayRange) {
     const month = monthNumberOf(dayRange[3]!);

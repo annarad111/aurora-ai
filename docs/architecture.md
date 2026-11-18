@@ -68,7 +68,7 @@ and keeps partial answers on Stop or error.
 
 | Responsibility | Deterministic | Model (optional) |
 |---|---|---|
-| Which tools to call | keyword rules (fallback) | function calling over the 4 tools |
+| Which tools to call | keyword rules (fallback) | function calling over the 6 chat tools |
 | Numbers, KPI statuses, charts, provenance | always | never |
 | Headline, chips, follow-ups | always (templates) | — |
 | Explanation text | templates (fallback) | writes sentences with `{placeholders}` |
@@ -89,6 +89,15 @@ A short question such as "and November?" or "what about weekends?" builds on the
 - `worker/src/orchestrator/follow-up.ts` decides first, with fixed rules: a question that opens with "and / what about / only…", points back ("the same nights"), or has at most 4 words is a follow-up. It keeps the previous query and changes only what the new question mentions (period, split, filters, metric, vs last year). After an analysis, "and October?" reruns the same analysis for October; "why?" after a data question explains the gap for that period.
 - When the rules don't apply, the model planner sees the earlier questions and what was looked up for them. The narrative writer is told which question a follow-up continues, so "and November?" is answered as "ADR by channel for November".
 - `done.followUpOf` names the earlier question; the UI shows it above the question bubble.
+
+## What-if simulation
+
+`simulate_scenario` answers "what if we act on the coming nights?" with three levers: win back part of the room nights behind last year's pace, change the rate of the rooms still to sell, and move part of the OTA revenue to direct.
+
+- The calculation is one pure function, `simulateScenario(basis, levers)` in `packages/analytics/src/scenario.ts`. The basis comes from the database (`worker/src/tools/simulate-scenario.ts`): rooms and revenue on the books, last year's rooms at the same point, the channel mix of the month so far, the commission per channel, and capacity.
+- Rooms already booked keep their rate; recovered room nights are sold at the rate on the books times the rate lever, and never past a full hotel. Commission is estimated from the channel mix. The four effects (recovered nights, rate, commission on the extra revenue, commission saved by direct) add up exactly to the change in net revenue.
+- The simulator in the pace Explore view calls `POST /api/simulate` once for the basis, then runs the same function in the browser on every slider move, so the numbers are the server's, without a request per move.
+- MCP clients get the same tool. The chat planner leaves it out: the what-if has its own screen.
 
 ## Security (demo level)
 

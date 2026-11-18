@@ -1,0 +1,184 @@
+@use '../abstracts' as *;
+
+// "What if": levers on the left, the effect on the right; stacked on narrow screens.
+
+.scenario-simulator {
+  display: flex;
+  flex-direction: column;
+  gap: $space-16;
+  margin-top: $space-24;
+  padding-top: $space-20;
+  border-top: 1px solid var(--color-line);
+}
+
+.scenario-simulator__header {
+  display: flex;
+  flex-direction: column;
+  gap: $space-4;
+}
+
+.scenario-simulator__eyebrow {
+  @include eyebrow(var(--color-ai-ink));
+}
+
+.scenario-simulator__title {
+  margin: 0;
+  font-size: $font-size-16;
+  font-weight: $font-weight-semibold;
+}
+
+.scenario-simulator__status {
+  margin: 0;
+  color: var(--color-ink-secondary);
+}
+
+.scenario-simulator__status--error {
+  color: var(--color-status-off-track);
+}
+
+.scenario-simulator__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: $space-24;
+
+  @include below-breakpoint($breakpoint-stacked) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.scenario-simulator__levers {
+  display: flex;
+  flex-direction: column;
+  gap: $space-20;
+}
+
+.scenario-simulator__reset {
+  align-self: flex-start;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+}
+
+// --- One lever ---------------------------------------------------------------
+
+.scenario-lever {
+  display: flex;
+  flex-direction: column;
+  gap: $space-6;
+}
+
+.scenario-lever__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: $space-12;
+}
+
+.scenario-lever__label {
+  font-weight: $font-weight-medium;
+}
+
+.scenario-lever__value {
+  @include tabular-numbers;
+  font-weight: $font-weight-semibold;
+}
+
+.scenario-lever__slider {
+  width: 100%;
+  accent-color: var(--color-primary);
+}
+
+.scenario-lever__hint {
+  color: var(--color-ink-tertiary);
+  font-size: $font-size-12;
+}
+
+// --- Result ------------------------------------------------------------------
+
+.scenario-simulator__result {
+  display: flex;
+  flex-direction: column;
+  gap: $space-12;
+  padding: $space-16;
+  border-radius: $radius-card;
+  background: var(--color-sunken);
+}
+
+.scenario-simulator__result-label {
+  @include eyebrow;
+}
+
+.scenario-simulator__headline {
+  @include tabular-numbers;
+  font-size: $font-size-22;
+  font-weight: $font-weight-semibold;
+}
+
+.scenario-simulator__headline--positive {
+  color: var(--color-status-on-track);
+}
+
+.scenario-simulator__headline--negative {
+  color: var(--color-status-off-track);
+}
+
+.scenario-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: $font-size-13;
+
+  th,
+  td {
+    padding: $space-6 0;
+    border-bottom: 1px solid var(--color-line);
+    text-align: right;
+  }
+
+  th[scope='row'] {
+    text-align: left;
+    font-weight: $font-weight-regular;
+    color: var(--color-ink-secondary);
+  }
+
+  thead th {
+    color: var(--color-ink-tertiary);
+    font-size: $font-size-12;
+    font-weight: $font-weight-medium;
+  }
+
+  td {
+    @include tabular-numbers;
+    padding-left: $space-12;
+  }
+}
+
+.scenario-effects {
+  display: flex;
+  flex-direction: column;
+  gap: $space-4;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: $font-size-12;
+  color: var(--color-ink-secondary);
+}
+
+.scenario-effects__row {
+  display: flex;
+  justify-content: space-between;
+  gap: $space-12;
+}
+
+.scenario-effects__amount {
+  @include tabular-numbers;
+  color: var(--color-ink);
+  white-space: nowrap;
+}
+
+.scenario-simulator__note {
+  margin: 0;
+  color: var(--color-ink-tertiary);
+  font-size: $font-size-12;
+}

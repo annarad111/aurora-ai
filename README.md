@@ -64,7 +64,7 @@ To rotate it, put a new value there and run `npx wrangler secret put MCP_TOKEN -
 
 The model never computes or types a number.
 
-1. **Planning.** The model sees the four tools (function calling) and picks the ones the question needs.
+1. **Planning.** The model sees the six chat tools (function calling) and picks the ones the question needs.
    The tools always run in a fixed order, and the ones the answer cannot do without are added.
 2. **Writing.** The model gets a catalogue of figures, each behind a placeholder:
    `{revenue_gap} = "€33,917" (how far room revenue is BELOW target)`. It writes
@@ -81,10 +81,11 @@ The headline, chips, KPI cards, charts and provenance are always deterministic; 
 | Route | What it does |
 |---|---|
 | `GET /api/workspace?hotel=` | Everything the UI shows before a question: hotels, period, starter and recent questions (all from D1) |
-| `POST /api/chat` | `{ question, hotelId }` → Server-Sent Events: `run_started`, `step`, `kpi`, `chart`, `insight`, `text_delta`, `provenance`, `followups`, `done` (or `error`) |
+| `POST /api/chat` | `{ question, hotelId, history? }` → Server-Sent Events: `run_started`, `step`, `kpi`, `chart`, `insight`, `text_delta`, `provenance`, `followups`, `done` (or `error`). `done.context` is what the answer covered; send the last turns back as `history` for follow-ups. |
+| `POST /api/simulate` | `{ hotelId, stayFrom, stayTo, paceRecovery?, rateChange?, otaToDirect? }` → the what-if result (`simulate_scenario`) |
 | `GET /api/hotels/:id/overview?from=&to=` | The overview tool as plain JSON, no AI. Defaults to month to date. |
 | `GET /api/health` | Worker and database status |
-| `/mcp` | The four tools for external agents (MCP, Streamable HTTP). Bearer token, 60 requests/min. See [docs/mcp-usage.md](docs/mcp-usage.md). |
+| `/mcp` | All seven tools, including the what-if simulation, for external agents (MCP, Streamable HTTP). Bearer token, 60 requests/min. See [docs/mcp-usage.md](docs/mcp-usage.md). |
 
 `POST /api/chat` is limited to 20 answers per minute per client.
 
@@ -121,7 +122,7 @@ worker/
     env.ts                      bindings and the checked config
     routes/                     one file per route
     db/                         HotelDataRepository interface, D1 implementation (the only SQL), in-memory implementation
-    tools/                      the 4 tools + registry.ts (one source for chat and MCP)
+    tools/                      the 7 tools + registry.ts (one source for chat and MCP)
     sse/sse-event-stream.ts     validated, numbered SSE events, heartbeat, stop on disconnect
     orchestrator/
       run-insight.ts            the run: steps → tools → KPI/charts → insight → text → provenance → follow-ups → done

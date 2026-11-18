@@ -20,6 +20,7 @@ export const TOOL_NAMES = [
   'get_booking_pace',
   'query_performance',
   'get_group_blocks',
+  'simulate_scenario',
 ] as const;
 export const toolNameSchema = z.enum(TOOL_NAMES);
 export type ToolName = z.infer<typeof toolNameSchema>;
@@ -240,6 +241,84 @@ export const groupBlocksOutputSchema = z.object({
 });
 export type GroupBlocksOutput = z.infer<typeof groupBlocksOutputSchema>;
 
+// --- simulate_scenario -------------------------------------------------------
+
+/**
+ * The three levers of a what-if, all about future stay dates:
+ *   paceRecovery  share of the room nights behind last year's pace that are won back (0–1)
+ *   rateChange    rate of the rooms still to sell vs the rate on the books (−0.3 to +0.3)
+ *   otaToDirect   share of OTA bookings that come direct instead (0–1)
+ */
+export const scenarioLeversSchema = z.object({
+  paceRecovery: z.number().min(0).max(1).default(0),
+  rateChange: z.number().min(-0.3).max(0.3).default(0),
+  otaToDirect: z.number().min(0).max(1).default(0),
+});
+export type ScenarioLevers = z.infer<typeof scenarioLeversSchema>;
+
+/** What a what-if starts from, read from the database. Everything the calculation needs, and nothing else. */
+export const scenarioBasisSchema = z.object({
+  stayFrom: isoDateSchema,
+  stayTo: isoDateSchema,
+  /** Room nights the hotel can sell on those dates (rooms × nights). */
+  roomNightsAvailable: z.number().nonnegative(),
+  roomsOnTheBooks: z.number().nonnegative(),
+  revenueOnTheBooks: z.number().nonnegative(),
+  roomsOnTheBooksLastYear: z.number().nonnegative(),
+  /** Share of room revenue per channel, from the month so far: the expected mix of those nights. */
+  channelRevenueShares: z.record(channelSchema, z.number().min(0).max(1)),
+  channelMixPeriod: dateRangeSchema,
+  /** Commission per channel, as a fraction of room revenue. */
+  commissionRates: z.record(channelSchema, z.number().min(0).max(1)),
+});
+export type ScenarioBasis = z.infer<typeof scenarioBasisSchema>;
+
+const scenarioTotalsSchema = z.object({
+  roomNights: z.number(),
+  roomRevenue: z.number(),
+  commission: z.number(),
+  /** Room revenue after commission. */
+  netRevenue: z.number(),
+});
+
+export const scenarioOutcomeSchema = z.object({
+  averageRateOnTheBooks: z.number(),
+  roomNightsBehindLastYear: z.number(),
+  recoveredRoomNights: z.number(),
+  /** True when the hotel would be full before the whole recovery fits. */
+  limitedByCapacity: z.boolean(),
+  rateForNewBookings: z.number(),
+  /** Today's position: what is on the books. */
+  baseline: scenarioTotalsSchema,
+  scenario: scenarioTotalsSchema,
+  /** Where the change in net revenue comes from. The four add up to netChange exactly. */
+  effects: z.object({
+    recoveredNights: z.number(),
+    rateOnNewBookings: z.number(),
+    commissionOnNewRevenue: z.number(),
+    commissionSavedByDirect: z.number(),
+    netChange: z.number(),
+  }),
+});
+export type ScenarioOutcome = z.infer<typeof scenarioOutcomeSchema>;
+
+export const simulateScenarioInputSchema = z
+  .object({
+    hotelId: hotelIdSchema,
+    /** Future stay dates, both included. */
+    stayFrom: isoDateSchema,
+    stayTo: isoDateSchema,
+  })
+  .extend(scenarioLeversSchema.shape);
+export type SimulateScenarioInput = z.infer<typeof simulateScenarioInputSchema>;
+
+export const simulateScenarioOutputSchema = z.object({
+  levers: scenarioLeversSchema,
+  basis: scenarioBasisSchema,
+  outcome: scenarioOutcomeSchema,
+});
+export type SimulateScenarioOutput = z.infer<typeof simulateScenarioOutputSchema>;
+
 /** Maps each tool name to its input and output schema. The tool registry (step 3) builds on this. */
 export const TOOL_SCHEMAS = {
   get_hotel_overview: { input: periodToolInputSchema, output: hotelOverviewOutputSchema },
@@ -248,4 +327,5 @@ export const TOOL_SCHEMAS = {
   get_booking_pace: { input: bookingPaceInputSchema, output: bookingPaceOutputSchema },
   query_performance: { input: queryPerformanceInputSchema, output: queryPerformanceOutputSchema },
   get_group_blocks: { input: periodToolInputSchema, output: groupBlocksOutputSchema },
+  simulate_scenario: { input: simulateScenarioInputSchema, output: simulateScenarioOutputSchema },
 } as const;

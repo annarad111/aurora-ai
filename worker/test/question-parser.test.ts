@@ -18,6 +18,15 @@ describe('parsePeriod', () => {
     expect(parsePeriod(question, TODAY)).toEqual(expected);
   });
 
+  it.each([
+    ['Are we on pace for the last 10 days of November?', { from: '2026-11-21', to: '2026-11-30' }],
+    ['How do the final 5 nights of the month look?', { from: '2026-11-26', to: '2026-11-30' }],
+    ['Pace for the first week of December', { from: '2026-12-01', to: '2026-12-07' }],
+    ['What is on the books for the rest of the month?', { from: '2026-11-18', to: '2026-11-30' }],
+  ])('part of a month: "%s"', (question, expected) => {
+    expect(parsePeriod(question, TODAY)).toEqual(expected);
+  });
+
   it('a month that has not started yet stays in the future (for pace)', () => {
     expect(parsePeriod('Where should rates move for 21–30 November?', TODAY)).toEqual({ from: '2026-11-21', to: '2026-11-30' });
   });

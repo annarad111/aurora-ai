@@ -6,6 +6,7 @@ import { handleChat } from './routes/chat';
 import { handleHealth } from './routes/health';
 import { handleHotelOverview } from './routes/hotels';
 import { handleMcp } from './routes/mcp';
+import { handleSimulate } from './routes/simulate';
 import { handleWorkspace } from './routes/workspace';
 import type { ToolContext } from './tools/tool-context';
 
@@ -45,6 +46,10 @@ export async function handleRequest(request: Request, dependencies: AppDependenc
 
     if (pathname === '/api/chat') {
       return request.method === 'POST' ? await handleChat(request, dependencies) : methodNotAllowed();
+    }
+
+    if (pathname === '/api/simulate') {
+      return request.method === 'POST' ? await handleSimulate(request, dependencies) : methodNotAllowed();
     }
 
     const overviewMatch = HOTEL_OVERVIEW_PATH.exec(pathname);

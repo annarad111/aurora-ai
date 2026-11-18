@@ -7,6 +7,7 @@ import { ChannelExploreView } from './ChannelExploreView';
 import { describeView, MAIN_FACT_OF_VIEW, readExploreData, type InsightView } from './explore-views';
 import { OccupancyExploreView } from './OccupancyExploreView';
 import { PaceExploreView } from './PaceExploreView';
+import { ScenarioSimulator } from './ScenarioSimulator';
 import { useDialogFocus } from './useDialogFocus';
 
 interface ExploreOverlayProps {
@@ -54,6 +55,9 @@ export function ExploreOverlay({ view, run, interaction, onClose, onAskQuestion 
         {view === 'bridge' && data.drivers && <BridgeExploreView drivers={data.drivers} run={run} interaction={interaction} />}
         {view === 'channel' && data.channelMix && <ChannelExploreView channelMix={data.channelMix} />}
         {view === 'pace' && data.pace && <PaceExploreView pace={data.pace} roomCount={data.overview?.hotel.roomCount ?? null} />}
+        {view === 'pace' && data.pace && data.overview && (
+          <ScenarioSimulator hotelId={data.overview.hotel.id} stayFrom={data.pace.stayFrom} stayTo={data.pace.stayTo} />
+        )}
 
         <footer className="explore-overlay__footer">
           <span className="follow-ups__label">

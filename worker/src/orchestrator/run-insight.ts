@@ -216,6 +216,8 @@ function hasResultFor(tool: ToolName, results: ToolResults): boolean {
     get_booking_pace: results.pace,
     query_performance: results.queries?.[0],
     get_group_blocks: results.groupBlocks,
+    // The chat never plans the what-if (it has its own screen).
+    simulate_scenario: undefined,
   };
   return resultForTool[tool] !== undefined;
 }

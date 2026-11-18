@@ -129,9 +129,9 @@ describe('get_booking_pace', async () => {
 });
 
 describe('the registry', () => {
-  it('has the six tools, each with a description for the model', () => {
+  it('has the seven tools, each with a description for the model', () => {
     expect(TOOL_DEFINITIONS.map((tool) => tool.name).sort()).toEqual(
-      ['analyze_revenue_drivers', 'get_booking_pace', 'get_channel_mix', 'get_group_blocks', 'get_hotel_overview', 'query_performance'].sort(),
+      ['analyze_revenue_drivers', 'get_booking_pace', 'get_channel_mix', 'get_group_blocks', 'get_hotel_overview', 'query_performance', 'simulate_scenario'].sort(),
     );
     TOOL_DEFINITIONS.forEach((tool) => expect(tool.description.length).toBeGreaterThan(60));
   });
@@ -186,5 +186,32 @@ describe('query_performance', async () => {
     await expect(
       callTool('query_performance', { hotelId: DEMO_HOTEL.id, period: { from: '2026-11-21', to: '2026-11-30' } }, context),
     ).rejects.toThrow(/get_booking_pace/);
+  });
+});
+
+describe('simulate_scenario', async () => {
+  const lateNovember = { hotelId: DEMO_HOTEL.id, stayFrom: '2026-11-21', stayTo: '2026-11-30' };
+  const today = await callTool('simulate_scenario', lateNovember, context);
+
+  it('starts from the books: 119 room nights behind last year for 21–30 Nov', () => {
+    expect(today.outcome.roomNightsBehindLastYear).toBe(119);
+    expect(today.basis.roomNightsAvailable).toBe(111 * 10);
+    expect(today.outcome.effects.netChange).toBe(0);
+  });
+
+  it('uses the channel mix and commissions of the month so far', () => {
+    const shares = Object.values(today.basis.channelRevenueShares).reduce((total, share) => total + share, 0);
+    expect(shares).toBeCloseTo(1, 9);
+    expect(today.basis.commissionRates.ota).toBe(0.18);
+  });
+
+  it('recovering the whole gap adds 119 room nights at the rate on the books', async () => {
+    const recovered = await callTool('simulate_scenario', { ...lateNovember, paceRecovery: 1 }, context);
+    expect(recovered.outcome.recoveredRoomNights).toBe(119);
+    expect(recovered.outcome.effects.recoveredNights).toBeCloseTo(119 * today.outcome.averageRateOnTheBooks, 6);
+  });
+
+  it('refuses past stay dates', async () => {
+    await expect(callTool('simulate_scenario', { ...lateNovember, stayFrom: '2026-11-10' }, context)).rejects.toThrow(/future stay dates/);
   });
 });

@@ -6,10 +6,11 @@ import { getChannelMix } from './get-channel-mix';
 import { getGroupBlocks } from './get-group-blocks';
 import { getHotelOverview } from './get-hotel-overview';
 import { queryPerformance } from './query-performance';
+import { simulateScenarioTool } from './simulate-scenario';
 import { ToolInputError, type ToolContext } from './tool-context';
 
 // ---------------------------------------------------------------------------
-// The tool registry: the single source of truth for the four tools.
+// The tool registry: the single source of truth for every tool.
 //
 // Two adapters will sit on top of it:
 //   - the chat orchestrator calls `callTool` directly, in the same process (step 4)
@@ -95,7 +96,22 @@ export const TOOL_REGISTRY: { [Name in ToolName]: ToolDefinition<Name> } = {
     outputSchema: TOOL_SCHEMAS.get_group_blocks.output,
     run: getGroupBlocks,
   },
+  simulate_scenario: {
+    name: 'simulate_scenario',
+    title: 'What-if simulation',
+    description:
+      'What-if for future stay dates, calculated deterministically from what is on the books. Levers: paceRecovery ' +
+      '(share of the room nights behind last year that are won back, 0–1), rateChange (rate of the rooms still to sell ' +
+      'vs the rate on the books, −0.3 to 0.3) and otaToDirect (share of OTA revenue that comes direct instead, 0–1). ' +
+      'Returns room nights, revenue, commission and net revenue before and after, and where the change comes from.',
+    inputSchema: TOOL_SCHEMAS.simulate_scenario.input,
+    outputSchema: TOOL_SCHEMAS.simulate_scenario.output,
+    run: simulateScenarioTool,
+  },
 };
+
+/** Tools the chat planner may choose. The what-if has its own screen (the simulator), so the chat leaves it out. */
+export const CHAT_TOOL_DEFINITIONS = Object.values(TOOL_REGISTRY).filter((tool) => tool.name !== 'simulate_scenario');
 
 export const TOOL_DEFINITIONS = Object.values(TOOL_REGISTRY);
 
