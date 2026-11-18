@@ -170,3 +170,37 @@
 .mcp-status__endpoint {
   font-family: var(--font-family-mono);
 }
+
+// --- Narrow screens: the sidebar becomes a compact top bar ------------------
+// Property, recent questions and the MCP status are secondary on a phone, so
+// only the brand, "New analysis" and the theme switch stay visible.
+@include below-breakpoint($breakpoint-stacked) {
+  .sidebar {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: $space-10 $space-12;
+    padding: $space-10 $space-16;
+    border-right: none;
+    border-bottom: 1px solid var(--color-line);
+  }
+
+  .sidebar__brand {
+    padding: 0;
+  }
+
+  .sidebar__brand-subline,
+  .sidebar__section,
+  .mcp-status {
+    display: none;
+  }
+
+  .sidebar__new-analysis {
+    height: 34px;
+    margin-left: auto;
+  }
+
+  .sidebar__footer {
+    flex-basis: 100%;
+  }
+}

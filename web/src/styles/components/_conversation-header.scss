@@ -60,3 +60,9 @@
 .run-status--error .run-status__dot {
   background: var(--color-coral);
 }
+
+@include below-breakpoint($breakpoint-stacked) {
+  .conversation-header {
+    padding: $space-10 $space-16;
+  }
+}

@@ -79,3 +79,14 @@
   border-radius: 2px;
   background: var(--color-ink);
 }
+
+// On narrow screens the page scrolls as a whole, so the composer sticks to the bottom of the screen.
+@include below-breakpoint($breakpoint-stacked) {
+  .composer {
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+    padding: $space-10 $space-16 $space-12;
+    background: var(--color-background);
+  }
+}

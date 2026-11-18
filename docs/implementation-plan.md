@@ -9,12 +9,12 @@ Sources:
 - Architecture: "Aurora: structura aplicației și propuneri" (one Worker, one tool registry,
   deterministic analytics, typed SSE stream).
 
-Choices that differ from the architecture document:
-- **No Tailwind and no shadcn/ui.** Styling is plain Sass (SCSS) in `web/src/styles/`.
-  Colours are CSS custom properties, so light and dark themes switch at runtime.
-- **npm workspaces instead of pnpm.** The folder layout is the same, and npm already ships with Node.
+Choices that differ from the architecture document are listed in `docs/architecture.md`
+("Decisions that differ from the original plan").
 
 ## Steps
+
+All ten steps are done; each one is a commit on `main` ("Step N: …").
 
 | # | Step | What you can check |
 |---|------|--------------------|

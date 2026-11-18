@@ -16,3 +16,9 @@
   flex-direction: column;
   gap: $space-20;
 }
+
+@include below-breakpoint($breakpoint-stacked) {
+  .conversation-body__content {
+    padding: $space-20 $space-16 $space-24;
+  }
+}
