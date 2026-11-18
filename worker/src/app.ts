@@ -1,4 +1,5 @@
 import type { WorkerConfig } from './env';
+import type { LanguageModel } from './llm/language-model';
 import { errorResponse } from './http/json-response';
 import { handleChat } from './routes/chat';
 import { handleHealth } from './routes/health';
@@ -12,6 +13,8 @@ import type { ToolContext } from './tools/tool-context';
 export interface AppDependencies {
   toolContext: ToolContext;
   config: WorkerConfig;
+  /** The model that chooses tools and writes the text. Null means templates only. */
+  languageModel: LanguageModel | null;
   /** Keeps work running after the response has started (the streamed answer). */
   waitUntil: (work: Promise<unknown>) => void;
   /** Static files of the React app. Absent in tests. */

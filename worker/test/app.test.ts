@@ -7,7 +7,8 @@ import { formatSseMessage } from '../src/sse/sse-event-stream';
 function createTestDependencies(): AppDependencies {
   return {
     toolContext: createDemoToolContext(),
-    config: { today: '2026-11-17', stepDelayMs: 0, textTokenDelayMs: 0 },
+    config: { today: '2026-11-17', stepDelayMs: 0, textTokenDelayMs: 0, narrativeProvider: 'scripted', aiModel: 'none', aiTimeoutMs: 0 },
+    languageModel: null,
     waitUntil: () => {},
   };
 }

@@ -1,7 +1,10 @@
 import { chatRequestSchema } from '@aurora/shared';
 import type { AppDependencies } from '../app';
 import { errorResponse } from '../http/json-response';
+import { KeywordInsightPlanner, LanguageModelInsightPlanner } from '../orchestrator/insight-planners';
+import { LanguageModelNarrativeWriter } from '../orchestrator/language-model-narrative-writer';
 import { runInsight } from '../orchestrator/run-insight';
+import { ScriptedNarrativeWriter } from '../orchestrator/scripted-narrative-writer';
 import { SSE_RESPONSE_HEADERS, SseEventStream } from '../sse/sse-event-stream';
 
 /**
@@ -31,6 +34,8 @@ export async function handleChat(request: Request, dependencies: AppDependencies
   const stream = new SseEventStream(`run_${crypto.randomUUID()}`);
   request.signal?.addEventListener('abort', () => stream.abort(), { once: true });
 
+  // With a model: it chooses the tools and writes the text, and falls back to the rules and templates.
+  const { languageModel } = dependencies;
   const run = runInsight({
     question,
     hotelId,
@@ -38,6 +43,8 @@ export async function handleChat(request: Request, dependencies: AppDependencies
     emit: stream.emit,
     signal: stream.signal,
     pacing: { stepDelayMs: dependencies.config.stepDelayMs, textTokenDelayMs: dependencies.config.textTokenDelayMs },
+    planner: languageModel ? new LanguageModelInsightPlanner(languageModel) : new KeywordInsightPlanner(),
+    narrativeWriter: languageModel ? new LanguageModelNarrativeWriter(languageModel) : new ScriptedNarrativeWriter(),
   }).finally(() => stream.close());
   dependencies.waitUntil(run);
 

@@ -3,7 +3,7 @@ import type { EmitStreamEvent } from '../sse/sse-event-stream';
 import { callTool } from '../tools/registry';
 import { requireHotel, ToolInputError, type ToolContext } from '../tools/tool-context';
 import { monthToDate, paceWindowFor, type AnalysisContext, type ToolResults } from './analysis-context';
-import { planInsightRun } from './insight-plan';
+import { KeywordInsightPlanner, type InsightPlanner } from './insight-planners';
 import type { NarrativeWriter } from './narrative-writer';
 import { pause } from './pause';
 import { buildProvenance, listKnownFactIds } from './provenance';
@@ -13,7 +13,7 @@ import { buildEventsAfterTool } from './tool-events';
 // ---------------------------------------------------------------------------
 // One answer, from question to "done".
 //
-//   1. run_started, then every planned step as "pending"
+//   1. run_started, the planner chooses the tools, then every planned step as "pending"
 //   2. for each tool: step running → call the tool → step done → KPI and chart events
 //      (the main finding goes out as soon as the tools behind its headline have answered)
 //   3. the explanation, word by word, with figures tagged by fact id
@@ -36,6 +36,9 @@ export interface RunInsightOptions {
   /** Aborted by Stop in the UI, or when the client disconnects. */
   signal: AbortSignal;
   pacing: StreamPacing;
+  /** Chooses the tools. Defaults to the keyword rules. */
+  planner?: InsightPlanner;
+  /** Writes the explanation. Defaults to the templates. */
   narrativeWriter?: NarrativeWriter;
 }
 
@@ -47,14 +50,17 @@ export function splitIntoWords(text: string): string[] {
 export async function runInsight(options: RunInsightOptions): Promise<void> {
   const { question, hotelId, toolContext, emit, signal, pacing } = options;
   const narrativeWriter = options.narrativeWriter ?? new ScriptedNarrativeWriter();
+  const planner = options.planner ?? new KeywordInsightPlanner();
   const startedAt = Date.now();
 
   await emit({ type: 'run_started', question, hotelId });
 
   try {
     const hotel = await requireHotel(toolContext, hotelId);
-    const plan = planInsightRun(question);
+    const plan = await planner.plan(question, signal);
+    if (signal.aborted) return;
     const analysis: AnalysisContext = {
+      question,
       hotel,
       period: monthToDate(toolContext.today),
       paceWindow: paceWindowFor(toolContext.today),
@@ -97,8 +103,12 @@ export async function runInsight(options: RunInsightOptions): Promise<void> {
     }
 
     // --- Explanation, word by word --------------------------------------------
+    // The whole explanation is checked before any of it is shown, so a rejected
+    // model answer never flashes on screen.
+    const narrative = await narrativeWriter.writeExplanation(plan.intent, analysis, signal);
+    if (signal.aborted) return;
     const figureFactIds = new Set<string>();
-    for await (const segment of narrativeWriter.writeExplanation(plan.intent, analysis)) {
+    for (const segment of narrative.segments) {
       if (signal.aborted) return;
       if (segment.factId) {
         // A figure is sent whole, so the UI can render it as one button.
@@ -124,7 +134,14 @@ export async function runInsight(options: RunInsightOptions): Promise<void> {
     }
 
     await emit({ type: 'followups', questions: narrativeWriter.suggestFollowups(plan.intent, analysis) });
-    await emit({ type: 'done', durationMs: Date.now() - startedAt, provider: narrativeWriter.provider, verifiedFigureCount });
+    await emit({
+      type: 'done',
+      durationMs: Date.now() - startedAt,
+      provider: narrative.provider,
+      toolsChosenBy: plan.plannedBy,
+      ...(narrative.fallbackReason ? { fallbackReason: narrative.fallbackReason } : {}),
+      verifiedFigureCount,
+    });
   } catch (error) {
     if (signal.aborted) return;
     if (error instanceof ToolInputError) {

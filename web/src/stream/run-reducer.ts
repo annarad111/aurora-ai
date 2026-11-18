@@ -39,6 +39,9 @@ export interface RunCompletion {
   durationMs: number;
   provider: 'llm' | 'scripted';
   verifiedFigureCount: number;
+  toolsChosenBy?: 'llm' | 'keywords';
+  /** Why the templates wrote the text although the model was asked. */
+  fallbackReason?: string;
 }
 
 export interface RunError {
@@ -163,7 +166,13 @@ function applyStreamEvent(state: RunState, event: StreamEvent): RunState {
       return {
         ...nextState,
         phase: 'done',
-        completion: { durationMs: event.durationMs, provider: event.provider, verifiedFigureCount: event.verifiedFigureCount },
+        completion: {
+          durationMs: event.durationMs,
+          provider: event.provider,
+          verifiedFigureCount: event.verifiedFigureCount,
+          ...(event.toolsChosenBy ? { toolsChosenBy: event.toolsChosenBy } : {}),
+          ...(event.fallbackReason ? { fallbackReason: event.fallbackReason } : {}),
+        },
       };
 
     case 'error':

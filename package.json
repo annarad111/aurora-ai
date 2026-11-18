@@ -18,7 +18,9 @@
     "typecheck": "npm run typecheck --workspaces --if-present",
     "tools:demo": "npm run tools:demo --workspace worker --",
     "db:seed:generate": "npm run db:seed:generate --workspace worker",
-    "db:migrate:local": "wrangler d1 migrations apply aurora-db --local"
+    "db:migrate:local": "wrangler d1 migrations apply aurora-db --local",
+    "dev:ai": "concurrently --names api,web --prefix-colors magenta,cyan \"npm:dev:api:ai\" \"npm:dev:web\"",
+    "dev:api:ai": "npm run build --workspace web && wrangler dev --env ai --port 8787"
   },
   "devDependencies": {
     "typescript": "^5.8.0",

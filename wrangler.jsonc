@@ -1,5 +1,9 @@
 {
   // One Worker serves everything: the React app (static assets), POST /api/chat and, from step 9, /mcp.
+  //
+  // Two setups:
+  //   default      (npm run dev)     templates only, no Cloudflare account needed, works offline
+  //   env "ai"     (npm run dev:ai)  Workers AI chooses the tools and writes the text; needs `npx wrangler login`
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "aurora",
   "main": "worker/src/index.ts",
@@ -25,11 +29,40 @@
   ],
 
   "vars": {
+    // "scripted": templates only, no model calls. The "ai" environment below switches to "llm".
+    "NARRATIVE_PROVIDER": "scripted",
     // The demo's fixed "today", so the numbers never change.
     "DEMO_TODAY": "2026-11-17",
     // Pauses between streamed steps and words. The scripted narrative is instant, so the
     // stream is paced to look the way it will with a real model. Set both to "0" to disable.
     "STREAM_STEP_DELAY_MS": "450",
     "TEXT_TOKEN_DELAY_MS": "30"
+  },
+
+  "env": {
+    // Wrangler does not copy bindings and vars into an environment, so they are repeated here.
+    "ai": {
+      // Workers AI always runs on Cloudflare, even in `wrangler dev`, so this needs a login.
+      "ai": {
+        "binding": "AI"
+      },
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "aurora-db",
+          "database_id": "00000000-0000-0000-0000-000000000000",
+          "migrations_dir": "worker/migrations"
+        }
+      ],
+      "vars": {
+        // The model chooses the tools and writes the text; rules and templates take over if it fails.
+        "NARRATIVE_PROVIDER": "llm",
+        "AI_MODEL": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+        "AI_TIMEOUT_MS": "15000",
+        "DEMO_TODAY": "2026-11-17",
+        "STREAM_STEP_DELAY_MS": "450",
+        "TEXT_TOKEN_DELAY_MS": "30"
+      }
+    }
   }
 }

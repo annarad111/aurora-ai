@@ -51,3 +51,35 @@ export function planInsightRun(question: string): InsightPlan {
   const intent = detectIntent(question);
   return { intent, steps: TOOLS_FOR_INTENT[intent].map((tool) => STEP_FOR_TOOL[tool]) };
 }
+
+/** The tools the templates of an intent cannot do without. */
+const REQUIRED_TOOLS_FOR_INTENT: Record<InsightIntent, ToolName[]> = {
+  revenue_gap: ['get_hotel_overview', 'analyze_revenue_drivers'],
+  channel_cost: ['get_hotel_overview', 'get_channel_mix'],
+  booking_pace: ['get_hotel_overview', 'get_booking_pace'],
+  segment_shift: ['get_hotel_overview', 'analyze_revenue_drivers'],
+};
+
+/** The order tools run in, whatever order the model listed them. Overview first: it feeds the KPI cards. */
+const TOOL_ORDER: ToolName[] = ['get_hotel_overview', 'analyze_revenue_drivers', 'get_channel_mix', 'get_booking_pace'];
+
+/**
+ * Turns the tools a language model chose into a plan.
+ * The intent follows from the choice (only channels → channel_cost, only
+ * pace → booking_pace, only drivers → segment_shift, else revenue_gap), and
+ * the tools that intent needs are added, so the answer can always be written.
+ */
+export function planFromToolNames(chosenTools: ToolName[]): InsightPlan {
+  const chosen = new Set(chosenTools);
+  const usesDrivers = chosen.has('analyze_revenue_drivers');
+  const usesChannels = chosen.has('get_channel_mix');
+  const usesPace = chosen.has('get_booking_pace');
+
+  let intent: InsightIntent = 'revenue_gap';
+  if (usesChannels && !usesDrivers && !usesPace) intent = 'channel_cost';
+  else if (usesPace && !usesDrivers && !usesChannels) intent = 'booking_pace';
+  else if (usesDrivers && !usesChannels && !usesPace) intent = 'segment_shift';
+
+  const tools = new Set<ToolName>([...chosen, ...REQUIRED_TOOLS_FOR_INTENT[intent]]);
+  return { intent, steps: TOOL_ORDER.filter((tool) => tools.has(tool)).map((tool) => STEP_FOR_TOOL[tool]) };
+}

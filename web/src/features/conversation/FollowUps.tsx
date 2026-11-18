@@ -26,9 +26,9 @@ export function FollowUps({ questions, basedOnLabel, completion, onAskQuestion }
         ))}
       </div>
       {completion && (
-        <span className="follow-ups__meta">
-          Answered in {(completion.durationMs / 1000).toFixed(1)} s · {PROVIDER_LABELS[completion.provider]} ·{' '}
-          {completion.verifiedFigureCount} figures matched to tool output
+        <span className="follow-ups__meta" title={completion.fallbackReason}>
+          Answered in {(completion.durationMs / 1000).toFixed(1)} s · {PROVIDER_LABELS[completion.provider]}
+          {completion.fallbackReason && ' (model unavailable)'} · {completion.verifiedFigureCount} figures matched to tool output
         </span>
       )}
     </div>

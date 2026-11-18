@@ -14,7 +14,8 @@ npm run db:migrate:local   # creates the local D1 database (.wrangler/) with the
 Every day:
 
 ```bash
-npm run dev          # Worker on :8787 + React app on :5173 (open http://localhost:5173)
+npm run dev          # Worker on :8787 + React app on :5173 (open http://localhost:5173), templates only, offline
+npm run dev:ai       # same, with Workers AI writing the text (run `npx wrangler login` once first)
 npm run dev:api      # only the Worker (it also serves the built React app on http://localhost:8787)
 npm test             # Vitest for all packages
 npm run typecheck
@@ -31,6 +32,22 @@ curl -N -X POST http://localhost:8787/api/chat \
   -H "content-type: application/json" \
   -d '{"question":"Why is my hotel revenue below target this month?","hotelId":"sablon-bru"}'
 ```
+
+## How the language model is used
+
+The model never computes or types a number.
+
+1. **Planning.** The model sees the four tools (function calling) and picks the ones the question needs.
+   The tools always run in a fixed order, and the ones the answer cannot do without are added.
+2. **Writing.** The model gets a catalogue of figures, each behind a placeholder:
+   `{revenue_gap} = "€33,917" (how far room revenue is BELOW target)`. It writes
+   "Revenue is {revenue_gap} below target…", and Aurora replaces each placeholder with the exact value.
+3. **The number guard** (`narrative-guard.ts`) rejects an answer with a digit outside a placeholder, an unknown
+   placeholder, fewer than three figures, or the wrong length. The model gets one retry with the reasons.
+4. **Fallback.** If the model fails, is slow (15 s) or is rejected twice, the keyword rules and the templates
+   take over. The answer footer says "Scripted narrative (model unavailable)".
+
+The headline, chips, KPI cards, charts and provenance are always deterministic; only the explanation comes from the model.
 
 ## API
 
@@ -76,8 +93,14 @@ worker/
     sse/sse-event-stream.ts     validated, numbered SSE events, heartbeat, stop on disconnect
     orchestrator/
       run-insight.ts            the run: steps → tools → KPI/charts → insight → text → provenance → follow-ups → done
-      insight-plan.ts           which tools a question needs (keyword rules for now)
-      scripted-narrative-writer.ts  the words around the numbers, from templates (LLM in step 8)
+      insight-plan.ts           keyword rules, and turning the model's tool choice into a plan
+      insight-planners.ts       KeywordInsightPlanner, LanguageModelInsightPlanner (with fallback)
+      scripted-narrative-writer.ts  the words around the numbers, from templates
+      language-model-narrative-writer.ts  the model writes the explanation; guard, retry, fallback
+      figure-catalogue.ts       the placeholders the model may use, with their exact values
+      narrative-guard.ts        rejects digits outside placeholders; fills in the values
+      prompts.ts                Aurora's instructions to the model
+    llm/                        LanguageModel interface, Workers AI implementation
       provenance.ts             "How was this calculated?" for every fact id
       context-notes.ts          the sentence of the contextual insight card, from the same tool output
       tool-events.ts            KPI cards and chart payloads sent after each tool

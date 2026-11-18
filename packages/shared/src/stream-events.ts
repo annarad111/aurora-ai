@@ -136,6 +136,10 @@ export const doneEventSchema = z.object({
   durationMs: z.number().nonnegative(),
   /** Who wrote the narrative: the language model, or the deterministic template fallback. */
   provider: z.enum(['llm', 'scripted']),
+  /** Who chose the tools: the model (function calling) or the keyword rules. */
+  toolsChosenBy: z.enum(['llm', 'keywords']).optional(),
+  /** Set when the model was asked but the templates wrote the text, and why (shown to the user). */
+  fallbackReason: z.string().optional(),
   /** How many figures in the text were matched to tool output. */
   verifiedFigureCount: z.number().int().nonnegative(),
 });

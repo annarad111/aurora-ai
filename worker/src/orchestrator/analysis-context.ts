@@ -19,6 +19,8 @@ export interface ToolResults {
 
 /** Everything the narrative, KPI and provenance builders can read. */
 export interface AnalysisContext {
+  /** The user's question, as asked. */
+  question: string;
   hotel: Hotel;
   /** The period being analysed (month to date). */
   period: DateRange;

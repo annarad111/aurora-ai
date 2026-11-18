@@ -11,7 +11,7 @@ import {
   relativeChange,
 } from './derived-facts';
 import type { InsightIntent } from './insight-plan';
-import type { InsightDraft, NarrativeSegment, NarrativeWriter } from './narrative-writer';
+import type { InsightDraft, NarrativeResult, NarrativeSegment, NarrativeWriter } from './narrative-writer';
 
 // ---------------------------------------------------------------------------
 // Deterministic templates. Every number comes from a tool result; every
@@ -49,8 +49,6 @@ const FOLLOWUPS: Record<InsightIntent, string[]> = {
 };
 
 export class ScriptedNarrativeWriter implements NarrativeWriter {
-  readonly provider = 'scripted' as const;
-
   headlineDependsOn(intent: InsightIntent): ToolName[] {
     const dependencies: Record<InsightIntent, ToolName[]> = {
       // The headline mentions both the cancelled block and the OTA shift.
@@ -75,14 +73,14 @@ export class ScriptedNarrativeWriter implements NarrativeWriter {
     }
   }
 
-  async *writeExplanation(intent: InsightIntent, analysis: AnalysisContext): AsyncIterable<NarrativeSegment> {
+  async writeExplanation(intent: InsightIntent, analysis: AnalysisContext): Promise<NarrativeResult> {
     const explanations: Record<InsightIntent, (context: AnalysisContext) => Iterable<NarrativeSegment>> = {
       revenue_gap: explainRevenueGap,
       channel_cost: explainChannelCost,
       booking_pace: explainBookingPace,
       segment_shift: explainSegmentShift,
     };
-    yield* explanations[intent](analysis);
+    return { provider: 'scripted', segments: [...explanations[intent](analysis)] };
   }
 
   suggestFollowups(intent: InsightIntent): string[] {
