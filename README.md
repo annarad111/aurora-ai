@@ -4,15 +4,41 @@ AI-first revenue assistant for hotel revenue managers. Independent concept for t
 
 ## Run it
 
+First time only:
+
 ```bash
 npm install
-npm run dev      # http://localhost:5173
-npm run build    # typecheck + production build
-npm test         # Vitest for all packages
+npm run db:migrate:local   # creates the local D1 database (.wrangler/) with the schema and the demo data
+```
+
+Every day:
+
+```bash
+npm run dev          # Worker on :8787 + React app on :5173 (open http://localhost:5173)
+npm run dev:api      # only the Worker (it also serves the built React app on http://localhost:8787)
+npm test             # Vitest for all packages
 npm run typecheck
+npm run build        # production build of the React app
 npm run tools:demo             # run the 4 tools on the demo data, print the key numbers
 npm run tools:demo -- --json   # same, full JSON output
+npm run db:seed:generate       # rewrite worker/migrations/0002_seed.sql after changing packages/demo-data
 ```
+
+Try the stream by hand while `npm run dev:api` runs:
+
+```bash
+curl -N -X POST http://localhost:8787/api/chat \
+  -H "content-type: application/json" \
+  -d '{"question":"Why is my hotel revenue below target this month?","hotelId":"sablon-bru"}'
+```
+
+## API
+
+| Route | What it does |
+|---|---|
+| `POST /api/chat` | `{ question, hotelId }` → Server-Sent Events: `run_started`, `step`, `kpi`, `chart`, `insight`, `text_delta`, `provenance`, `followups`, `done` (or `error`) |
+| `GET /api/hotels/:id/overview?from=&to=` | The overview tool as plain JSON, no AI. Defaults to month to date. |
+| `GET /api/health` | Worker and database status |
 
 ## Where things are
 
@@ -37,11 +63,24 @@ packages/
     story.ts                    THE PLANTED STORY: every number the demo is built around
     generate-demo-dataset.ts    turns the story into daily_stats, targets and on_the_books rows
     allocate.ts                 splits whole numbers without losing any (largest remainder, matrix fitting)
+wrangler.jsonc                  one Worker: static assets + D1 + vars (demo "today", stream pacing)
 worker/
+  migrations/                   0001_schema.sql (5 tables), 0002_seed.sql (generated, committed)
   src/
-    db/                         HotelDataRepository interface + in-memory implementation (D1 comes in step 4)
+    index.ts                    Worker entry: builds the real dependencies (D1, assets)
+    app.ts                      router: /api/chat, /api/hotels/:id/overview, /api/health, else assets
+    env.ts                      bindings and the checked config
+    routes/                     one file per route
+    db/                         HotelDataRepository interface, D1 implementation (the only SQL), in-memory implementation
     tools/                      the 4 tools + registry.ts (one source for chat and MCP)
-  scripts/print-tool-outputs.ts the `npm run tools:demo` script
+    sse/sse-event-stream.ts     validated, numbered SSE events, heartbeat, stop on disconnect
+    orchestrator/
+      run-insight.ts            the run: steps → tools → KPI/charts → insight → text → provenance → follow-ups → done
+      insight-plan.ts           which tools a question needs (keyword rules for now)
+      scripted-narrative-writer.ts  the words around the numbers, from templates (LLM in step 8)
+      provenance.ts             "How was this calculated?" for every fact id
+      tool-events.ts            KPI cards and chart payloads sent after each tool
+  scripts/                      tools:demo and the seed SQL generator (run with tsx)
 docs/
   design/design_handoff_aurora_ai_chat/   design reference (open Aurora v2.dc.html in a browser)
   implementation-plan.md                  the step-by-step plan and what to check after each step

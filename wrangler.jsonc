@@ -1,0 +1,35 @@
+{
+  // One Worker serves everything: the React app (static assets), POST /api/chat and, from step 9, /mcp.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "aurora",
+  "main": "worker/src/index.ts",
+  "compatibility_date": "2025-09-01",
+
+  "assets": {
+    // Built by `npm run build` (Vite). Unknown paths fall back to index.html, so client routes work.
+    "directory": "web/dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    // These paths always go to the Worker code, never to a static file.
+    "run_worker_first": ["/api/*", "/mcp", "/mcp/*"]
+  },
+
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "aurora-db",
+      // Placeholder for local development. Step 10 replaces it with the id from `wrangler d1 create aurora-db`.
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "worker/migrations"
+    }
+  ],
+
+  "vars": {
+    // The demo's fixed "today", so the numbers never change.
+    "DEMO_TODAY": "2026-11-17",
+    // Pauses between streamed steps and words. The scripted narrative is instant, so the
+    // stream is paced to look the way it will with a real model. Set both to "0" to disable.
+    "STREAM_STEP_DELAY_MS": "450",
+    "TEXT_TOKEN_DELAY_MS": "30"
+  }
+}

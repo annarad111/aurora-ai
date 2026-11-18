@@ -10,14 +10,20 @@
     "web"
   ],
   "scripts": {
-    "dev": "npm run dev --workspace web",
+    "dev": "concurrently --names api,web --prefix-colors magenta,cyan \"npm:dev:api\" \"npm:dev:web\"",
+    "dev:api": "npm run build --workspace web && wrangler dev --port 8787",
+    "dev:web": "npm run dev --workspace web",
     "build": "npm run build --workspace web",
     "test": "npm run test --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
-    "tools:demo": "npm run tools:demo --workspace worker --"
+    "tools:demo": "npm run tools:demo --workspace worker --",
+    "db:seed:generate": "npm run db:seed:generate --workspace worker",
+    "db:migrate:local": "wrangler d1 migrations apply aurora-db --local"
   },
   "devDependencies": {
     "typescript": "^5.8.0",
-    "vitest": "^3.2.0"
+    "vitest": "^3.2.0",
+    "wrangler": "^4.40.0",
+    "concurrently": "^9.2.0"
   }
 }

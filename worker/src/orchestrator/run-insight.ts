@@ -1,0 +1,170 @@
+import type { ToolName } from '@aurora/shared';
+import type { EmitStreamEvent } from '../sse/sse-event-stream';
+import { callTool } from '../tools/registry';
+import { requireHotel, ToolInputError, type ToolContext } from '../tools/tool-context';
+import { monthToDate, paceWindowFor, type AnalysisContext, type ToolResults } from './analysis-context';
+import { planInsightRun } from './insight-plan';
+import type { NarrativeWriter } from './narrative-writer';
+import { pause } from './pause';
+import { buildProvenance, listKnownFactIds } from './provenance';
+import { ScriptedNarrativeWriter } from './scripted-narrative-writer';
+import { buildEventsAfterTool } from './tool-events';
+
+// ---------------------------------------------------------------------------
+// One answer, from question to "done".
+//
+//   1. run_started, then every planned step as "pending"
+//   2. for each tool: step running → call the tool → step done → KPI and chart events
+//      (the main finding goes out as soon as the tools behind its headline have answered)
+//   3. the explanation, word by word, with figures tagged by fact id
+//   4. provenance for every figure, then follow-ups, then done
+//
+// The order is a UX decision: the summary comes before the details, and every
+// step says what is happening.
+// ---------------------------------------------------------------------------
+
+export interface StreamPacing {
+  stepDelayMs: number;
+  textTokenDelayMs: number;
+}
+
+export interface RunInsightOptions {
+  question: string;
+  hotelId: string;
+  toolContext: ToolContext;
+  emit: EmitStreamEvent;
+  /** Aborted by Stop in the UI, or when the client disconnects. */
+  signal: AbortSignal;
+  pacing: StreamPacing;
+  narrativeWriter?: NarrativeWriter;
+}
+
+/** Splits text into words, keeping the trailing spaces, so streamed words join back exactly. */
+export function splitIntoWords(text: string): string[] {
+  return text.match(/\S+\s*|\s+/g) ?? [];
+}
+
+export async function runInsight(options: RunInsightOptions): Promise<void> {
+  const { question, hotelId, toolContext, emit, signal, pacing } = options;
+  const narrativeWriter = options.narrativeWriter ?? new ScriptedNarrativeWriter();
+  const startedAt = Date.now();
+
+  await emit({ type: 'run_started', question, hotelId });
+
+  try {
+    const hotel = await requireHotel(toolContext, hotelId);
+    const plan = planInsightRun(question);
+    const analysis: AnalysisContext = {
+      hotel,
+      period: monthToDate(toolContext.today),
+      paceWindow: paceWindowFor(toolContext.today),
+      results: {},
+    };
+
+    for (const step of plan.steps) {
+      await emit({ type: 'step', stepId: step.stepId, label: step.label, tool: step.tool, status: 'pending' });
+    }
+
+    // --- Tools ---------------------------------------------------------------
+    const headlineTools = narrativeWriter.headlineDependsOn(plan.intent);
+    let insightSent = false;
+
+    for (const step of plan.steps) {
+      if (signal.aborted) return;
+      await emit({ type: 'step', stepId: step.stepId, label: step.label, tool: step.tool, status: 'running' });
+      await pause(pacing.stepDelayMs, signal);
+      if (signal.aborted) return;
+
+      try {
+        await runToolIntoResults(step.tool, analysis, toolContext);
+      } catch (error) {
+        await emit({ type: 'step', stepId: step.stepId, label: step.label, tool: step.tool, status: 'failed' });
+        throw error;
+      }
+      await emit({ type: 'step', stepId: step.stepId, label: step.label, tool: step.tool, status: 'done' });
+
+      for (const event of buildEventsAfterTool(step.tool, analysis)) {
+        await emit(event);
+      }
+
+      if (!insightSent && headlineTools.every((tool) => hasResultFor(tool, analysis.results))) {
+        await emit({ type: 'insight', ...narrativeWriter.writeInsight(plan.intent, analysis) });
+        insightSent = true;
+      }
+    }
+    if (!insightSent) {
+      await emit({ type: 'insight', ...narrativeWriter.writeInsight(plan.intent, analysis) });
+    }
+
+    // --- Explanation, word by word --------------------------------------------
+    const figureFactIds = new Set<string>();
+    for await (const segment of narrativeWriter.writeExplanation(plan.intent, analysis)) {
+      if (signal.aborted) return;
+      if (segment.factId) {
+        // A figure is sent whole, so the UI can render it as one button.
+        figureFactIds.add(segment.factId);
+        await emit({ type: 'text_delta', text: segment.text, factId: segment.factId });
+        await pause(pacing.textTokenDelayMs, signal);
+        continue;
+      }
+      for (const word of splitIntoWords(segment.text)) {
+        if (signal.aborted) return;
+        await emit({ type: 'text_delta', text: word });
+        await pause(pacing.textTokenDelayMs, signal);
+      }
+    }
+
+    // --- Provenance for every figure, chip, KPI card and chart bar ------------------
+    let verifiedFigureCount = 0;
+    for (const factId of new Set([...figureFactIds, ...listKnownFactIds(analysis)])) {
+      const provenance = buildProvenance(factId, analysis);
+      if (!provenance) continue;
+      if (figureFactIds.has(factId)) verifiedFigureCount += 1;
+      await emit({ type: 'provenance', ...provenance });
+    }
+
+    await emit({ type: 'followups', questions: narrativeWriter.suggestFollowups(plan.intent, analysis) });
+    await emit({ type: 'done', durationMs: Date.now() - startedAt, provider: narrativeWriter.provider, verifiedFigureCount });
+  } catch (error) {
+    if (signal.aborted) return;
+    if (error instanceof ToolInputError) {
+      await emit({ type: 'error', code: error.code, message: error.message, recoverable: false });
+      return;
+    }
+    console.error('[Aurora] run failed', error);
+    await emit({ type: 'error', code: 'internal_error', message: 'Aurora could not finish this answer. Please try again.', recoverable: true });
+  }
+}
+
+async function runToolIntoResults(tool: ToolName, analysis: AnalysisContext, toolContext: ToolContext): Promise<void> {
+  const hotelId = analysis.hotel.id;
+  const periodInput = { hotelId, period: analysis.period };
+  switch (tool) {
+    case 'get_hotel_overview':
+      analysis.results.overview = await callTool('get_hotel_overview', periodInput, toolContext);
+      return;
+    case 'analyze_revenue_drivers':
+      analysis.results.drivers = await callTool('analyze_revenue_drivers', periodInput, toolContext);
+      return;
+    case 'get_channel_mix':
+      analysis.results.channelMix = await callTool('get_channel_mix', periodInput, toolContext);
+      return;
+    case 'get_booking_pace':
+      analysis.results.pace = await callTool(
+        'get_booking_pace',
+        { hotelId, stayFrom: analysis.paceWindow.from, stayTo: analysis.paceWindow.to },
+        toolContext,
+      );
+      return;
+  }
+}
+
+function hasResultFor(tool: ToolName, results: ToolResults): boolean {
+  const resultForTool: Record<ToolName, unknown> = {
+    get_hotel_overview: results.overview,
+    analyze_revenue_drivers: results.drivers,
+    get_channel_mix: results.channelMix,
+    get_booking_pace: results.pace,
+  };
+  return resultForTool[tool] !== undefined;
+}
