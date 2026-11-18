@@ -12,8 +12,10 @@ export function Sidebar({ onStartNewAnalysis, onAskQuestion }: SidebarProps) {
     <aside className="sidebar workspace__sidebar" aria-label="Sidebar">
       <div className="sidebar__brand">
         <div className="sidebar__brand-row">
-          <span className="brand-logo" aria-hidden="true" />
-          <span className="sidebar__brand-name">Aurora</span>
+          <span className="brand-logo" aria-hidden="true">
+            <img className="brand-logo__image" src="/aurora-mark.png" alt="" />
+          </span>
+          <span className="sidebar__brand-name">aurora</span>
         </div>
         <span className="sidebar__brand-subline">Independent concept for the Juyo assessment</span>
       </div>

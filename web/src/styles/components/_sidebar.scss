@@ -24,29 +24,32 @@
   gap: $space-10;
 }
 
-// 26px violet ring with a 10px petrol dot inside.
+// The Aurora mark (web/public/aurora-mark.png). The image has transparent
+// padding around the "A", so it is drawn larger than its box and clipped.
 .brand-logo {
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  border: 2px solid var(--color-violet);
+  flex: none;
+  width: 30px;
+  height: 30px;
+  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-
-  &::after {
-    content: '';
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background: var(--color-petrol);
-  }
 }
 
+.brand-logo__image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transform: scale(1.5);
+}
+
+// The wordmark is text, not an image, so it follows the theme colour (the
+// supplied wordmark image has dark letters that would vanish on dark mode).
 .sidebar__brand-name {
-  font-size: $font-size-18;
+  font-size: 21px;
   font-weight: $font-weight-semibold;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
+  text-transform: lowercase;
 }
 
 .sidebar__brand-subline {
