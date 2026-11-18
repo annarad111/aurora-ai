@@ -10,6 +10,9 @@ import type { NarrativeSegment } from './narrative-writer';
 
 const PLACEHOLDER_PATTERN = /\{([a-z0-9_]+)\}/gi;
 const MINIMUM_FIGURES = 3;
+/** Spelled-out numbers ("eleven November", "two hundred"). "one" alone is left out: "one segment" is ordinary English. */
+const NUMBER_WORDS_PATTERN =
+  /\b(two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand|million|percent)\b/gi;
 const MINIMUM_WORDS = 25;
 const MAXIMUM_WORDS = 170;
 
@@ -46,6 +49,10 @@ export function checkAndRenderNarrative(rawText: string, catalogue: CatalogueEnt
   const strayNumbers = textWithoutPlaceholders.match(/[^\s]*\d[^\s]*/g) ?? [];
   if (strayNumbers.length > 0) {
     problems.push(`Numbers must only appear through placeholders. Remove or replace: ${[...new Set(strayNumbers)].slice(0, 5).join(', ')}.`);
+  }
+  const numberWords = textWithoutPlaceholders.match(NUMBER_WORDS_PATTERN) ?? [];
+  if (numberWords.length > 0) {
+    problems.push(`Numbers written as words are numbers too; use placeholders instead of: ${[...new Set(numberWords.map((word) => word.toLowerCase()))].slice(0, 5).join(', ')}.`);
   }
   if (/[{}]/.test(textWithoutPlaceholders)) {
     problems.push('Write placeholders exactly as {name}, with no spaces or other characters inside the braces.');

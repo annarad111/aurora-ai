@@ -57,8 +57,27 @@ export function toolParametersFor(inputSchema: z.ZodType): Record<string, unknow
   return jsonSchema;
 }
 
+/**
+ * Models often send values as text: "false" for false, "ota, direct" for a list,
+ * "null" or "" for "not given". This turns those into what the schema expects;
+ * the schema still validates the result.
+ */
+export function normalizeModelArguments(rawArguments: unknown): Record<string, unknown> {
+  if (!rawArguments || typeof rawArguments !== 'object' || Array.isArray(rawArguments)) return {};
+  const normalized: Record<string, unknown> = {};
+  for (const [name, value] of Object.entries(rawArguments as Record<string, unknown>)) {
+    if (value === null || value === '' || value === 'null' || value === 'none') continue;
+    if (value === 'true' || value === 'false') normalized[name] = value === 'true';
+    else if ((name === 'segments' || name === 'channels') && typeof value === 'string') {
+      normalized[name] = value.split(',').map((part) => part.trim().toLowerCase()).filter(Boolean);
+    } else if (name === 'period' && typeof value === 'object') normalized[name] = normalizeModelArguments(value);
+    else normalized[name] = value;
+  }
+  return normalized;
+}
+
 function argumentsOf(call: LanguageModelToolCall): Record<string, unknown> {
-  return call.arguments && typeof call.arguments === 'object' ? (call.arguments as Record<string, unknown>) : {};
+  return normalizeModelArguments(call.arguments);
 }
 
 /** Placeholder hotel id used only to validate the model's arguments; the real one is set when the tool runs. */

@@ -4,7 +4,7 @@ import { createDemoToolContext } from '../src/demo-context';
 import { LanguageModelError, type LanguageModel, type LanguageModelRequest, type LanguageModelResponse } from '../src/llm/language-model';
 import { readWorkersAiResult } from '../src/llm/workers-ai-model';
 import { planFromToolNames } from '../src/orchestrator/insight-plan';
-import { LanguageModelInsightPlanner } from '../src/orchestrator/insight-planners';
+import { LanguageModelInsightPlanner, normalizeModelArguments, planFromToolCalls } from '../src/orchestrator/insight-planners';
 import { LanguageModelNarrativeWriter } from '../src/orchestrator/language-model-narrative-writer';
 import { checkAndRenderNarrative } from '../src/orchestrator/narrative-guard';
 import { runInsight } from '../src/orchestrator/run-insight';
@@ -91,6 +91,12 @@ describe('the number guard', () => {
   it('rejects an answer that uses fewer than three figures', () => {
     const result = checkAndRenderNarrative('Revenue is {revenue_gap} below target, mainly because of lower volume and a weaker mix of guests than the plan expected for the month.', catalogue);
     expect(result.problems.join(' ')).toMatch(/at least 3 figure placeholders/);
+  });
+
+  it('rejects numbers written as words, but not words that only contain them', () => {
+    const result = checkAndRenderNarrative(`${validText} Nights eleven and twelve November were weakest.`, catalogue);
+    expect(result.problems.join(' ')).toMatch(/written as words.*eleven, twelve/);
+    expect(checkAndRenderNarrative(`${validText} This needs attention, often.`, catalogue).isValid).toBe(true);
   });
 
   it('removes Markdown the explanation area cannot show', () => {
@@ -257,6 +263,20 @@ describe('free-form data questions through the model', () => {
     const { done, explanation } = await runWithModel(model, 'What was occupancy on 5 November?');
     expect(done?.toolsChosenBy).toBe('keywords');
     expect(explanation).toMatch(/^For 5 Nov 2026, occupancy was \d+\.\d%/);
+  });
+
+  it('accepts values the model sent as text: "false", "true", a comma list, "null"', () => {
+    expect(normalizeModelArguments({ compareWithLastYear: 'false', segments: 'Corporate, leisure', dayType: 'null', groupBy: 'segment' })).toEqual({
+      compareWithLastYear: false,
+      segments: ['corporate', 'leisure'],
+      groupBy: 'segment',
+    });
+    const plan = planFromToolCalls(
+      [{ name: 'query_performance', arguments: { period: { from: '2026-10-01', to: '2026-10-31' }, compareWithLastYear: 'true', segments: 'corporate' } }],
+      'Corporate revenue in October vs last year',
+      '2026-11-17',
+    );
+    expect(plan.steps[0]?.input).toMatchObject({ compareWithLastYear: true, segments: ['corporate'] });
   });
 
   it('reads arguments from tool calls the model wrote as JSON text', () => {

@@ -309,14 +309,25 @@ export function buildDataCatalogue(analysis: AnalysisContext): CatalogueEntry[] 
     ];
     for (const [row, metrics] of rowsAndTotal) {
       const slug = row.key.replace(/[^a-z0-9]+/gi, '_').toLowerCase();
+      const rowName = row.key === 'total' ? 'the whole selection' : row.label;
+      // The row's own name, so dates like "11 Nov 2026" are never typed by the model.
+      if (row.key !== 'total') entries.push({ key: `q${queryIndex}_${slug}_name`, text: row.label, meaning: `the name of a row: ${row.label}` });
       for (const shownMetric of metrics) {
         const info = BREAKDOWN_METRIC_INFO[shownMetric];
-        entries.push({
-          key: `q${queryIndex}_${slug}_${shownMetric}`,
-          factId: queryFactId(queryIndex, row.key, shownMetric),
-          text: info.format(valueOf(row, shownMetric)),
-          meaning: `${info.label} for ${row.key === 'total' ? 'the whole selection' : row.label}${row.lastYear ? ` (${describeChangeVsLastYear(shownMetric, row, row.lastYear)})` : ''}`,
-        });
+        const factId = queryFactId(queryIndex, row.key, shownMetric);
+        entries.push({ key: `q${queryIndex}_${slug}_${shownMetric}`, factId, text: info.format(valueOf(row, shownMetric)), meaning: `${info.label} for ${rowName}, this period` });
+        if (row.lastYear) {
+          entries.push(
+            { key: `q${queryIndex}_${slug}_${shownMetric}_last_year`, factId, text: info.format(valueOf(row.lastYear, shownMetric)), meaning: `${info.label} for ${rowName}, same nights last year` },
+            {
+              key: `q${queryIndex}_${slug}_${shownMetric}_change`,
+              factId,
+              // Without the words "vs last year": models tend to add them again, so the sentence pattern asks for them once.
+              text: describeChangeVsLastYear(shownMetric, row, row.lastYear).replace(/ vs last year$/, ''),
+              meaning: `the change of ${info.label} for ${rowName} vs last year. Write: "${info.label} changed {q${queryIndex}_${slug}_${shownMetric}_change} vs last year"`,
+            },
+          );
+        }
       }
     }
   }

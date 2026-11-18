@@ -32,6 +32,8 @@ export const NARRATIVE_SYSTEM_PROMPT = [
   '5. When a placeholder says "Write: ...", follow that pattern. Placeholders that already include words (above target, fewer room nights) must not repeat them.',
   '6. Write 4 or 5 short sentences, at most 100 words, one paragraph, no lists, no headings, no Markdown.',
   '7. Mention the 4 to 7 most important figures, not all of them.',
+  '8. Names of nights, segments and channels and the period also have placeholders (…_name, …_scope): use them, never spell dates or numbers out in words.',
+  '9. Only state causes that are in the list. For a plain data question, describe the numbers; do not explain them.',
 ].join('\n');
 
 export function buildPlannerRequest(question: string): string {
