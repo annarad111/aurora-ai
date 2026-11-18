@@ -2,6 +2,7 @@ import { BookingPaceCard } from '../../features/evidence/BookingPaceCard';
 import { ChannelMixCard } from '../../features/evidence/ChannelMixCard';
 import { ProvenanceCard } from '../../features/evidence/ProvenanceCard';
 import { RevenueBridgeCard } from '../../features/evidence/RevenueBridgeCard';
+import type { InsightView } from '../../features/insights/context-followups';
 import type { FactInteraction } from '../../features/insights/fact-links';
 import type { ProvenanceData, RunState } from '../../stream/run-reducer';
 
@@ -12,13 +13,14 @@ interface EvidencePanelProps {
   openProvenance: ProvenanceData | null;
   onShowProvenance: (factId: string) => void;
   onCloseProvenance: () => void;
+  onOpenExplore: (view: InsightView) => void;
 }
 
 /**
  * Right-hand column: the charts behind the answer, in the order their tools
  * answered. Each card appears as soon as its data arrives.
  */
-export function EvidencePanel({ run, interaction, openProvenance, onShowProvenance, onCloseProvenance }: EvidencePanelProps) {
+export function EvidencePanel({ run, interaction, openProvenance, onShowProvenance, onCloseProvenance, onOpenExplore }: EvidencePanelProps) {
   const revenueBridge = run.charts.revenue_bridge?.kind === 'revenue_bridge' ? run.charts.revenue_bridge.data : null;
   const channelMix = run.charts.channel_mix?.kind === 'channel_mix' ? run.charts.channel_mix.data : null;
   const bookingPace = run.charts.booking_pace?.kind === 'booking_pace' ? run.charts.booking_pace.data : null;
@@ -38,9 +40,25 @@ export function EvidencePanel({ run, interaction, openProvenance, onShowProvenan
               </span>
             </div>
           )}
-          {revenueBridge && <RevenueBridgeCard drivers={revenueBridge} interaction={interaction} />}
-          {channelMix && <ChannelMixCard channelMix={channelMix} interaction={interaction} onShowProvenance={onShowProvenance} />}
-          {bookingPace && <BookingPaceCard pace={bookingPace} interaction={interaction} onShowProvenance={onShowProvenance} />}
+          {revenueBridge && (
+            <RevenueBridgeCard drivers={revenueBridge} interaction={interaction} onExpand={() => onOpenExplore('bridge')} />
+          )}
+          {channelMix && (
+            <ChannelMixCard
+              channelMix={channelMix}
+              interaction={interaction}
+              onShowProvenance={onShowProvenance}
+              onExpand={() => onOpenExplore('channel')}
+            />
+          )}
+          {bookingPace && (
+            <BookingPaceCard
+              pace={bookingPace}
+              interaction={interaction}
+              onShowProvenance={onShowProvenance}
+              onExpand={() => onOpenExplore('pace')}
+            />
+          )}
         </>
       )}
     </aside>

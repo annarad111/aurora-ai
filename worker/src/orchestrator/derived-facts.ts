@@ -1,5 +1,14 @@
 import { divideOrZero } from '@aurora/analytics';
-import type { ChannelMixOutput, DateRange, HotelOverviewOutput, IsoDate, KpiComparison, MetricId, RevenueDriversOutput } from '@aurora/shared';
+import {
+  isCancelledBlockNight,
+  type ChannelMixOutput,
+  type DateRange,
+  type HotelOverviewOutput,
+  type IsoDate,
+  type KpiComparison,
+  type MetricId,
+  type RevenueDriversOutput,
+} from '@aurora/shared';
 
 // Small read helpers over the tool outputs. The narrative and the provenance
 // both use these, so a figure in the text and in "How was this calculated?" is
@@ -32,13 +41,11 @@ export function findShareShift(drivers: RevenueDriversOutput): { losing: Segment
   };
 }
 
-/** A night counts as a cancelled block when at least a quarter of the hotel was cancelled for it. */
-const CANCELLED_BLOCK_SHARE_OF_ROOMS = 0.25;
-
-/** The first run of consecutive nights with a cancelled block, or null. */
+/** The nights with a cancelled group block (see isCancelledBlockNight), as one range, or null. */
 export function findCancelledBlock(overview: HotelOverviewOutput): DateRange | null {
-  const threshold = overview.hotel.roomCount * CANCELLED_BLOCK_SHARE_OF_ROOMS;
-  const blockNights = overview.dailyOccupancy.filter((night) => night.roomsCancelled >= threshold).map((night) => night.date);
+  const blockNights = overview.dailyOccupancy
+    .filter((night) => isCancelledBlockNight(night, overview.hotel.roomCount))
+    .map((night) => night.date);
   if (blockNights.length === 0) return null;
   return { from: blockNights[0]!, to: blockNights[blockNights.length - 1]! };
 }

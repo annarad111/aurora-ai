@@ -2,6 +2,12 @@
 
 $bridge-columns: 5;
 
+.revenue-bridge {
+  display: flex;
+  flex-direction: column;
+  gap: $space-14;
+}
+
 .revenue-bridge__plot {
   position: relative;
   height: 210px;
@@ -9,6 +15,32 @@ $bridge-columns: 5;
   grid-template-columns: repeat($bridge-columns, minmax(0, 1fr));
   gap: $space-8;
   border-bottom: 1px solid var(--color-line);
+}
+
+// The bigger version in the Explore overlay.
+.revenue-bridge--large {
+  gap: $space-10;
+
+  .revenue-bridge__plot {
+    height: 280px;
+    gap: $space-10;
+  }
+
+  .revenue-bridge__bar {
+    left: $space-6;
+    right: $space-6;
+    border-radius: 5px;
+  }
+
+  .revenue-bridge__value {
+    font-size: 12.5px;
+  }
+
+  .revenue-bridge__labels {
+    gap: $space-10;
+    margin-top: 0;
+    font-size: $font-size-12;
+  }
 }
 
 // Each column is one button: the bar and its value label.

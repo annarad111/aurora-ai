@@ -1,5 +1,6 @@
 import type { RunState } from '../../stream/run-reducer';
-import { followupsForFact } from '../insights/context-followups';
+import { followupsForFact, viewForFact, type InsightView } from '../insights/context-followups';
+import { isViewAvailable, readExploreData } from '../explore/explore-views';
 import { ContextualInsightCard } from '../insights/ContextualInsightCard';
 import type { FactInteraction } from '../insights/fact-links';
 import { KpiGrid } from '../insights/KpiCard';
@@ -16,15 +17,18 @@ interface AnswerViewProps {
   onRetry: () => void;
   onShowProvenance: (factId: string) => void;
   onClearFocus: () => void;
+  onOpenExplore: (view: InsightView) => void;
 }
 
 /**
  * One answer, top to bottom, in the order of the design. Each block appears
  * as soon as its data has arrived.
  */
-export function AnswerView({ run, interaction, onAskQuestion, onRetry, onShowProvenance, onClearFocus }: AnswerViewProps) {
+export function AnswerView({ run, interaction, onAskQuestion, onRetry, onShowProvenance, onClearFocus, onOpenExplore }: AnswerViewProps) {
   const focusedProvenance = interaction.focusedFactId ? run.provenanceByFactId[interaction.focusedFactId] : undefined;
   const followups = focusedProvenance ? followupsForFact(focusedProvenance.factId) : run.followups;
+  const focusedView = focusedProvenance ? viewForFact(focusedProvenance.factId) : null;
+  const canExploreFocusedFact = focusedView !== null && isViewAvailable(focusedView, readExploreData(run));
 
   return (
     <>
@@ -48,6 +52,7 @@ export function AnswerView({ run, interaction, onAskQuestion, onRetry, onShowPro
         <ContextualInsightCard
           key={focusedProvenance.factId}
           provenance={focusedProvenance}
+          onExplore={canExploreFocusedFact && focusedView ? () => onOpenExplore(focusedView) : null}
           onShowProvenance={() => onShowProvenance(focusedProvenance.factId)}
           onDismiss={onClearFocus}
         />

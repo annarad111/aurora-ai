@@ -101,8 +101,11 @@ web/
       conversation/             AnswerView, RunTimeline, StreamedExplanation, RunBanner, FollowUps, Composer
       insights/                 MainFinding, KpiCard, ContextualInsightCard, fact-links (which elements light up
                                 together), context-followups (questions that change with the selected figure)
-      evidence/                 RevenueBridgeCard (+ revenue-bridge-geometry, tested), ChannelMixCard,
-                                BookingPaceCard, ProvenanceCard ("How was this calculated?")
+      evidence/                 RevenueBridgeCard / RevenueBridgeChart (+ revenue-bridge-geometry, tested),
+                                ChannelMixCard, BookingPaceCard, ProvenanceCard ("How was this calculated?")
+      explore/                  ExploreOverlay (dialog, Esc, focus kept inside) with four views:
+                                Occupancy (layer toggles, tooltips), Bridge (segment drill-down, formula of
+                                the selected bar), Channel (months + last year, stat tiles), Pace (per stay date)
       empty-state/              SuggestedQuestions (idle screen)
     lib/                        metric-display (value, delta, status icon), class-names
     design-system/

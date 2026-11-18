@@ -2,16 +2,18 @@ import { formatCount, formatPercent, formatPeriodLabel, type BookingPaceOutput }
 import { joinClassNames } from '../../lib/class-names';
 import { STATUS_DISPLAY } from '../../lib/metric-display';
 import { isFactHighlighted, type FactInteraction } from '../insights/fact-links';
+import { ExpandButton } from './ExpandButton';
 import { useDrawOnMount } from './useDrawOnMount';
 
 interface BookingPaceCardProps {
   pace: BookingPaceOutput;
   interaction: FactInteraction;
   onShowProvenance: (factId: string) => void;
+  onExpand: () => void;
 }
 
 /** Rooms on the books for the rest of the month vs the same point last year. */
-export function BookingPaceCard({ pace, interaction, onShowProvenance }: BookingPaceCardProps) {
+export function BookingPaceCard({ pace, interaction, onShowProvenance, onExpand }: BookingPaceCardProps) {
   const isDrawn = useDrawOnMount();
   const isHighlighted = ['booking_pace', 'pace_pickup'].some((factId) => isFactHighlighted(factId, interaction.activeFactId));
   const status = STATUS_DISPLAY[pace.status];
@@ -34,6 +36,7 @@ export function BookingPaceCard({ pace, interaction, onShowProvenance }: Booking
             {status.label}
           </span>
         </span>
+        <ExpandButton chartName="pace" onExpand={onExpand} />
       </header>
 
       <div className="booking-pace__rows">

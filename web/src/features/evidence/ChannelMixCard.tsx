@@ -1,12 +1,14 @@
 import { CHANNEL_LABELS, CHANNELS, formatEuro, formatPercent, type Channel, type ChannelMixOutput } from '@aurora/shared';
 import { joinClassNames } from '../../lib/class-names';
 import { isFactHighlighted, type FactInteraction } from '../insights/fact-links';
+import { ExpandButton } from './ExpandButton';
 import { useDrawOnMount } from './useDrawOnMount';
 
 interface ChannelMixCardProps {
   channelMix: ChannelMixOutput;
   interaction: FactInteraction;
   onShowProvenance: (factId: string) => void;
+  onExpand: () => void;
 }
 
 /** Facts this card illustrates. Hovering any of them outlines the card. */
@@ -48,7 +50,7 @@ export function ChannelLegend() {
   );
 }
 
-export function ChannelMixCard({ channelMix, interaction, onShowProvenance }: ChannelMixCardProps) {
+export function ChannelMixCard({ channelMix, interaction, onShowProvenance, onExpand }: ChannelMixCardProps) {
   const isDrawn = useDrawOnMount();
   const isHighlighted = CHANNEL_FACT_IDS.some((factId) => isFactHighlighted(factId, interaction.activeFactId));
   const shareThisPeriod = Object.fromEntries(channelMix.channels.map((line) => [line.channel, line.revenueShare])) as Record<Channel, number>;
@@ -66,6 +68,7 @@ export function ChannelMixCard({ channelMix, interaction, onShowProvenance }: Ch
           <span className="evidence-card__title">Channel mix</span>
           <span className="evidence-card__subtitle">Share of room revenue</span>
         </div>
+        <ExpandButton chartName="channel mix" onExpand={onExpand} />
       </header>
 
       <div className="channel-mix__rows">

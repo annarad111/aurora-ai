@@ -25,3 +25,7 @@ const FOLLOWUPS_BY_VIEW: Record<InsightView, string[]> = {
 export function followupsForFact(factId: string): string[] {
   return FOLLOWUPS_BY_VIEW[viewForFact(factId)];
 }
+
+export function followupsForView(view: InsightView): string[] {
+  return FOLLOWUPS_BY_VIEW[view];
+}

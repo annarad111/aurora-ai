@@ -2,6 +2,8 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 import { AnswerView } from '../features/conversation/AnswerView';
 import { Composer } from '../features/conversation/Composer';
 import { SuggestedQuestions } from '../features/empty-state/SuggestedQuestions';
+import { ExploreOverlay } from '../features/explore/ExploreOverlay';
+import type { InsightView } from '../features/insights/context-followups';
 import type { FactInteraction } from '../features/insights/fact-links';
 import { useInsightRun } from '../stream/useInsightRun';
 import { ConversationHeader } from './layout/ConversationHeader';
@@ -21,6 +23,10 @@ export function App() {
   const [hoveredFactId, setHoveredFactId] = useState<string | null>(null);
   const [focusedFactId, setFocusedFactId] = useState<string | null>(null);
   const [provenanceFactId, setProvenanceFactId] = useState<string | null>(null);
+  // The open Explore overlay, if any.
+  const [exploreView, setExploreView] = useState<InsightView | null>(null);
+  // Stable, so the dialog's keyboard handling is not reset on every hover.
+  const closeExplore = useCallback(() => setExploreView(null), []);
 
   const factInteraction = useMemo<FactInteraction>(
     () => ({
@@ -41,6 +47,7 @@ export function App() {
     setHoveredFactId(null);
     setFocusedFactId(null);
     setProvenanceFactId(null);
+    setExploreView(null);
   }, []);
 
   const handleAskQuestion = useCallback(
@@ -77,6 +84,7 @@ export function App() {
                 onRetry={insightRun.retry}
                 onShowProvenance={setProvenanceFactId}
                 onClearFocus={() => setFocusedFactId(null)}
+                onOpenExplore={setExploreView}
               />
             )}
           </div>
@@ -90,7 +98,18 @@ export function App() {
         openProvenance={openProvenance}
         onShowProvenance={setProvenanceFactId}
         onCloseProvenance={() => setProvenanceFactId(null)}
+        onOpenExplore={setExploreView}
       />
+
+      {exploreView && (
+        <ExploreOverlay
+          view={exploreView}
+          run={run}
+          interaction={factInteraction}
+          onClose={closeExplore}
+          onAskQuestion={handleAskQuestion}
+        />
+      )}
     </div>
   );
 }

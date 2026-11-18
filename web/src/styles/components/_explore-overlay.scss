@@ -1,0 +1,150 @@
+@use '../abstracts' as *;
+
+// Full-screen dialog with a dimmed background.
+.explore-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: $space-32;
+
+  @include below-breakpoint($breakpoint-stacked) {
+    padding: $space-12;
+  }
+}
+
+.explore-overlay__scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(17, 26, 39, 0.45);
+}
+
+.explore-overlay__dialog {
+  @include enters-on-arrival(250ms);
+  position: relative;
+  width: 100%;
+  max-width: 900px;
+  max-height: 100%;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  padding: $space-24 26px;
+  border-radius: $radius-overlay;
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
+  box-shadow: $shadow-overlay;
+}
+
+.explore-overlay__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: $space-16;
+}
+
+.explore-overlay__titles {
+  display: flex;
+  flex-direction: column;
+  gap: $space-4;
+}
+
+.explore-overlay__eyebrow {
+  @include eyebrow($color: var(--color-petrol));
+}
+
+.explore-overlay__title {
+  margin: 0;
+  font-size: $font-size-22;
+  font-weight: $font-weight-semibold;
+  letter-spacing: -0.01em;
+}
+
+.explore-overlay__subtitle {
+  margin: 0;
+  max-width: 600px;
+  font-size: $font-size-13;
+  color: var(--color-ink-secondary);
+  text-wrap: pretty;
+}
+
+.explore-overlay__footer {
+  display: flex;
+  flex-direction: column;
+  gap: $space-10;
+  padding-top: 18px;
+  border-top: 1px solid var(--color-line);
+}
+
+// --- Shared layout of the views --------------------------------------------
+
+.explore-view {
+  display: flex;
+  flex-direction: column;
+  gap: $space-14;
+}
+
+.explore-view__columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: $space-28;
+}
+
+.explore-view__panel {
+  display: flex;
+  flex-direction: column;
+  gap: $space-12;
+}
+
+.explore-view__panel-title {
+  font-size: $font-size-13;
+  font-weight: $font-weight-semibold;
+}
+
+.explore-view__note {
+  margin: 0;
+  font-size: $font-size-12;
+  color: var(--color-ink-tertiary);
+  text-wrap: pretty;
+}
+
+// Formula of the bar selected in the overlay.
+.formula-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: $space-8 $space-16;
+  padding: $space-10 $space-14;
+  border-radius: $radius-button;
+  background: var(--color-sunken);
+  font-size: $font-size-13;
+}
+
+.formula-strip__formula {
+  font-size: 12.5px;
+  white-space: pre-wrap;
+}
+
+// "Expand" in the corner of each evidence card.
+.expand-button {
+  @include unstyled-button;
+  @include focus-visible-ring;
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: $space-6;
+  height: 28px;
+  padding: 0 $space-10;
+  border-radius: $radius-button-small;
+  border: 1px solid var(--color-line);
+  color: var(--color-ink-secondary);
+  font-size: $font-size-12;
+
+  &:hover {
+    border-color: var(--color-petrol);
+    color: var(--color-petrol);
+  }
+}
