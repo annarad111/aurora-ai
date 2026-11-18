@@ -1,0 +1,58 @@
+// ---------------------------------------------------------------------------
+// Cognitive Clarity palette
+//
+// One map per theme. Each key becomes a CSS custom property named
+// `--color-<key>` (see _theme-variables.scss). To change a colour, edit it
+// here and both themes stay consistent.
+//
+// Semantics:
+//   petrol = primary action and data
+//   violet = AI (Aurora's own voice)
+//   sage   = on track
+//   amber  = watch
+//   coral  = off track
+// ---------------------------------------------------------------------------
+
+$light-palette: (
+  'background': #f7f9fc,
+  'surface': #ffffff,
+  'sunken': #eef2f7,
+  'line': #e2e7ee,
+  'ink': #172334,
+  'ink-secondary': #46526a,
+  'ink-tertiary': #5f6b7c,
+  'petrol': #267d91,
+  'petrol-soft': #e4f0f3,
+  'violet': #7663c5,
+  'violet-ink': #5b48a8,
+  'violet-soft': #f0edfa,
+  'sage': #2c7a64,
+  'sage-soft': #e4f1ec,
+  'amber': #b77922,
+  'amber-ink': #8a5a14,
+  'amber-soft': #f8efe1,
+  'coral': #b4463a,
+  'coral-soft': #f8e7e4,
+);
+
+$dark-palette: (
+  'background': #111a27,
+  'surface': #172334,
+  'sunken': #1f2c40,
+  'line': #2a3851,
+  'ink': #e9eef5,
+  'ink-secondary': #b7c1cf,
+  'ink-tertiary': #97a3b5,
+  'petrol': #7ccfdc,
+  'petrol-soft': #183843,
+  'violet': #a797ec,
+  'violet-ink': #c6bcf6,
+  'violet-soft': #262645,
+  'sage': #6fcba8,
+  'sage-soft': #173832,
+  'amber': #e7b567,
+  'amber-ink': #e7b567,
+  'amber-soft': #3a2f1e,
+  'coral': #f29384,
+  'coral-soft': #3f2529,
+);

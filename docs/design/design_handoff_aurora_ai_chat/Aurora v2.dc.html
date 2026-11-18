@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root,[data-theme="light"]{--bg:#F7F9FC;--surface:#FFFFFF;--sunken:#EEF2F7;--line:#E2E7EE;--ink:#172334;--ink2:#46526A;--ink3:#5F6B7C;--petrol:#267D91;--petrol-soft:#E4F0F3;--violet:#7663C5;--violet-ink:#5B48A8;--violet-soft:#F0EDFA;--sage:#2C7A64;--sage-soft:#E4F1EC;--amber:#B77922;--amber-ink:#8A5A14;--amber-soft:#F8EFE1;--coral:#B4463A;--coral-soft:#F8E7E4;}
+[data-theme="dark"]{--bg:#111A27;--surface:#172334;--sunken:#1F2C40;--line:#2A3851;--ink:#E9EEF5;--ink2:#B7C1CF;--ink3:#97A3B5;--petrol:#7CCFDC;--petrol-soft:#183843;--violet:#A797EC;--violet-ink:#C6BCF6;--violet-soft:#262645;--sage:#6FCBA8;--sage-soft:#173832;--amber:#E7B567;--amber-ink:#E7B567;--amber-soft:#3A2F1E;--coral:#F29384;--coral-soft:#3F2529;}
+html,body{margin:0;padding:0;background:var(--bg);}
+*{box-sizing:border-box;}
+a{color:var(--petrol);}a:hover{color:var(--violet);}
+button{font:inherit;}
+@keyframes aurPulse{0%,100%{opacity:.35;transform:scale(.8)}50%{opacity:1;transform:scale(1)}}
+@keyframes aurCaret{0%,100%{opacity:1}50%{opacity:0}}
+@keyframes aurIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+</style>
+</helmet>
+<div data-theme="{{ resolvedTheme }}" style="display:flex;flex-wrap:wrap;min-height:100vh;background:var(--bg);color:var(--ink);font-family:'Geist',system-ui,sans-serif;font-size:14px;line-height:1.5;transition:background .3s,color .3s;">
+
+  <aside data-screen-label="Sidebar" style="flex:0 0 248px;height:100vh;position:sticky;top:0;display:flex;flex-direction:column;gap:24px;padding:20px 16px;border-right:1px solid var(--line);background:var(--surface);">
+    <div style="display:flex;flex-direction:column;gap:6px;padding:0 6px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:26px;height:26px;border-radius:50%;border:2px solid var(--violet);display:flex;align-items:center;justify-content:center;">
+          <div style="width:10px;height:10px;border-radius:50%;background:var(--petrol);"></div>
+        </div>
+        <div style="font-size:18px;font-weight:600;letter-spacing:-0.01em;">Aurora</div>
+      </div>
+      <div style="font-size:12px;color:var(--ink3);line-height:1.4;">Independent concept for the Juyo assessment</div>
+    </div>
+
+    <button onClick="{{ newRun }}" style="display:flex;align-items:center;gap:8px;height:40px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font-weight:500;cursor:pointer;" style-hover="border-color:var(--petrol);">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 3v10M3 8h10"></path></svg>
+      New analysis
+    </button>
+
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);padding:0 6px;">Property</div>
+      <div style="display:flex;flex-direction:column;gap:2px;padding:10px 12px;border-radius:10px;background:var(--sunken);">
+        <div style="font-weight:600;">Hotel Sablon</div>
+        <div style="font-size:12px;color:var(--ink2);">Brussels · 111 rooms · EUR</div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:4px;flex:1;min-height:0;overflow:auto;">
+      <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);padding:0 6px 4px;">Recent</div>
+      <sc-for list="{{ history }}" as="h" hint-placeholder-count="3">
+        <button onClick="{{ h.open }}" style="display:flex;flex-direction:column;align-items:flex-start;gap:1px;padding:8px 10px;border:none;border-radius:8px;background:transparent;color:var(--ink);text-align:left;cursor:pointer;" style-hover="background:var(--sunken);">
+          <span style="font-size:13px;line-height:1.35;">{{ h.q }}</span>
+          <span style="font-size:11px;color:var(--ink3);">{{ h.when }}</span>
+        </button>
+      </sc-for>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;border:1px dashed var(--line);font-size:12px;color:var(--ink2);">
+        <span style="width:6px;height:6px;border-radius:50%;background:var(--sage);"></span>
+        <span style="font-family:'Geist Mono',monospace;">/mcp</span>
+        <span>· 4 read-only tools</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:2px;padding:3px;border-radius:10px;background:var(--sunken);">
+        <sc-for list="{{ themeOpts }}" as="o" hint-placeholder-count="3">
+          <button onClick="{{ o.pick }}" aria-pressed="{{ o.pressed }}" style="height:30px;border:none;border-radius:7px;font-size:12px;font-weight:500;cursor:pointer;background:{{ o.bg }};color:{{ o.fg }};box-shadow:{{ o.shadow }};">{{ o.label }}</button>
+        </sc-for>
+      </div>
+    </div>
+  </aside>
+
+  <main data-screen-label="Conversation" style="flex:1 1 520px;min-width:0;height:100vh;display:flex;flex-direction:column;">
+    <header style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:14px 28px;border-bottom:1px solid var(--line);">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <span style="font-weight:600;">Revenue workspace</span>
+        <span style="padding:3px 10px;border-radius:999px;background:var(--sunken);font-size:12px;color:var(--ink2);">1–17 Nov 2026 · month to date</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink3);">
+        <span style="width:7px;height:7px;border-radius:50%;background:{{ phaseDot }};"></span>
+        <span>{{ phaseLabel }}</span>
+      </div>
+    </header>
+
+    <div style="flex:1;min-height:0;overflow:auto;">
+      <div style="max-width:760px;margin:0 auto;padding:32px 28px 40px;display:flex;flex-direction:column;gap:20px;">
+
+        <sc-if value="{{ isIdle }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;gap:24px;padding-top:8vh;">
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <div style="font-size:30px;font-weight:600;letter-spacing:-0.02em;line-height:1.2;text-wrap:pretty;">What do you want to understand about Hotel Sablon?</div>
+              <div style="color:var(--ink2);max-width:560px;text-wrap:pretty;">Aurora answers with the summary first, then the numbers behind it. Every figure links to the tool and formula that produced it.</div>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px;">
+              <sc-for list="{{ suggestions }}" as="s" hint-placeholder-count="4">
+                <button onClick="{{ s.ask }}" style="display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:14px 16px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);text-align:left;cursor:pointer;" style-hover="border-color:var(--petrol);">
+                  <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--petrol);">{{ s.tag }}</span>
+                  <span style="font-size:14px;line-height:1.4;">{{ s.q }}</span>
+                </button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ hasRun }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;justify-content:flex-end;">
+            <div style="max-width:80%;padding:10px 16px;border-radius:14px 14px 4px 14px;background:var(--ink);color:var(--bg);">{{ question }}</div>
+          </div>
+
+          <div style="border:1px solid var(--line);border-radius:12px;background:var(--surface);">
+            <button onClick="{{ toggleTl }}" aria-expanded="{{ tlOpen }}" style="display:flex;align-items:center;justify-content:space-between;width:100%;gap:12px;padding:10px 14px;border:none;background:transparent;color:var(--ink);cursor:pointer;text-align:left;">
+              <span style="display:flex;align-items:center;gap:10px;">
+                <span style="font-size:12px;font-weight:600;color:var(--violet-ink);">Aurora</span>
+                <span style="font-size:13px;color:var(--ink2);">{{ tlSummary }}</span>
+              </span>
+              <span style="font-size:12px;color:var(--ink3);">{{ tlToggleLabel }}</span>
+            </button>
+            <sc-if value="{{ tlOpen }}" hint-placeholder-val="{{ true }}">
+              <div aria-live="polite" style="display:flex;flex-direction:column;gap:2px;padding:0 14px 12px;">
+                <sc-for list="{{ steps }}" as="st" hint-placeholder-count="4">
+                  <div style="display:grid;grid-template-columns:18px minmax(0,1fr) auto;align-items:center;gap:10px;padding:5px 0;">
+                    <span style="display:flex;align-items:center;justify-content:center;">
+                      <sc-if value="{{ st.isDone }}"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="var(--sage)" stroke-width="1.8"><path d="M3 7.5l2.5 2.5L11 4.5"></path></svg></sc-if>
+                      <sc-if value="{{ st.isRunning }}">{{ pulse }}</sc-if>
+                      <sc-if value="{{ st.isPending }}"><span style="width:8px;height:8px;border-radius:50%;border:1.5px solid var(--line);"></span></sc-if>
+                      <sc-if value="{{ st.isStopped }}"><span style="width:8px;height:2px;background:var(--ink3);"></span></sc-if>
+                    </span>
+                    <span style="font-size:13px;color:{{ st.color }};">{{ st.label }}</span>
+                    <span style="font-family:'Geist Mono',monospace;font-size:11px;color:var(--ink3);">{{ st.tool }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+          </div>
+
+          <sc-if value="{{ showInsight }}" hint-placeholder-val="{{ false }}">
+            <section aria-label="AI insight" style="display:flex;flex-direction:column;gap:14px;padding:20px 22px;border-radius:16px;background:var(--violet-soft);border:1px solid var(--violet);animation:aurIn .4s ease-out;">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+                <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--violet-ink);">Main finding</span>
+                <span style="display:flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;background:var(--surface);font-size:12px;font-weight:600;color:var(--coral);">
+                  <span aria-hidden="true">↓</span>−€33,917 vs target
+                </span>
+              </div>
+              <div style="font-size:21px;font-weight:600;letter-spacing:-0.01em;line-height:1.3;text-wrap:pretty;">A cancelled MICE congress left 204 empty room nights, and the OTA shift means net revenue is falling faster than gross.</div>
+              <div style="display:flex;flex-direction:column;gap:8px;">
+                <span style="font-size:13px;color:var(--ink2);">Select an insight to investigate:</span>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                  <sc-for list="{{ chips }}" as="c" hint-placeholder-count="3">
+                    <button onClick="{{ c.open }}" onMouseEnter="{{ c.enter }}" onMouseLeave="{{ c.leave }}" aria-pressed="{{ c.pressed }}" style="display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 12px;border-radius:999px;border:1px solid var(--violet);background:{{ c.bg }};color:{{ c.fg }};font-weight:600;font-size:13px;cursor:pointer;">
+                      <span style="width:6px;height:6px;border-radius:50%;background:{{ c.dot }};"></span>{{ c.label }}
+                    </button>
+                  </sc-for>
+                  <button onClick="{{ howCalc }}" style="height:34px;padding:0 6px;border:none;background:transparent;color:var(--violet-ink);font-weight:500;font-size:13px;cursor:pointer;text-decoration:underline;text-underline-offset:3px;">How was this calculated?</button>
+                </div>
+              </div>
+            </section>
+          </sc-if>
+
+          <sc-if value="{{ hasKpis }}" hint-placeholder-val="{{ false }}">
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;">
+              <sc-for list="{{ kpis }}" as="k" hint-placeholder-count="4">
+                <button onClick="{{ k.open }}" onMouseEnter="{{ k.enter }}" onMouseLeave="{{ k.leave }}" style="display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:14px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);text-align:left;cursor:pointer;box-shadow:{{ k.ring }};transition:box-shadow .15s;animation:aurIn .35s ease-out;">
+                  <span style="font-size:12px;color:var(--ink2);">{{ k.label }}</span>
+                  <span style="font-size:24px;font-weight:600;letter-spacing:-0.02em;font-variant-numeric:tabular-nums;line-height:1.1;">{{ k.value }}</span>
+                  <span style="display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:6px;font-size:12px;font-weight:600;background:{{ k.bg }};color:{{ k.fg }};">
+                    <span aria-hidden="true">{{ k.icon }}</span>{{ k.delta }}
+                  </span>
+                  <span style="font-size:11px;color:var(--ink3);">{{ k.ref }}</span>
+                </button>
+              </sc-for>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ hasText }}" hint-placeholder-val="{{ false }}">
+            <div aria-live="polite" style="font-size:15px;line-height:1.75;color:var(--ink);text-wrap:pretty;"><sc-for list="{{ tokens }}" as="tk"><sc-if value="{{ tk.isText }}">{{ tk.text }}</sc-if><sc-if value="{{ tk.isFact }}"><button onClick="{{ tk.open }}" onMouseEnter="{{ tk.enter }}" onMouseLeave="{{ tk.leave }}" style="display:inline;padding:1px 5px;margin:0 1px;border:none;border-bottom:1.5px dashed var(--petrol);border-radius:4px;background:{{ tk.bg }};color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums;cursor:pointer;line-height:inherit;">{{ tk.label }}</button></sc-if></sc-for>{{ caret }}</div>
+          </sc-if>
+
+          <sc-if value="{{ hasFocus }}" hint-placeholder-val="{{ false }}">
+            <section aria-label="Contextual insight" style="display:flex;flex-direction:column;gap:12px;padding:16px 18px;border-radius:14px;border:1px solid var(--petrol);background:var(--surface);animation:aurIn .25s ease-out;">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+                <span style="display:flex;align-items:center;gap:8px;">
+                  <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--petrol);">Contextual insight</span>
+                  <span style="padding:2px 8px;border-radius:6px;background:var(--petrol-soft);color:var(--petrol);font-size:12px;font-weight:600;">{{ ctx.label }}</span>
+                </span>
+                <button onClick="{{ clearFocus }}" aria-label="Dismiss" style="width:26px;height:26px;border-radius:7px;border:none;background:transparent;color:var(--ink3);cursor:pointer;display:flex;align-items:center;justify-content:center;">
+                  <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 2l8 8M10 2l-8 8"></path></svg>
+                </button>
+              </div>
+              <div style="font-size:15px;line-height:1.6;text-wrap:pretty;">{{ ctx.text }}</div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <button onClick="{{ exploreFocus }}" style="display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 14px;border-radius:9px;border:none;background:var(--petrol);color:var(--surface);font-weight:600;cursor:pointer;" style-hover="opacity:.9;">
+                  Explore this insight
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 7h8M7.5 3.5L11 7l-3.5 3.5"></path></svg>
+                </button>
+                <button onClick="{{ provFocus }}" style="height:36px;padding:0 14px;border-radius:9px;border:1px solid var(--line);background:transparent;color:var(--ink);font-weight:500;cursor:pointer;">How was this calculated?</button>
+              </div>
+            </section>
+          </sc-if>
+
+          <sc-if value="{{ isCancelled }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:10px 14px;border-radius:10px;background:var(--amber-soft);color:var(--amber-ink);font-size:13px;">
+              <span>Stopped. Everything received so far is kept.</span>
+              <button onClick="{{ retry }}" style="height:30px;padding:0 12px;border-radius:8px;border:1px solid var(--amber);background:transparent;color:var(--amber-ink);font-weight:600;cursor:pointer;">Run again</button>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ showFollow }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;gap:12px;animation:aurIn .4s ease-out;">
+              <span style="font-size:12px;color:var(--ink3);">{{ followLabel }}</span>
+              <div style="display:flex;flex-wrap:wrap;gap:8px;">
+                <sc-for list="{{ followups }}" as="f" hint-placeholder-count="3">
+                  <button onClick="{{ f.ask }}" style="padding:8px 14px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-size:13px;cursor:pointer;" style-hover="border-color:var(--petrol);color:var(--petrol);">{{ f.q }}</button>
+                </sc-for>
+              </div>
+              <div style="font-size:12px;color:var(--ink3);">{{ doneMeta }}</div>
+            </div>
+          </sc-if>
+        </sc-if>
+      </div>
+    </div>
+
+    <div style="padding:12px 28px 20px;">
+      <div style="max-width:760px;margin:0 auto;display:flex;align-items:center;gap:8px;padding:6px 6px 6px 16px;border-radius:14px;border:1px solid var(--line);background:var(--surface);box-shadow:0 1px 2px rgba(23,35,52,.06);">
+        <input value="{{ draft }}" onChange="{{ onDraft }}" onKeyDown="{{ onKey }}" disabled="{{ isStreaming }}" maxlength="280" placeholder="Ask about revenue, pace, channels or segments" aria-label="Ask Aurora" style="flex:1;min-width:0;height:40px;border:none;outline:none;background:transparent;color:var(--ink);font:inherit;font-size:15px;">
+        <sc-if value="{{ isStreaming }}" hint-placeholder-val="{{ false }}">
+          <button onClick="{{ stop }}" style="display:flex;align-items:center;gap:8px;height:40px;padding:0 14px;border-radius:10px;border:1px solid var(--line);background:var(--sunken);color:var(--ink);font-weight:500;cursor:pointer;">
+            <span style="width:10px;height:10px;border-radius:2px;background:var(--ink);"></span>Stop
+          </button>
+        </sc-if>
+        <sc-if value="{{ notStreaming }}" hint-placeholder-val="{{ true }}">
+          <button onClick="{{ send }}" aria-label="Send" style="width:40px;height:40px;border-radius:10px;border:none;background:var(--petrol);color:var(--surface);display:flex;align-items:center;justify-content:center;cursor:pointer;">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 13V3M3.5 7.5L8 3l4.5 4.5"></path></svg>
+          </button>
+        </sc-if>
+      </div>
+    </div>
+  </main>
+
+  <aside data-screen-label="Insight panel" style="flex:1 1 340px;max-width:440px;min-width:0;height:100vh;overflow:auto;border-left:1px solid var(--line);padding:20px;display:flex;flex-direction:column;gap:14px;">
+    <sc-if value="{{ hasSelected }}" hint-placeholder-val="{{ false }}">
+      <section aria-label="Provenance" style="display:flex;flex-direction:column;gap:16px;padding:18px;border-radius:14px;border:1px solid var(--line);background:var(--surface);animation:aurIn .25s ease-out;">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
+          <div style="display:flex;flex-direction:column;gap:4px;">
+            <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--petrol);">How was this calculated?</span>
+            <span style="font-size:16px;font-weight:600;">{{ sel.title }}</span>
+          </div>
+          <button onClick="{{ closeSel }}" aria-label="Close" style="width:30px;height:30px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--ink2);cursor:pointer;display:flex;align-items:center;justify-content:center;">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 2l8 8M10 2l-8 8"></path></svg>
+          </button>
+        </div>
+        <div style="font-size:30px;font-weight:600;letter-spacing:-0.02em;font-variant-numeric:tabular-nums;">{{ sel.value }}</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <span style="font-size:12px;color:var(--ink3);">Tool</span>
+          <span style="align-self:flex-start;padding:3px 8px;border-radius:6px;background:var(--petrol-soft);color:var(--petrol);font-family:'Geist Mono',monospace;font-size:12px;">{{ sel.tool }}</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <span style="font-size:12px;color:var(--ink3);">Formula</span>
+          <code style="padding:10px 12px;border-radius:8px;background:var(--sunken);font-family:'Geist Mono',monospace;font-size:12.5px;line-height:1.6;white-space:pre-wrap;">{{ sel.formula }}</code>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <span style="font-size:12px;color:var(--ink3);">Inputs</span>
+          <div style="display:flex;flex-direction:column;border:1px solid var(--line);border-radius:8px;">
+            <sc-for list="{{ sel.rows }}" as="r" hint-placeholder-count="3">
+              <div style="display:flex;justify-content:space-between;gap:12px;padding:8px 12px;border-top:1px solid var(--line);font-size:13px;margin-top:-1px;">
+                <span style="color:var(--ink2);">{{ r.k }}</span>
+                <span style="font-weight:600;font-variant-numeric:tabular-nums;text-align:right;">{{ r.v }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <span style="font-size:12px;color:var(--ink3);">Source</span>
+          <code style="font-family:'Geist Mono',monospace;font-size:11.5px;color:var(--ink2);line-height:1.6;white-space:pre-wrap;">{{ sel.query }}</code>
+        </div>
+        <div style="font-size:12px;color:var(--ink3);">Computed deterministically in packages/analytics. The language model only writes the sentence around it.</div>
+      </section>
+    </sc-if>
+
+    <sc-if value="{{ noSelected }}" hint-placeholder-val="{{ true }}">
+      <sc-if value="{{ panelEmpty }}" hint-placeholder-val="{{ true }}">
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;padding:24px;border:1px dashed var(--line);border-radius:14px;color:var(--ink3);">
+          <span style="font-weight:500;color:var(--ink2);">Evidence panel</span>
+          <span style="font-size:13px;max-width:240px;">Charts appear here as Aurora works. Click any number to see where it comes from.</span>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ bridgeOn }}" hint-placeholder-val="{{ false }}">
+        <section aria-label="Revenue bridge" style="display:flex;flex-direction:column;gap:14px;padding:18px;border-radius:14px;border:1px solid var(--line);background:var(--surface);animation:aurIn .35s ease-out;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+            <div style="display:flex;flex-direction:column;gap:2px;">
+              <span style="font-weight:600;">Revenue bridge</span>
+              <span style="font-size:12px;color:var(--ink3);">Target to actual, room revenue, 1–17 Nov</span>
+            </div>
+            <button onClick="{{ expandBridge }}" aria-label="Expand revenue bridge" style="display:flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:7px;border:1px solid var(--line);background:transparent;color:var(--ink2);font-size:12px;cursor:pointer;" style-hover="border-color:var(--petrol);color:var(--petrol);"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 1.5h3.5V5M5 10.5H1.5V7M10.5 1.5L7 5M1.5 10.5L5 7"></path></svg>Expand</button>
+          </div>
+          <div style="position:relative;height:210px;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;border-bottom:1px solid var(--line);">
+            <sc-for list="{{ bars }}" as="b" hint-placeholder-count="5">
+              <button onClick="{{ b.open }}" onMouseEnter="{{ b.enter }}" onMouseLeave="{{ b.leave }}" aria-label="{{ b.aria }}" style="position:relative;height:100%;border:none;padding:0;background:transparent;cursor:pointer;">
+                <span style="position:absolute;left:0;right:0;bottom:{{ b.labelBottom }};text-align:center;font-size:11.5px;font-weight:600;font-variant-numeric:tabular-nums;color:{{ b.textColor }};transition:bottom .7s cubic-bezier(.2,.7,.2,1);">{{ b.valueLabel }}</span>
+                <span style="position:absolute;left:4px;right:4px;bottom:{{ b.bottom }};height:{{ b.height }};border-radius:4px;background:{{ b.color }};box-shadow:{{ b.ring }};transition:height .7s cubic-bezier(.2,.7,.2,1),bottom .7s cubic-bezier(.2,.7,.2,1),box-shadow .15s;"></span>
+              </button>
+            </sc-for>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-top:-6px;">
+            <sc-for list="{{ bars }}" as="b" hint-placeholder-count="5">
+              <span style="text-align:center;font-size:11.5px;color:var(--ink2);">{{ b.label }}</span>
+            </sc-for>
+          </div>
+          <div style="font-size:11px;color:var(--ink3);">Axis starts at €160k. Volume + mix + price = gap, exactly.</div>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{ mixOn }}" hint-placeholder-val="{{ false }}">
+        <section aria-label="Channel mix" onMouseEnter="{{ mixEnter }}" onMouseLeave="{{ leaveAll }}" style="display:flex;flex-direction:column;gap:14px;padding:18px;border-radius:14px;border:1px solid var(--line);background:var(--surface);box-shadow:{{ mixRing }};animation:aurIn .35s ease-out;">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;">
+            <div style="display:flex;flex-direction:column;gap:2px;">
+              <span style="font-weight:600;">Channel mix</span>
+              <span style="font-size:12px;color:var(--ink3);">share of room revenue</span>
+            </div>
+            <button onClick="{{ expandChannel }}" aria-label="Expand channel mix" style="display:flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:7px;border:1px solid var(--line);background:transparent;color:var(--ink2);font-size:12px;cursor:pointer;" style-hover="border-color:var(--petrol);color:var(--petrol);"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 1.5h3.5V5M5 10.5H1.5V7M10.5 1.5L7 5M1.5 10.5L5 7"></path></svg>Expand</button>
+          </div>
+          <sc-for list="{{ mixRows }}" as="m" hint-placeholder-count="2">
+            <div style="display:grid;grid-template-columns:72px minmax(0,1fr);align-items:center;gap:10px;">
+              <span style="font-size:12px;color:var(--ink2);">{{ m.label }}</span>
+              <div style="display:flex;height:22px;border-radius:5px;overflow:hidden;gap:2px;">
+                <sc-for list="{{ m.parts }}" as="p" hint-placeholder-count="4">
+                  <span style="width:{{ p.w }};background:{{ p.color }};display:flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:600;color:{{ p.text }};">{{ p.v }}</span>
+                </sc-for>
+              </div>
+            </div>
+          </sc-for>
+          <div style="display:flex;flex-wrap:wrap;gap:12px;font-size:11.5px;color:var(--ink2);">
+            <sc-for list="{{ legend }}" as="l" hint-placeholder-count="4">
+              <span style="display:flex;align-items:center;gap:6px;"><span style="width:8px;height:8px;border-radius:2px;background:{{ l.color }};"></span>{{ l.label }}</span>
+            </sc-for>
+          </div>
+          <button onClick="{{ openOta }}" style="align-self:flex-start;padding:0;border:none;background:none;color:var(--petrol);font-size:12.5px;font-weight:500;cursor:pointer;">Commission cost: €22,492 (10.8% of revenue)</button>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{ paceOn }}" hint-placeholder-val="{{ false }}">
+        <section aria-label="Booking pace" onMouseEnter="{{ paceEnter }}" onMouseLeave="{{ leaveAll }}" style="display:flex;flex-direction:column;gap:12px;padding:18px;border-radius:14px;border:1px solid var(--line);background:var(--surface);box-shadow:{{ paceRing }};animation:aurIn .35s ease-out;">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;">
+            <span style="display:flex;align-items:center;gap:8px;">
+              <span style="font-weight:600;">Pace, 21–30 Nov</span>
+              <span style="display:inline-flex;gap:5px;padding:2px 8px;border-radius:6px;font-size:12px;font-weight:600;background:var(--amber-soft);color:var(--amber-ink);"><span aria-hidden="true">!</span>Watch</span>
+            </span>
+            <button onClick="{{ expandPace }}" aria-label="Expand pace" style="display:flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:7px;border:1px solid var(--line);background:transparent;color:var(--ink2);font-size:12px;cursor:pointer;" style-hover="border-color:var(--petrol);color:var(--petrol);"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 1.5h3.5V5M5 10.5H1.5V7M10.5 1.5L7 5M1.5 10.5L5 7"></path></svg>Expand</button>
+          </div>
+          <div style="display:grid;grid-template-columns:72px minmax(0,1fr) 44px;align-items:center;gap:10px;font-size:12px;">
+            <span style="color:var(--ink2);">On books</span>
+            <span style="height:10px;border-radius:5px;background:var(--petrol);width:83.7%;"></span>
+            <span style="font-weight:600;text-align:right;font-variant-numeric:tabular-nums;">612</span>
+            <span style="color:var(--ink2);">Last year</span>
+            <span style="height:10px;border-radius:5px;background:var(--line);width:100%;"></span>
+            <span style="font-weight:600;text-align:right;font-variant-numeric:tabular-nums;">731</span>
+          </div>
+          <button onClick="{{ openPace }}" style="align-self:flex-start;padding:0;border:none;background:none;color:var(--petrol);font-size:12.5px;font-weight:500;cursor:pointer;">Room nights, same point last year: −16%</button>
+        </section>
+      </sc-if>
+    </sc-if>
+  </aside>
+
+  <sc-if value="{{ hasOverlay }}" hint-placeholder-val="{{ false }}">
+    <div role="dialog" aria-modal="true" aria-label="{{ ov.title }}" data-screen-label="Explore overlay" style="position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:32px;">
+      <div onClick="{{ closeOv }}" style="position:absolute;inset:0;background:rgba(17,26,39,.45);"></div>
+      <section style="position:relative;width:100%;max-width:900px;max-height:100%;overflow:auto;display:flex;flex-direction:column;gap:22px;padding:24px 26px;border-radius:18px;background:var(--surface);border:1px solid var(--line);box-shadow:0 24px 60px rgba(17,26,39,.25);animation:aurIn .25s ease-out;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;">
+          <div style="display:flex;flex-direction:column;gap:4px;">
+            <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--petrol);">Explore · from Aurora's answer</span>
+            <span style="font-size:22px;font-weight:600;letter-spacing:-0.01em;">{{ ov.title }}</span>
+            <span style="font-size:13px;color:var(--ink2);max-width:600px;text-wrap:pretty;">{{ ov.sub }}</span>
+          </div>
+          <button onClick="{{ closeOv }}" aria-label="Close" style="flex:none;width:34px;height:34px;border-radius:9px;border:1px solid var(--line);background:transparent;color:var(--ink2);cursor:pointer;display:flex;align-items:center;justify-content:center;">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 2l8 8M10 2l-8 8"></path></svg>
+          </button>
+        </div>
+
+        <sc-if value="{{ isOvOcc }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;gap:14px;">
+            <div style="display:flex;flex-wrap:wrap;gap:8px;">
+              <sc-for list="{{ occToggles }}" as="t" hint-placeholder-count="3">
+                <button onClick="{{ t.toggle }}" aria-pressed="{{ t.pressed }}" style="display:inline-flex;align-items:center;gap:8px;height:32px;padding:0 12px;border-radius:999px;border:1px solid {{ t.border }};background:{{ t.bg }};color:var(--ink);font-size:12.5px;font-weight:500;cursor:pointer;">
+                  <span style="width:10px;height:{{ t.swH }};border-radius:2px;background:{{ t.sw }};"></span>{{ t.label }}
+                </button>
+              </sc-for>
+            </div>
+            <div style="position:relative;height:260px;margin-top:28px;display:grid;grid-template-columns:repeat(17,minmax(0,1fr));gap:6px;border-bottom:1px solid var(--line);">
+              <sc-if value="{{ showTarget }}" hint-placeholder-val="{{ true }}">
+                <div style="position:absolute;left:0;right:0;bottom:75%;border-top:1.5px dashed var(--ink3);pointer-events:none;z-index:1;">
+                  <span style="position:absolute;right:0;top:-22px;padding:0 4px;background:var(--surface);font-size:11px;color:var(--ink2);">Target 75%</span>
+                </div>
+              </sc-if>
+              <sc-for list="{{ occDays }}" as="d" hint-placeholder-count="17">
+                <div onMouseEnter="{{ d.enter }}" onMouseLeave="{{ d.leave }}" style="position:relative;height:100%;cursor:default;">
+                  <span style="position:absolute;left:0;right:0;bottom:0;height:{{ d.h }};border-radius:4px 4px 0 0;background:{{ d.color }};opacity:{{ d.op }};transition:opacity .15s;"></span>
+                  <sc-if value="{{ d.showLY }}"><span style="position:absolute;left:-2px;right:-2px;bottom:{{ d.ly }};height:2.5px;border-radius:2px;background:var(--violet);"></span></sc-if>
+                  <sc-if value="{{ d.hot }}">
+                    <div style="position:absolute;bottom:calc({{ d.h }} + 10px);left:50%;transform:{{ d.tx }};z-index:3;white-space:nowrap;padding:8px 10px;border-radius:8px;background:var(--ink);color:var(--bg);font-size:12px;line-height:1.5;">
+                      <div style="font-weight:600;">{{ d.date }}</div>
+                      <div>Occupancy {{ d.v }}% · target 75%</div>
+                      <div>Last year {{ d.lyv }}%</div>
+                      <sc-if value="{{ d.isBlock }}"><div style="font-weight:600;">Congress block cancelled</div></sc-if>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(17,minmax(0,1fr));gap:6px;margin-top:-6px;">
+              <sc-for list="{{ occDays }}" as="d" hint-placeholder-count="17">
+                <span style="text-align:center;font-size:11px;font-variant-numeric:tabular-nums;color:{{ d.labelColor }};font-weight:{{ d.labelWeight }};">{{ d.day }}</span>
+              </sc-for>
+            </div>
+            <div style="font-size:12px;color:var(--ink3);">Daily occupancy, 1–17 Nov 2026. Hover a day for details.</div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isOvBridge }}" hint-placeholder-val="{{ false }}">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:28px;">
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <span style="font-size:13px;font-weight:600;">Target to actual</span>
+              <div style="position:relative;height:280px;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;border-bottom:1px solid var(--line);">
+                <sc-for list="{{ bars }}" as="b" hint-placeholder-count="5">
+                  <button onClick="{{ b.open }}" onMouseEnter="{{ b.enter }}" onMouseLeave="{{ b.leave }}" aria-label="{{ b.aria }}" style="position:relative;height:100%;border:none;padding:0;background:transparent;cursor:pointer;">
+                    <span style="position:absolute;left:0;right:0;bottom:{{ b.labelBottom }};text-align:center;font-size:12.5px;font-weight:600;font-variant-numeric:tabular-nums;color:{{ b.textColor }};">{{ b.valueLabel }}</span>
+                    <span style="position:absolute;left:6px;right:6px;bottom:{{ b.bottom }};height:{{ b.height }};border-radius:5px;background:{{ b.color }};box-shadow:{{ b.ring }};"></span>
+                  </button>
+                </sc-for>
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;">
+                <sc-for list="{{ bars }}" as="b" hint-placeholder-count="5">
+                  <span style="text-align:center;font-size:12px;color:var(--ink2);">{{ b.label }}</span>
+                </sc-for>
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:12px;">
+              <div style="display:flex;flex-direction:column;gap:2px;">
+                <span style="font-size:13px;font-weight:600;">Volume effect by segment</span>
+                <span style="font-size:12px;color:var(--ink3);">Drill-down of the −€41,932 volume bar</span>
+              </div>
+              <sc-for list="{{ segRows }}" as="r" hint-placeholder-count="4">
+                <div onMouseEnter="{{ r.enter }}" onMouseLeave="{{ r.leave }}" style="display:grid;grid-template-columns:80px minmax(0,1fr) 72px;align-items:center;gap:10px;padding:6px 8px;border-radius:8px;background:{{ r.rowBg }};">
+                  <span style="font-size:13px;color:var(--ink2);">{{ r.label }}</span>
+                  <div style="position:relative;height:18px;border-left:1px solid transparent;">
+                    <span style="position:absolute;top:0;bottom:0;left:50%;width:1px;background:var(--line);"></span>
+                    <span style="position:absolute;top:2px;bottom:2px;left:{{ r.left }};right:{{ r.right }};border-radius:4px;background:{{ r.color }};"></span>
+                  </div>
+                  <span style="font-size:13px;font-weight:600;text-align:right;font-variant-numeric:tabular-nums;color:{{ r.color }};">{{ r.v }}</span>
+                </div>
+              </sc-for>
+              <div style="font-size:12px;color:var(--ink3);text-wrap:pretty;">MICE accounts for 83% of the volume effect. Leisure partly compensated with 26 extra room nights.</div>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isOvChannel }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;gap:14px;">
+            <div style="display:grid;grid-template-columns:96px minmax(0,1fr) 92px;gap:12px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--ink3);">
+              <span>Period</span><span>Share of room revenue</span><span style="text-align:right;">Commission</span>
+            </div>
+            <sc-for list="{{ chRows }}" as="m" hint-placeholder-count="4">
+              <div style="display:grid;grid-template-columns:96px minmax(0,1fr) 92px;align-items:center;gap:12px;padding:6px 0;">
+                <span style="font-size:13px;color:var(--ink);font-weight:{{ m.weight }};">{{ m.label }}</span>
+                <div style="display:flex;height:28px;border-radius:6px;overflow:hidden;gap:2px;">
+                  <sc-for list="{{ m.parts }}" as="p" hint-placeholder-count="4">
+                    <span style="width:{{ p.w }};background:{{ p.color }};display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:600;color:{{ p.text }};">{{ p.v }}</span>
+                  </sc-for>
+                </div>
+                <span style="font-size:13px;font-weight:600;text-align:right;font-variant-numeric:tabular-nums;color:{{ m.commColor }};">{{ m.comm }}</span>
+              </div>
+            </sc-for>
+            <div style="display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:var(--ink2);">
+              <sc-for list="{{ legend }}" as="l" hint-placeholder-count="4">
+                <span style="display:flex;align-items:center;gap:6px;"><span style="width:9px;height:9px;border-radius:2px;background:{{ l.color }};"></span>{{ l.label }}</span>
+              </sc-for>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;">
+              <sc-for list="{{ chStats }}" as="c" hint-placeholder-count="3">
+                <div style="display:flex;flex-direction:column;gap:4px;padding:12px 14px;border-radius:10px;background:var(--sunken);">
+                  <span style="font-size:12px;color:var(--ink2);">{{ c.k }}</span>
+                  <span style="font-size:20px;font-weight:600;font-variant-numeric:tabular-nums;">{{ c.v }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isOvPace }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;gap:14px;">
+            <div style="display:flex;flex-wrap:wrap;gap:16px;font-size:12px;color:var(--ink2);">
+              <span style="display:flex;align-items:center;gap:6px;"><span style="width:9px;height:9px;border-radius:2px;background:var(--petrol);"></span>On the books today</span>
+              <span style="display:flex;align-items:center;gap:6px;"><span style="width:9px;height:9px;border-radius:2px;background:var(--line);"></span>Same point last year</span>
+            </div>
+            <div style="height:240px;margin-top:20px;display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:12px;border-bottom:1px solid var(--line);">
+              <sc-for list="{{ paceDays }}" as="d" hint-placeholder-count="10">
+                <div onMouseEnter="{{ d.enter }}" onMouseLeave="{{ d.leave }}" style="position:relative;height:100%;display:flex;align-items:flex-end;justify-content:center;gap:3px;">
+                  <span style="width:42%;height:{{ d.hOtb }};border-radius:4px 4px 0 0;background:var(--petrol);opacity:{{ d.op }};"></span>
+                  <span style="width:42%;height:{{ d.hLy }};border-radius:4px 4px 0 0;background:var(--line);"></span>
+                  <sc-if value="{{ d.hot }}">
+                    <div style="position:absolute;bottom:calc({{ d.hLy }} + 10px);left:50%;transform:{{ d.tx }};z-index:3;white-space:nowrap;padding:8px 10px;border-radius:8px;background:var(--ink);color:var(--bg);font-size:12px;line-height:1.5;">
+                      <div style="font-weight:600;">{{ d.date }}</div>
+                      <div>On books {{ d.otb }} · LY {{ d.ly }}</div>
+                      <div>{{ d.diff }}</div>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:12px;margin-top:-6px;">
+              <sc-for list="{{ paceDays }}" as="d" hint-placeholder-count="10">
+                <span style="text-align:center;font-size:11px;color:var(--ink2);">{{ d.day }}</span>
+              </sc-for>
+            </div>
+            <div style="font-size:12px;color:var(--ink3);">Room nights on the books for stay dates 21–30 Nov. Capacity 111 per night.</div>
+          </div>
+        </sc-if>
+
+        <div style="display:flex;flex-direction:column;gap:10px;padding-top:18px;border-top:1px solid var(--line);">
+          <span style="font-size:12px;color:var(--ink3);">{{ followLabel }}</span>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;">
+            <sc-for list="{{ followups }}" as="f" hint-placeholder-count="3">
+              <button onClick="{{ f.ask }}" style="padding:8px 14px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-size:13px;cursor:pointer;" style-hover="border-color:var(--petrol);color:var(--petrol);">{{ f.q }}</button>
+            </sc-for>
+          </div>
+        </div>
+      </section>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;view&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;aurora&quot;,&quot;dense&quot;],&quot;default&quot;:&quot;aurora&quot;,&quot;tsType&quot;:&quot;'aurora'|'dense'&quot;,&quot;section&quot;:&quot;Experiment&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;,&quot;system&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Display&quot;},&quot;autoplay&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Demo&quot;},&quot;speed&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;min&quot;:0.5,&quot;max&quot;:3,&quot;step&quot;:0.25,&quot;default&quot;:1,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Demo&quot;}}">
+const Q0 = 'Why is my hotel revenue below target this month?';
+const STEPS = [
+  { label: 'Checking occupancy and rate', tool: 'get_hotel_overview' },
+  { label: 'Decomposing the revenue gap', tool: 'analyze_revenue_drivers' },
+  { label: 'Comparing channels', tool: 'get_channel_mix' },
+  { label: 'Checking pace for the rest of the month', tool: 'get_booking_pace' }
+];
+const FACTS = {
+  gap: { title: 'Revenue gap vs target', value: '−€33,917', tool: 'analyze_revenue_drivers', formula: 'ΔRev = Rev_actual − Rev_target', rows: [{k:'Room revenue, actual',v:'€208,260'},{k:'Room revenue, target',v:'€242,177'},{k:'Gap',v:'−€33,917 (−14.0%)'}], query: 'daily_stats ⨝ targets\nhotel_id = sablon-bru · 2026-11-01 … 2026-11-17' },
+  volume: { title: 'Volume effect', value: '−€41,932', tool: 'analyze_revenue_drivers', formula: '(Sold_a − Sold_t) × ADR_t', rows: [{k:'Room nights sold',v:'1,170'},{k:'Room nights target',v:'1,415'},{k:'Difference',v:'−245'},{k:'ADR target',v:'€171.15'}], query: 'variance.ts · volumeEffect()\n68 daily_stats rows (17 days × 4 segments)' },
+  mice: { title: 'Cancelled MICE block', value: '204 room nights', tool: 'get_hotel_overview', formula: 'rooms_target(MICE) − rooms_sold(MICE), 10–12 Nov', rows: [{k:'Block',v:'EU Health Congress'},{k:'Rooms × nights',v:'68 × 3'},{k:'Cancelled on',v:'28 Oct 2026'},{k:'Share of volume gap',v:'83%'}], query: 'daily_stats WHERE segment = "MICE"\nAND date BETWEEN 2026-11-10 AND 2026-11-12' },
+  adr: { title: 'ADR vs target', value: '€178.00', tool: 'get_hotel_overview', formula: 'ADR = room revenue / rooms sold', rows: [{k:'Room revenue',v:'€208,260'},{k:'Rooms sold',v:'1,170'},{k:'ADR target',v:'€171.15'},{k:'Delta',v:'+4.0%'}], query: 'kpi.ts · adr()' },
+  price: { title: 'Price effect', value: '+€8,015', tool: 'analyze_revenue_drivers', formula: '(ADR_a − ADR_t) × Sold_a\n= mix + pure price', rows: [{k:'ADR delta',v:'+€6.85'},{k:'× rooms sold',v:'1,170'},{k:'Mix effect',v:'−€6,240'},{k:'Pure price effect',v:'+€14,255'}], query: 'variance.ts · priceEffect(), splitMix()' },
+  mix: { title: 'Segment mix effect', value: '−€6,240', tool: 'analyze_revenue_drivers', formula: 'Σ_s (w_a,s − w_t,s) × ADR_t,s × Sold_a', rows: [{k:'Corporate share',v:'31% vs 38% target'},{k:'Leisure share',v:'52% vs 39% target'},{k:'Corporate vs last year',v:'−15%'}], query: 'variance.ts · splitMix() by segment' },
+  ota: { title: 'OTA share of revenue', value: '48%', tool: 'get_channel_mix', formula: 'revenue(OTA) / room revenue', rows: [{k:'This period',v:'48%'},{k:'Same period last year',v:'35%'},{k:'OTA commission',v:'18%'}], query: 'daily_stats ⨝ channels\nGROUP BY channel' },
+  netrevpar: { title: 'Net RevPAR', value: '€98.44', tool: 'get_channel_mix', formula: '(room revenue − commissions) / rooms available', rows: [{k:'Room revenue',v:'€208,260'},{k:'Commissions',v:'−€22,492'},{k:'Rooms available',v:'1,887'},{k:'Target',v:'€117.17 (−16.0%)'}], query: 'channels.ts · netRevpar()' },
+  revpar: { title: 'RevPAR', value: '€110.36', tool: 'get_hotel_overview', formula: 'RevPAR = room revenue / rooms available\n= Occupancy × ADR', rows: [{k:'Occupancy × ADR',v:'62.0% × €178.00'},{k:'Rooms available',v:'111 × 17 = 1,887'},{k:'Target',v:'€128.34 (−14.0%)'}], query: 'kpi.ts · revpar()' },
+  occ: { title: 'Occupancy', value: '62.0%', tool: 'get_hotel_overview', formula: 'rooms sold / rooms available', rows: [{k:'Rooms sold',v:'1,170'},{k:'Rooms available',v:'1,887'},{k:'Target',v:'75.0% (−13.0 pp)'}], query: 'kpi.ts · occupancy()' },
+  pace: { title: 'Booking pace, 21–30 Nov', value: '−16%', tool: 'get_booking_pace', formula: 'rooms_otb(today) vs rooms_otb(same day LY)', rows: [{k:'On the books',v:'612'},{k:'Last year, same point',v:'731'},{k:'Pickup last 7 days',v:'+38 vs +61 LY'}], query: 'on_the_books WHERE stay_date\nBETWEEN 2026-11-21 AND 2026-11-30' }
+};
+const KPIS = [
+  { id:'occ', label:'Occupancy', value:'62.0%', delta:'−13.0 pp', ref:'target 75.0%', status:'off' },
+  { id:'adr', label:'ADR', value:'€178', delta:'+4.0%', ref:'target €171.15', status:'on' },
+  { id:'revpar', label:'RevPAR', value:'€110.36', delta:'−14.0%', ref:'target €128.34', status:'off' },
+  { id:'netrevpar', label:'Net RevPAR', value:'€98.44', delta:'−16.0%', ref:'after commissions', status:'off' }
+];
+const DENSE = [
+  { id:'occ', label:'Occupancy', value:'62.0%', delta:'−13.0 pp', ref:'vs target' },
+  { id:'adr', label:'ADR', value:'€178', delta:'+4.0%', ref:'vs target' },
+  { id:'revpar', label:'RevPAR', value:'€110.36', delta:'−14.0%', ref:'vs target' },
+  { id:'netrevpar', label:'Net RevPAR', value:'€98.44', delta:'−16.0%', ref:'vs target' },
+  { id:'gap', label:'Room revenue', value:'€208,260', delta:'−14.0%', ref:'vs target' },
+  { id:'volume', label:'Room nights', value:'1,170', delta:'−245', ref:'vs target' },
+  { id:'ota', label:'OTA share', value:'48%', delta:'+13 pp', ref:'vs last year' },
+  { id:'pace', label:'Pace 21–30 Nov', value:'612', delta:'−16%', ref:'vs last year' }
+];
+const STATUS = {
+  off: { fg:'var(--coral)', bg:'var(--coral-soft)', icon:'↓' },
+  on: { fg:'var(--sage)', bg:'var(--sage-soft)', icon:'↑' },
+  watch: { fg:'var(--amber-ink)', bg:'var(--amber-soft)', icon:'!' },
+  neutral: { fg:'var(--ink2)', bg:'var(--sunken)', icon:'' }
+};
+const SEGS = [
+  'Revenue is ', ['gap','€33,917'], ' below target for 1–17 November. Most of the gap is volume: you sold ', ['volume','245 fewer room nights'],
+  ' than planned, and the cancelled MICE congress on 10–12 November accounts for ', ['mice','204 of them'],
+  '. Rate held up. ADR is ', ['adr','4.0% above target'], ', which recovered ', ['price','€8,015'],
+  ', although the shift from corporate to leisure cost ', ['mix','€6,240'], ' in mix. Profit is the weaker point. OTA share rose from 35% to ', ['ota','48%'],
+  ', so Net RevPAR is down ', ['netrevpar','16.0%'], ', more than the ', ['revpar','14.0%'], ' drop in RevPAR. Pace for 21–30 November is ',
+  ['pace','16% behind last year'], ', so the gap will widen unless you act.'
+];
+const TOKENS = [];
+SEGS.forEach(s => { if (typeof s === 'string') s.match(/\S+\s*|\s+/g).forEach(w => TOKENS.push({ text: w })); else TOKENS.push({ fact: s[0], label: s[1] }); });
+const LO = 160000, RANGE = 90000;
+const pct = v => ((v - LO) / RANGE * 100).toFixed(2) + '%';
+const BARS = [
+  { id:'gap', label:'Target', valueLabel:'€242k', lo:LO, hi:242177, color:'var(--ink3)', facts:['gap'] },
+  { id:'volume', label:'Volume', valueLabel:'−€41.9k', lo:200245, hi:242177, color:'var(--coral)', facts:['volume','mice'] },
+  { id:'mix', label:'Mix', valueLabel:'−€6.2k', lo:194005, hi:200245, color:'var(--coral)', facts:['mix'] },
+  { id:'price', label:'Price', valueLabel:'+€14.3k', lo:194005, hi:208260, color:'var(--sage)', facts:['price','adr'] },
+  { id:'revpar', label:'Actual', valueLabel:'€208k', lo:LO, hi:208260, color:'var(--petrol)', facts:['gap','revpar'] }
+];
+const CH = ['var(--petrol)','var(--amber)','var(--violet)','var(--ink3)'];
+const MIX = [
+  { label:'This month', vals:[34,48,12,6] },
+  { label:'Last year', vals:[45,35,14,6] }
+];
+const RING = '0 0 0 2px var(--violet)';
+const CTX = {
+  mice: { label:'204 lost room nights', view:'occ', text:'The EU Health Congress block (68 rooms × 3 nights) was cancelled on 28 Oct. Occupancy on 10–12 Nov fell to 38–41% against a 75% target.' },
+  volume: { label:'245 fewer room nights', view:'bridge', text:'Volume explains −€41,932 of the gap. 83% of the missing room nights fall on the three congress dates; the rest is spread across corporate weekdays.' },
+  occ: { label:'Occupancy 62.0%', view:'occ', text:'Occupancy is 13 percentage points below target. Excluding 10–12 Nov it would be 66.7%, still 8.3 points short.' },
+  adr: { label:'ADR +4.0%', view:'bridge', text:'Rate is holding. ADR is €6.85 above target, worth +€14,255 before the mix shift took back €6,240.' },
+  price: { label:'Price +€8,015', view:'bridge', text:'Pure price added €14,255. The move from corporate to leisure took back €6,240, leaving a net +€8,015.' },
+  mix: { label:'Mix −€6,240', view:'bridge', text:'Leisure grew to 52% of room nights while corporate fell to 31%. Leisure books at a lower rate, which cost €6,240.' },
+  gap: { label:'−€33,917 vs target', view:'bridge', text:'Volume −€41,932, mix −€6,240 and price +€14,255 add up to the full gap.' },
+  revpar: { label:'RevPAR −14.0%', view:'occ', text:'RevPAR is €110.36 against a €128.34 target. The drop comes from occupancy, since ADR is above target.' },
+  ota: { label:'OTA share 48%', view:'channel', text:'OTA represents 48% of the current channel mix. Investigate distribution costs and net revenue.' },
+  netrevpar: { label:'Net RevPAR −16.0%', view:'channel', text:'After €22,492 in commissions, Net RevPAR is €98.44. It falls faster than RevPAR because of the OTA shift.' },
+  pace: { label:'Pace −16%', view:'pace', text:'612 room nights are on the books for 21–30 Nov, against 731 at this point last year. Pickup in the last 7 days was +38 vs +61.' }
+};
+const FOLLOW = {
+  none: ['Which segments replaced the lost MICE nights?', 'What would moving 10% of OTA to direct be worth?', 'Where should rates move for 21–30 November?'],
+  occ: ['Which segments could fill 10–12 Nov next year?', 'Are other group blocks at risk this quarter?', 'Compare weekday and weekend occupancy'],
+  bridge: ['Break the volume effect down by segment', 'How much of the price gain came from leisure?', 'What happens to the gap if pace holds?'],
+  channel: ['What would moving 10% of OTA to direct be worth?', 'Which OTA has the highest commission?', 'Show Net RevPAR by channel'],
+  pace: ['Where should rates move for 21–30 November?', 'Which dates have the weakest pickup?', 'Compare pace by segment']
+};
+const OV = {
+  occ: { title:'Occupancy trend vs target', sub:'Daily occupancy for 1–17 Nov. The cancelled congress dates are highlighted.' },
+  bridge: { title:'Revenue bridge', sub:'How target becomes actual, with the volume effect broken down by segment. Click a bar to see its formula.' },
+  channel: { title:'Channel mix and distribution cost', sub:'Share of room revenue by channel and the commission paid, compared with previous months and last year.' },
+  pace: { title:'Booking pace, 21–30 Nov', sub:'Room nights on the books per stay date compared with the same point last year.' }
+};
+const OCC = [68,71,66,58,61,70,72,66,64,40,38,41,63,67,69,64,75];
+const OCC_LY = [72,74,70,66,68,74,76,70,69,73,75,72,68,70,72,69,74];
+const WD = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const SEG = [
+  { label:'MICE', v:-34915, facts:['mice'] },
+  { label:'Corporate', v:-9110, facts:['mix'] },
+  { label:'Groups', v:-2290, facts:[] },
+  { label:'Leisure', v:4383, facts:[] }
+];
+const CHROWS = [
+  { label:'Sep 2026', vals:[42,38,14,6], comm:'8.4%' },
+  { label:'Oct 2026', vals:[39,42,13,6], comm:'9.2%' },
+  { label:'Nov 1–17', vals:[34,48,12,6], comm:'10.8%', now:true },
+  { label:'Nov 2025', vals:[45,35,14,6], comm:'7.9%' }
+];
+const PACE_OTB = [58,64,70,49,55,62,66,71,60,57];
+const PACE_LY = [70,76,80,62,66,74,79,84,72,68];
+
+class Component extends DCLogic {
+  state = { theme:null, sysDark:false, phase:'idle', question:'', draft:'', steps:[], kpiN:0, insight:false, bridge:false, mix:false, pace:false, tok:0, follow:false, hovered:null, selected:null, tlOpen:true, ms:0, focus:null, overlay:null, ovHover:null, showTarget:true, showLY:false, showBlock:true };
+  timers = [];
+  componentDidMount() {
+    this.mq = window.matchMedia('(prefers-color-scheme: dark)');
+    this.onMq = e => this.setState({ sysDark: e.matches });
+    this.mq.addEventListener('change', this.onMq);
+    this.setState({ sysDark: this.mq.matches });
+    this.onEsc = e => { if (e.key === 'Escape' && this.state.overlay) this.setState({ overlay:null }); };
+    window.addEventListener('keydown', this.onEsc);
+    if (this.props.autoplay ?? true) this.timers.push(setTimeout(() => this.start(Q0), 600));
+  }
+  componentWillUnmount() { this.clear(); window.removeEventListener('keydown', this.onEsc); this.mq && this.mq.removeEventListener('change', this.onMq); }
+  clear() { this.timers.forEach(clearTimeout); this.timers = []; }
+  start(q) {
+    if (!q || !q.trim()) return;
+    this.clear();
+    const sp = this.props.speed ?? 1;
+    this.t0 = performance.now();
+    this.setState({ phase:'streaming', question:q.trim(), draft:'', steps:STEPS.map(s => ({ ...s, status:'pending' })), kpiN:0, insight:false, bridge:false, mix:false, pace:false, tok:0, follow:false, selected:null, hovered:null, tlOpen:true, focus:null, overlay:null });
+    const at = (ms, fn) => this.timers.push(setTimeout(fn, ms / sp));
+    const step = (i, status) => this.setState(s => ({ steps: s.steps.map((x, j) => j === i ? { ...x, status } : x) }));
+    at(250, () => step(0, 'running'));
+    at(1000, () => { step(0, 'done'); step(1, 'running'); this.setState({ kpiN:2 }); });
+    at(1400, () => this.setState({ kpiN:4 }));
+    at(2100, () => { step(1, 'done'); step(2, 'running'); this.setState({ insight:true, bridge:true, kpiN:8 }); });
+    at(2800, () => { step(2, 'done'); step(3, 'running'); this.setState({ mix:true }); });
+    at(3400, () => { step(3, 'done'); this.setState({ pace:true }); });
+    const n = TOKENS.length;
+    for (let i = 1; i <= n; i++) at(3500 + i * 36, () => this.setState({ tok:i }));
+    at(3500 + n * 36 + 250, () => this.setState({ follow:true, phase:'done', tlOpen:false, ms: performance.now() - this.t0 }));
+  }
+  stop() {
+    this.clear();
+    this.setState(s => ({ phase:'cancelled', steps: s.steps.map(x => x.status === 'running' || x.status === 'pending' ? { ...x, status:'stopped' } : x) }));
+  }
+  renderVals() {
+    const s = this.state;
+    const dense = (this.props.view ?? 'aurora') === 'dense';
+    const theme = s.theme ?? this.props.theme ?? 'light';
+    const resolvedTheme = theme === 'system' ? (s.sysDark ? 'dark' : 'light') : theme;
+    const hov = s.hovered || s.focus;
+    const hover = id => ({ enter: () => this.setState({ hovered:id }), leave: () => this.setState({ hovered:null }), open: () => this.setState({ focus:id, selected:null }) });
+    const ringFor = facts => facts.includes(hov) ? RING : 'none';
+    const related = { mice:['volume'], price:['price'], mix:['mix'], gap:['gap','revpar'], adr:['price','adr'] };
+    const isRel = id => hov === id || (related[hov] || []).includes(id);
+
+    const kpiSrc = dense ? DENSE : KPIS;
+    const kpis = kpiSrc.slice(0, s.kpiN).map(k => {
+      const st = STATUS[dense ? 'neutral' : k.status];
+      return { ...k, ...hover(k.id), fg:st.fg, bg:st.bg, icon:st.icon, ring: isRel(k.id) ? RING : 'none' };
+    });
+    const tokens = TOKENS.slice(0, s.tok).map(t => t.fact
+      ? { isFact:true, isText:false, label:t.label, ...hover(t.fact), bg: hov === t.fact ? 'var(--violet-soft)' : 'var(--petrol-soft)' }
+      : { isText:true, isFact:false, text:t.text });
+    const bars = BARS.map(b => {
+      const on = s.bridge;
+      return { ...b, ...hover(b.facts[0]), enter: () => this.setState({ hovered:b.facts[0] }),
+        bottom: on ? pct(b.lo) : '0%', height: on ? pct(b.hi - b.lo + LO) : '0%',
+        labelBottom: on ? `calc(${pct(b.hi)} + 4px)` : '4px',
+        textColor: b.color === 'var(--ink3)' ? 'var(--ink2)' : b.color,
+        ring: ringFor(b.facts), aria: `${b.label} ${b.valueLabel}` };
+    });
+    const steps = s.steps.map(x => ({ ...x, isDone:x.status === 'done', isRunning:x.status === 'running', isPending:x.status === 'pending', isStopped:x.status === 'stopped', color: x.status === 'pending' ? 'var(--ink3)' : 'var(--ink)' }));
+    const doneN = s.steps.filter(x => x.status === 'done').length;
+    const running = s.steps.find(x => x.status === 'running');
+    const tlSummary = s.phase === 'streaming' ? (running ? running.label + '…' : 'Writing the explanation…') : s.phase === 'cancelled' ? `Stopped after ${doneN} of 4 steps` : `${doneN} steps · ${(s.ms / 1000).toFixed(1)} s · 4 tools`;
+    const pulse = React.createElement('span', { style:{ display:'block', width:8, height:8, borderRadius:'50%', background:'var(--violet)', animation:'aurPulse 1.1s ease-in-out infinite' } });
+    const caret = s.phase === 'streaming' && s.tok > 0 ? React.createElement('span', { style:{ display:'inline-block', width:2, height:'1.1em', marginLeft:2, verticalAlign:'-0.2em', background:'var(--violet)', animation:'aurCaret 1s step-end infinite' } }) : null;
+    const f = s.selected ? FACTS[s.selected] : null;
+    const ctx = s.focus ? CTX[s.focus] : null;
+    const ctxView = ctx ? ctx.view : 'none';
+    const phaseMap = { idle:['var(--ink3)','Ready'], streaming:['var(--violet)','Analysing'], done:['var(--sage)','Answer verified'], cancelled:['var(--amber)','Stopped'] };
+
+    return {
+      resolvedTheme,
+      themeOpts: ['light','dark','system'].map(t => ({ label: t[0].toUpperCase() + t.slice(1), pressed: String(theme === t), pick: () => this.setState({ theme:t }),
+        bg: theme === t ? 'var(--surface)' : 'transparent', fg: theme === t ? 'var(--ink)' : 'var(--ink2)', shadow: theme === t ? '0 1px 2px rgba(23,35,52,.12)' : 'none' })),
+      history: [
+        { q:'Why is my hotel revenue below target this month?', when:'Today' },
+        { q:'How is corporate pace vs last year?', when:'Yesterday' },
+        { q:'Weekend ADR by channel', when:'12 Nov' }
+      ].map(h => ({ ...h, open: () => this.start(h.q) })),
+      newRun: () => { this.clear(); this.setState({ phase:'idle', steps:[], kpiN:0, insight:false, bridge:false, mix:false, pace:false, tok:0, follow:false, selected:null }); },
+      suggestions: [
+        { tag:'Revenue', q:Q0 },
+        { tag:'Channels', q:'What are OTA commissions costing us this month?' },
+        { tag:'Pace', q:'Are we on pace for the last 10 days of November?' },
+        { tag:'Segments', q:'Which segment moved most vs last year?' }
+      ].map(x => ({ ...x, ask: () => this.start(x.q) })),
+      isIdle: s.phase === 'idle', hasRun: s.phase !== 'idle',
+      isStreaming: s.phase === 'streaming', notStreaming: s.phase !== 'streaming', isCancelled: s.phase === 'cancelled',
+      phaseDot: phaseMap[s.phase][0], phaseLabel: phaseMap[s.phase][1],
+      question: s.question, steps, pulse, caret, tlOpen: s.tlOpen, tlSummary, tlToggleLabel: s.tlOpen ? 'Hide steps' : 'Show steps',
+      toggleTl: () => this.setState({ tlOpen: !s.tlOpen }),
+      showInsight: s.insight && !dense, hasKpis: s.kpiN > 0, kpis,
+      howCalc: () => this.setState({ selected:'gap' }),
+      hasText: s.tok > 0, tokens,
+      showFollow: s.follow,
+      followups: FOLLOW[ctxView].map(q => ({ q, ask: () => this.start(q) })),
+      followLabel: ctx ? `Suggested next, based on ${ctx.label}` : 'Suggested next',
+      chips: ['mice','adr','ota'].map(id => ({ label: CTX[id].label, ...hover(id), pressed: String(s.focus === id),
+        bg: s.focus === id ? 'var(--violet-ink)' : 'var(--surface)', fg: s.focus === id ? 'var(--surface)' : 'var(--violet-ink)',
+        dot: id === 'adr' ? 'var(--sage)' : id === 'ota' ? 'var(--amber)' : 'var(--coral)' })),
+      hasFocus: !!ctx, ctx: ctx || {},
+      clearFocus: () => this.setState({ focus:null }),
+      exploreFocus: () => this.setState({ overlay: ctxView, ovHover:null }),
+      provFocus: () => this.setState({ selected: s.focus }),
+      expandBridge: () => this.setState({ overlay:'bridge', ovHover:null }),
+      expandChannel: () => this.setState({ overlay:'channel', ovHover:null }),
+      expandPace: () => this.setState({ overlay:'pace', ovHover:null }),
+      hasOverlay: !!s.overlay, ov: OV[s.overlay] || {}, closeOv: () => this.setState({ overlay:null }),
+      isOvOcc: s.overlay === 'occ', isOvBridge: s.overlay === 'bridge', isOvChannel: s.overlay === 'channel', isOvPace: s.overlay === 'pace',
+      showTarget: s.showTarget,
+      occToggles: [
+        { key:'showTarget', label:'Target 75%', sw:'var(--ink3)', swH:'2px' },
+        { key:'showLY', label:'Last year', sw:'var(--violet)', swH:'3px' },
+        { key:'showBlock', label:'Cancelled congress', sw:'var(--coral)', swH:'10px' }
+      ].map(t => ({ ...t, pressed: String(s[t.key]), toggle: () => this.setState({ [t.key]: !s[t.key] }),
+        bg: s[t.key] ? 'var(--sunken)' : 'transparent', border: s[t.key] ? 'var(--ink3)' : 'var(--line)' })),
+      occDays: OCC.map((v, i) => {
+        const isBlock = i >= 9 && i <= 11, hot = s.ovHover === 'o' + i;
+        return { day: i + 1, v, lyv: OCC_LY[i], isBlock, hot, h: v + '%', ly: OCC_LY[i] + '%', showLY: s.showLY,
+          date: `${WD[(i + 0) % 7]} ${i + 1} Nov`,
+          color: isBlock && s.showBlock ? 'var(--coral)' : 'var(--petrol)',
+          op: s.ovHover && !hot ? .55 : 1,
+          tx: i < 3 ? 'translateX(-20%)' : i > 13 ? 'translateX(-80%)' : 'translateX(-50%)',
+          labelColor: isBlock && s.showBlock ? 'var(--coral)' : 'var(--ink2)', labelWeight: isBlock && s.showBlock ? 600 : 400,
+          enter: () => this.setState({ ovHover: 'o' + i }), leave: () => this.setState({ ovHover:null }) };
+      }),
+      segRows: SEG.map(r => {
+        const w = (Math.abs(r.v) / 34915 * 50).toFixed(1) + '%', neg = r.v < 0;
+        const on = r.facts.includes(hov);
+        return { label:r.label, v:(neg ? '−€' : '+€') + (Math.abs(r.v) / 1000).toFixed(1) + 'k',
+          left: neg ? `calc(50% - ${w})` : '50%', right: neg ? '50%' : `calc(50% - ${w})`,
+          color: neg ? 'var(--coral)' : 'var(--sage)', rowBg: on ? 'var(--violet-soft)' : 'transparent',
+          enter: () => r.facts[0] && this.setState({ hovered:r.facts[0] }), leave: () => this.setState({ hovered:null }) };
+      }),
+      chRows: CHROWS.map(m => ({ label:m.label, comm:m.comm, weight: m.now ? 600 : 400, commColor: m.now ? 'var(--coral)' : 'var(--ink)',
+        parts: m.vals.map((v, i) => ({ w: v + '%', v: v >= 10 ? v + '%' : '', color: CH[i], text: i === 3 ? 'var(--bg)' : 'var(--surface)' })) })),
+      chStats: [{ k:'Commission paid, 1–17 Nov', v:'€22,492' }, { k:'Net RevPAR', v:'€98.44' }, { k:'OTA share vs last year', v:'+13 pp' }],
+      paceDays: PACE_OTB.map((o, i) => {
+        const ly = PACE_LY[i], hot = s.ovHover === 'p' + i;
+        return { day: 21 + i, otb:o, ly, hot, date: `${WD[(i + 6) % 7]} ${21 + i} Nov`,
+          hOtb: (o / 111 * 100).toFixed(1) + '%', hLy: (ly / 111 * 100).toFixed(1) + '%',
+          diff: `${o - ly} room nights (${Math.round((o - ly) / ly * 100)}%)`,
+          op: s.ovHover && !hot ? .55 : 1,
+          tx: i < 2 ? 'translateX(-20%)' : i > 7 ? 'translateX(-80%)' : 'translateX(-50%)',
+          enter: () => this.setState({ ovHover: 'p' + i }), leave: () => this.setState({ ovHover:null }) };
+      }),
+      doneMeta: `Answered in ${(s.ms / 1000).toFixed(1)} s · Workers AI · 10 figures matched to tool output`,
+      retry: () => this.start(s.question),
+      draft: s.draft, onDraft: e => this.setState({ draft: e.target.value }),
+      onKey: e => { if (e.key === 'Enter') this.start(s.draft); },
+      send: () => this.start(s.draft || Q0), stop: () => this.stop(),
+      hasSelected: !!f, noSelected: !f, sel: f || { rows:[] }, closeSel: () => this.setState({ selected:null }),
+      panelEmpty: !s.bridge, bridgeOn: s.bridge, bars,
+      mixOn: s.mix, mixRing: isRel('ota') || hov === 'netrevpar' ? RING : 'none',
+      mixEnter: () => this.setState({ hovered:'ota' }), leaveAll: () => this.setState({ hovered:null }), openOta: () => this.setState({ selected:'ota' }),
+      mixRows: MIX.map(m => ({ label:m.label, parts: m.vals.map((v, i) => ({ w: v + '%', v: v >= 10 ? v + '%' : '', color: CH[i], text: i === 3 ? 'var(--bg)' : 'var(--surface)' })) })),
+      legend: ['Direct','OTA','GDS','Wholesale'].map((l, i) => ({ label:l, color:CH[i] })),
+      paceOn: s.pace, paceRing: isRel('pace') ? RING : 'none', paceEnter: () => this.setState({ hovered:'pace' }), openPace: () => this.setState({ selected:'pace' })
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,44 @@
+@use 'palette' as *;
+
+// Writes every colour of a palette map as a CSS custom property.
+@mixin emit-color-variables($palette) {
+  @each $color-name, $color-value in $palette {
+    --color-#{$color-name}: #{$color-value};
+  }
+}
+
+// The ThemeProvider (src/design-system/ThemeProvider.tsx) sets
+// `data-theme="light" | "dark"` on <html>. "System" is resolved in TypeScript
+// before it reaches the DOM, so CSS only has to know two themes.
+:root,
+[data-theme='light'] {
+  @include emit-color-variables($light-palette);
+  color-scheme: light;
+}
+
+[data-theme='dark'] {
+  @include emit-color-variables($dark-palette);
+  color-scheme: dark;
+}
+
+// Semantic aliases. Components should prefer these over raw palette names,
+// so the meaning of a colour can change in one place.
+:root {
+  --color-primary: var(--color-petrol);
+  --color-primary-soft: var(--color-petrol-soft);
+  --color-ai: var(--color-violet);
+  --color-ai-ink: var(--color-violet-ink);
+  --color-ai-soft: var(--color-violet-soft);
+
+  --color-status-on-track: var(--color-sage);
+  --color-status-on-track-soft: var(--color-sage-soft);
+  --color-status-watch: var(--color-amber-ink);
+  --color-status-watch-soft: var(--color-amber-soft);
+  --color-status-off-track: var(--color-coral);
+  --color-status-off-track-soft: var(--color-coral-soft);
+
+  --font-family-sans: 'Geist', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-family-mono: 'Geist Mono', ui-monospace, 'SFMono-Regular', Consolas, monospace;
+
+  --shadow-focus-ring: 0 0 0 2px var(--color-violet);
+}

@@ -1,0 +1,27 @@
+// ---------------------------------------------------------------------------
+// Aurora stylesheet entry point. Imported once, in src/main.tsx.
+//
+//   abstracts/  Sass variables and mixins (no CSS output on their own)
+//   themes/     colour palettes, emitted as CSS custom properties
+//   base/       reset, typography, keyframes
+//   layout/     the three-column workspace
+//   components/ one partial per UI component, named like the component
+//
+// Class names follow BEM: .block, .block__element, .block--modifier
+// ---------------------------------------------------------------------------
+
+@use 'themes/theme-variables';
+
+@use 'base/reset';
+@use 'base/typography';
+@use 'base/animations';
+
+@use 'layout/workspace';
+
+@use 'components/sidebar';
+@use 'components/theme-switch';
+@use 'components/conversation-header';
+@use 'components/conversation';
+@use 'components/idle-state';
+@use 'components/composer';
+@use 'components/evidence-panel';

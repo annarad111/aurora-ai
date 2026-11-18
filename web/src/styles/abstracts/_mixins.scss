@@ -1,0 +1,41 @@
+@use 'variables' as *;
+
+// Small uppercase label above a section ("MAIN FINDING", "PROPERTY").
+@mixin eyebrow($color: var(--color-ink-tertiary), $letter-spacing: 0.06em) {
+  font-size: $font-size-11;
+  font-weight: $font-weight-semibold;
+  text-transform: uppercase;
+  letter-spacing: $letter-spacing;
+  color: $color;
+}
+
+// Removes the browser's default button look so we can style it from scratch.
+@mixin unstyled-button {
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: inherit;
+  cursor: pointer;
+}
+
+// Visible keyboard focus, using the AI violet as in the design.
+@mixin focus-visible-ring {
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--shadow-focus-ring);
+  }
+}
+
+// Numbers line up in columns (KPI values, chart labels).
+@mixin tabular-numbers {
+  font-variant-numeric: tabular-nums;
+}
+
+@mixin below-breakpoint($breakpoint) {
+  @media (max-width: $breakpoint) {
+    @content;
+  }
+}

@@ -1,0 +1,18 @@
+@use '../abstracts' as *;
+
+body {
+  background: var(--color-background);
+  color: var(--color-ink);
+  font-family: var(--font-family-sans);
+  font-size: $font-size-14;
+  line-height: $line-height-base;
+  -webkit-font-smoothing: antialiased;
+  transition:
+    background-color 0.3s,
+    color 0.3s;
+}
+
+code,
+.text-mono {
+  font-family: var(--font-family-mono);
+}

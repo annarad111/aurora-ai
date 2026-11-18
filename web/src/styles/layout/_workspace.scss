@@ -1,0 +1,53 @@
+@use '../abstracts' as *;
+
+// Three columns at full viewport height: sidebar | conversation | evidence panel.
+// The row wraps on narrow screens (see the breakpoint at the bottom).
+.workspace {
+  display: flex;
+  flex-wrap: wrap;
+  min-height: 100vh;
+}
+
+.workspace__sidebar {
+  flex: 0 0 $sidebar-width;
+  height: 100vh;
+  position: sticky;
+  top: 0;
+}
+
+.workspace__conversation {
+  flex: 1 1 $conversation-min-width;
+  min-width: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.workspace__evidence-panel {
+  flex: 1 1 $evidence-panel-min-width;
+  max-width: $evidence-panel-max-width;
+  min-width: 0;
+  height: 100vh;
+  overflow: auto;
+}
+
+@include below-breakpoint($breakpoint-stacked) {
+  .workspace {
+    flex-direction: column;
+    flex-wrap: nowrap;
+  }
+
+  .workspace__sidebar,
+  .workspace__conversation,
+  .workspace__evidence-panel {
+    flex: none;
+    width: 100%;
+    max-width: none;
+    height: auto;
+    position: static;
+  }
+
+  .workspace__conversation {
+    min-height: 100vh;
+  }
+}

@@ -1,0 +1,81 @@
+@use '../abstracts' as *;
+
+.composer {
+  padding: $space-12 $space-28 $space-20;
+}
+
+.composer__form {
+  max-width: $content-max-width;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: $space-8;
+  padding: $space-6 $space-6 $space-6 $space-16;
+  border-radius: $radius-panel;
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
+  box-shadow: $shadow-composer;
+
+  &:focus-within {
+    border-color: var(--color-petrol);
+  }
+}
+
+.composer__input {
+  flex: 1;
+  min-width: 0;
+  height: 40px;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: $font-size-15;
+
+  &::placeholder {
+    color: var(--color-ink-tertiary);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+  }
+}
+
+.composer__send-button {
+  @include unstyled-button;
+  @include focus-visible-ring;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: $radius-button;
+  background: var(--color-petrol);
+  color: var(--color-surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    opacity: 0.9;
+  }
+}
+
+// Shown instead of the send button while an answer is streaming.
+.composer__stop-button {
+  @include unstyled-button;
+  @include focus-visible-ring;
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: $space-8;
+  height: 40px;
+  padding: 0 $space-14;
+  border-radius: $radius-button;
+  border: 1px solid var(--color-line);
+  background: var(--color-sunken);
+  font-weight: $font-weight-medium;
+}
+
+.composer__stop-square {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  background: var(--color-ink);
+}

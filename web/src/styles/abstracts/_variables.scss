@@ -1,0 +1,70 @@
+// ---------------------------------------------------------------------------
+// Design tokens that do not change between themes.
+// They are Sass variables, so they are resolved at build time.
+// ---------------------------------------------------------------------------
+
+// Spacing scale (px): 2 / 4 / 6 / 8 / 10 / 12 / 14 / 16 / 20 / 24 / 28 / 32
+$space-2: 2px;
+$space-4: 4px;
+$space-6: 6px;
+$space-8: 8px;
+$space-10: 10px;
+$space-12: 12px;
+$space-14: 14px;
+$space-16: 16px;
+$space-20: 20px;
+$space-24: 24px;
+$space-28: 28px;
+$space-32: 32px;
+
+// Type scale (px)
+$font-size-11: 11px;
+$font-size-12: 12px;
+$font-size-13: 13px;
+$font-size-14: 14px; // base UI text
+$font-size-15: 15px; // answer text
+$font-size-16: 16px;
+$font-size-18: 18px;
+$font-size-21: 21px;
+$font-size-22: 22px;
+$font-size-24: 24px;
+$font-size-30: 30px;
+
+$font-weight-regular: 400;
+$font-weight-medium: 500;
+$font-weight-semibold: 600;
+
+$line-height-base: 1.5;
+$line-height-answer: 1.75;
+
+// Corner radii
+$radius-bar: 4px;
+$radius-badge: 6px;
+$radius-button-small: 7px;
+$radius-button: 10px;
+$radius-card: 12px;
+$radius-panel: 14px;
+$radius-main-finding: 16px;
+$radius-overlay: 18px;
+$radius-pill: 999px;
+
+// Shadows
+$shadow-composer: 0 1px 2px rgba(23, 35, 52, 0.06);
+$shadow-toggle-active: 0 1px 2px rgba(23, 35, 52, 0.12);
+$shadow-overlay: 0 24px 60px rgba(17, 26, 39, 0.25);
+
+// Motion
+$easing-chart: cubic-bezier(0.2, 0.7, 0.2, 1);
+$duration-fast: 150ms;
+$duration-enter: 350ms;
+$duration-chart: 700ms;
+
+// Layout
+$sidebar-width: 248px;
+$conversation-min-width: 520px;
+$evidence-panel-min-width: 340px;
+$evidence-panel-max-width: 440px;
+$content-max-width: 760px;
+
+// Breakpoint below which the three columns stack vertically.
+$breakpoint-stacked: 900px;

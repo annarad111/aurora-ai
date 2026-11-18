@@ -1,0 +1,28 @@
+@use '../abstracts' as *;
+
+// Segmented control: Light | Dark | System.
+.theme-switch {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: $space-2;
+  padding: 3px;
+  border-radius: $radius-button;
+  background: var(--color-sunken);
+}
+
+.theme-switch__option {
+  @include unstyled-button;
+  @include focus-visible-ring;
+  height: 30px;
+  border-radius: $radius-button-small;
+  font-size: $font-size-12;
+  font-weight: $font-weight-medium;
+  text-align: center;
+  color: var(--color-ink-secondary);
+
+  &[aria-pressed='true'] {
+    background: var(--color-surface);
+    color: var(--color-ink);
+    box-shadow: $shadow-toggle-active;
+  }
+}

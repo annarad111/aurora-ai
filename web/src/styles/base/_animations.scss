@@ -1,0 +1,46 @@
+// Shared keyframes. Names match the prototype so they are easy to look up.
+
+// "Running" step indicator in the run timeline.
+@keyframes aurora-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+// Blinking caret at the end of streamed text.
+@keyframes aurora-caret-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+// Every block that appears while the answer streams in slides up 6px and fades in.
+@keyframes aurora-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

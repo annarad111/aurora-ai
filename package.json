@@ -1,0 +1,13 @@
+{
+  "name": "aurora",
+  "private": true,
+  "description": "Aurora: AI-first revenue assistant for hotels (independent concept for the Juyo assessment)",
+  "workspaces": [
+    "web"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace web",
+    "build": "npm run build --workspace web",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  }
+}

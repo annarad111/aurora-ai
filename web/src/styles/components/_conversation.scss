@@ -1,0 +1,18 @@
+@use '../abstracts' as *;
+
+// Scrolling area between the header and the composer.
+.conversation-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+// Centered column that holds the idle state or the answer.
+.conversation-body__content {
+  max-width: $content-max-width;
+  margin: 0 auto;
+  padding: $space-32 $space-28 40px;
+  display: flex;
+  flex-direction: column;
+  gap: $space-20;
+}
