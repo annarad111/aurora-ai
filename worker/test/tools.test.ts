@@ -43,6 +43,12 @@ describe('get_hotel_overview', async () => {
     expect(corporate.roomsSold / corporate.roomsSoldLastYear - 1).toBeCloseTo(-0.15, 2);
   });
 
+  it('returns the group blocks of the period, with the cancelled congress', () => {
+    expect(overview.groupBlocks).toEqual([
+      expect.objectContaining({ name: 'EU Health Congress', status: 'cancelled', firstNight: '2026-11-10', lastNight: '2026-11-12', roomsPerNight: 68 }),
+    ]);
+  });
+
   it('shows the congress dip: 10–12 Nov at 38–41% occupancy, with 68 cancelled rooms each night', () => {
     const congressNights = overview.dailyOccupancy.filter((day) => ['2026-11-10', '2026-11-11', '2026-11-12'].includes(day.date));
     congressNights.forEach((night) => {

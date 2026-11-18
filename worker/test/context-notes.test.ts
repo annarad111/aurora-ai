@@ -28,19 +28,29 @@ describe('contextual notes on provenance events', async () => {
     });
   });
 
-  it('explains the cancelled block from the nightly data', () => {
+  it('names the cancelled block from the group_blocks table', () => {
     expect(noteFor('volume_mice')?.contextLabel).toBe('204 lost room nights');
-    expect(noteFor('volume_mice')?.contextText).toMatch(
-      /^The MICE shortfall sits on 10–12 November: 204 room nights were cancelled for those nights and never resold\. Occupancy on those nights fell to 38–41% against a/,
+    expect(noteFor('volume_mice')?.contextText).toBe(
+      'The EU Health Congress (68 rooms × 3 nights, 10–12 November, 204 room nights) was cancelled on 28 October and the rooms were never resold. ' +
+        'Occupancy on those nights fell to 38–41% against a 92–94% target.',
     );
   });
 
-  it('quotes the same cancellation count in the provenance and in the note', () => {
-    expect(noteFor('volume_mice')?.inputs).toContainEqual({ label: 'Cancelled, 10–12 November', value: '204 room nights' });
+  it('quotes the same block in the provenance: name, room nights and cancellation date', () => {
+    const inputs = noteFor('volume_mice')?.inputs;
+    expect(inputs).toContainEqual({ label: 'Cancelled block', value: 'EU Health Congress' });
+    expect(inputs).toContainEqual({ label: 'Cancelled, 10–12 November', value: '68 × 3 = 204 room nights' });
+    expect(inputs).toContainEqual({ label: 'Cancelled on', value: '28 October' });
+  });
+
+  it('sends follow-up questions written from the data with each figure', () => {
+    expect(noteFor('volume_mice')?.exploreView).toBe('occupancy');
+    expect(noteFor('volume_mice')?.followupQuestions[0]).toBe('Which segments could fill 10–12 November next year?');
+    expect(noteFor('booking_pace')?.followupQuestions[0]).toBe('Where should rates move for 21–30 November?');
   });
 
   it('shows occupancy without the congress nights', () => {
-    expect(noteFor('occupancy')?.contextText).toMatch(/^Occupancy is 13\.0 pp below target\. Without 10–12 November it would be \d+\.\d%/);
+    expect(noteFor('occupancy')?.contextText).toMatch(/^Occupancy is 13\.0 pp below target\. Without the EU Health Congress nights \(10–12 November\) it would be \d+\.\d%/);
   });
 
   it('adds up the bridge in the revenue gap note', () => {

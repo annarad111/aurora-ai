@@ -2,7 +2,7 @@ import { BookingPaceCard } from '../../features/evidence/BookingPaceCard';
 import { ChannelMixCard } from '../../features/evidence/ChannelMixCard';
 import { ProvenanceCard } from '../../features/evidence/ProvenanceCard';
 import { RevenueBridgeCard } from '../../features/evidence/RevenueBridgeCard';
-import type { InsightView } from '../../features/insights/context-followups';
+import type { InsightView } from '../../features/explore/explore-views';
 import type { FactInteraction } from '../../features/insights/fact-links';
 import type { ProvenanceData, RunState } from '../../stream/run-reducer';
 

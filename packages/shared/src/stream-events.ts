@@ -122,6 +122,10 @@ export const provenanceEventSchema = z.object({
   contextLabel: z.string(),
   /** One or two sentences that put the figure in context, written from the same tool output. */
   contextText: z.string(),
+  /** The Explore overlay view that best explains this figure. */
+  exploreView: z.enum(['occupancy', 'bridge', 'channel', 'pace']),
+  /** Questions to suggest when this figure is selected, written from the data (dates, segments). */
+  followupQuestions: z.array(z.string()).max(4),
 });
 
 export const followupsEventSchema = z.object({

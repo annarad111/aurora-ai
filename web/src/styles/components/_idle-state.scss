@@ -62,3 +62,8 @@
   font-size: $font-size-14;
   line-height: 1.4;
 }
+
+.idle-state__loading {
+  margin: 8vh 0 0;
+  color: var(--color-ink-tertiary);
+}

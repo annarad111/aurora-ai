@@ -59,7 +59,7 @@ describe('runInsight: "Why is my hotel revenue below target this month?"', async
     expect(types.indexOf('insight')).toBeLessThan(types.indexOf('text_delta'));
     const [insight] = eventsOfType(events, 'insight');
     expect(insight?.headline).toBe(
-      'A cancelled MICE block left 204 room nights empty, and the OTA shift means net revenue is falling faster than gross.',
+      'The cancelled EU Health Congress left 204 room nights empty, and the OTA shift means net revenue is falling faster than gross.',
     );
     expect(insight?.chips.map((chip) => chip.label)).toEqual(['204 lost room nights', 'ADR +4.0%', 'OTA share 48%']);
   });
@@ -67,7 +67,7 @@ describe('runInsight: "Why is my hotel revenue below target this month?"', async
   it('writes the explanation from the tool numbers', () => {
     expect(explanation).toBe(
       'Revenue is €33,917 below target for 1–17 November. Most of the gap is volume: you sold 245 fewer room nights than planned, ' +
-        'and the cancelled MICE block on 10–12 November accounts for 204 of them. Rate held up. ADR is 4.0% above target, worth €14,255, ' +
+        'and the cancelled EU Health Congress on 10–12 November accounts for 204 of them. Rate held up. ADR is 4.0% above target, worth €14,255, ' +
         'although the shift from MICE to leisure took back €6,240 in mix. Profit is the weaker point. OTA share rose from 35% to 48%, ' +
         'so Net RevPAR is down 16.0%, more than the 14.0% drop in RevPAR. Pace for 21–30 November is 16% behind last year, ' +
         'so the gap will widen unless you act.',

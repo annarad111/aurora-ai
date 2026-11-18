@@ -1,19 +1,29 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AnswerView } from '../features/conversation/AnswerView';
 import { Composer } from '../features/conversation/Composer';
 import { SuggestedQuestions } from '../features/empty-state/SuggestedQuestions';
 import { ExploreOverlay } from '../features/explore/ExploreOverlay';
-import type { InsightView } from '../features/insights/context-followups';
+import type { InsightView } from '../features/explore/explore-views';
 import type { FactInteraction } from '../features/insights/fact-links';
 import { useInsightRun } from '../stream/useInsightRun';
 import { ConversationHeader } from './layout/ConversationHeader';
 import { EvidencePanel } from './layout/EvidencePanel';
 import { Sidebar } from './layout/Sidebar';
-import { CURRENT_PROPERTY } from './workspace-content';
+import { useWorkspace } from './useWorkspace';
 
 export function App() {
-  const insightRun = useInsightRun(CURRENT_PROPERTY.hotelId);
+  // The hotel, period and questions all come from the database through /api/workspace.
+  const [selectedHotelId, setSelectedHotelId] = useState<string | null>(null);
+  const { state: workspaceState, reload: reloadWorkspace } = useWorkspace(selectedHotelId);
+  const workspace = workspaceState.status === 'ready' ? workspaceState.workspace : null;
+
+  const insightRun = useInsightRun(workspace?.hotel.id ?? null);
   const { state: run } = insightRun;
+
+  // A finished answer adds its question to "Recent", so refresh the workspace then.
+  useEffect(() => {
+    if (run.phase === 'done' || run.phase === 'cancelled' || run.phase === 'error') reloadWorkspace();
+  }, [run.phase, reloadWorkspace]);
   const conversationBody = useRef<HTMLDivElement>(null);
 
   // Three kinds of selection, as in the design:
@@ -64,19 +74,44 @@ export function App() {
     insightRun.reset();
   }, [clearSelection, insightRun]);
 
+  const handleSelectHotel = useCallback(
+    (hotelId: string) => {
+      handleStartNewAnalysis();
+      setSelectedHotelId(hotelId);
+    },
+    [handleStartNewAnalysis],
+  );
+
   const openProvenance = provenanceFactId ? (run.provenanceByFactId[provenanceFactId] ?? null) : null;
 
   return (
     <div className="workspace">
-      <Sidebar onStartNewAnalysis={handleStartNewAnalysis} onAskQuestion={handleAskQuestion} />
+      <Sidebar
+        workspace={workspace}
+        onStartNewAnalysis={handleStartNewAnalysis}
+        onAskQuestion={handleAskQuestion}
+        onSelectHotel={handleSelectHotel}
+      />
 
       <main className="workspace__conversation" aria-label="Conversation">
-        <ConversationHeader runPhase={run.phase} />
+        <ConversationHeader runPhase={run.phase} period={workspace?.period ?? null} />
         <div className="conversation-body" ref={conversationBody}>
           <div className="conversation-body__content">
-            {run.phase === 'idle' ? (
-              <SuggestedQuestions onAskQuestion={handleAskQuestion} />
+            {run.phase !== 'idle' ? null : workspaceState.status === 'failed' ? (
+              <div className="run-banner run-banner--error" role="alert">
+                <span>{workspaceState.message}</span>
+                <button type="button" className="run-banner__action" onClick={reloadWorkspace}>
+                  Retry
+                </button>
+              </div>
+            ) : workspace ? (
+              <SuggestedQuestions workspace={workspace} onAskQuestion={handleAskQuestion} />
             ) : (
+              <p className="idle-state__loading" aria-busy="true">
+                Loading the workspace…
+              </p>
+            )}
+            {run.phase !== 'idle' && (
               <AnswerView
                 run={run}
                 interaction={factInteraction}
@@ -89,7 +124,12 @@ export function App() {
             )}
           </div>
         </div>
-        <Composer isStreaming={run.phase === 'streaming'} onAskQuestion={handleAskQuestion} onStop={insightRun.stop} />
+        <Composer
+          isStreaming={run.phase === 'streaming'}
+          isDisabled={!workspace}
+          onAskQuestion={handleAskQuestion}
+          onStop={insightRun.stop}
+        />
       </main>
 
       <EvidencePanel

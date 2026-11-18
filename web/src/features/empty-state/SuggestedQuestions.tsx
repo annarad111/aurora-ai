@@ -1,15 +1,16 @@
-import { CURRENT_PROPERTY, SUGGESTED_QUESTIONS } from '../../app/workspace-content';
+import type { Workspace } from '@aurora/shared';
 
 interface SuggestedQuestionsProps {
+  workspace: Workspace;
   onAskQuestion: (question: string) => void;
 }
 
-/** The idle screen: a heading and four suggestion cards that each start a run. */
-export function SuggestedQuestions({ onAskQuestion }: SuggestedQuestionsProps) {
+/** The idle screen: a heading and the hotel's starter questions, each of which starts a run. */
+export function SuggestedQuestions({ workspace, onAskQuestion }: SuggestedQuestionsProps) {
   return (
     <div className="idle-state">
       <div className="idle-state__intro">
-        <h1 className="idle-state__title">What do you want to understand about {CURRENT_PROPERTY.name}?</h1>
+        <h1 className="idle-state__title">What do you want to understand about {workspace.hotel.name}?</h1>
         <p className="idle-state__description">
           Aurora answers with the summary first, then the numbers behind it. Every figure links to the tool and
           formula that produced it.
@@ -17,7 +18,7 @@ export function SuggestedQuestions({ onAskQuestion }: SuggestedQuestionsProps) {
       </div>
 
       <div className="suggestion-grid">
-        {SUGGESTED_QUESTIONS.map((suggestion) => (
+        {workspace.suggestedQuestions.map((suggestion) => (
           <button
             key={suggestion.question}
             type="button"

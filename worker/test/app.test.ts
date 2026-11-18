@@ -74,6 +74,41 @@ describe('POST /api/chat', () => {
   });
 });
 
+describe('GET /api/workspace', () => {
+  it('returns the hotel, period and starter questions from the database', async () => {
+    const response = await handleRequest(new Request('http://localhost/api/workspace'), createTestDependencies());
+    const workspace = (await response.json()) as {
+      hotel: { name: string; roomCount: number };
+      period: { from: string; to: string };
+      suggestedQuestions: Array<{ topic: string }>;
+      mcp: { toolCount: number };
+    };
+    expect(workspace.hotel).toMatchObject({ name: 'Hotel Sablon', roomCount: 111 });
+    expect(workspace.period).toEqual({ from: '2026-11-01', to: '2026-11-17' });
+    expect(workspace.suggestedQuestions.map((suggestion) => suggestion.topic)).toEqual(['Revenue', 'Channels', 'Pace', 'Segments']);
+    expect(workspace.mcp.toolCount).toBe(4);
+  });
+
+  it('lists the questions asked in the chat as "Recent", newest first and without duplicates', async () => {
+    const dependencies = createTestDependencies();
+    const pendingWork: Array<Promise<unknown>> = [];
+    dependencies.waitUntil = (work) => pendingWork.push(work);
+    for (const question of ['First question?', 'Second question?', 'First question?']) {
+      await (await handleRequest(postChat({ question, hotelId: 'sablon-bru' }), dependencies)).text();
+      await Promise.all(pendingWork);
+    }
+    const workspace = (await (await handleRequest(new Request('http://localhost/api/workspace'), dependencies)).json()) as {
+      recentQuestions: Array<{ question: string }>;
+    };
+    expect(workspace.recentQuestions.map((recent) => recent.question)).toEqual(['First question?', 'Second question?']);
+  });
+
+  it('answers 404 for an unknown hotel', async () => {
+    const response = await handleRequest(new Request('http://localhost/api/workspace?hotel=nowhere'), createTestDependencies());
+    expect(response.status).toBe(404);
+  });
+});
+
 describe('other routes', () => {
   it('GET /api/health reports a seeded database', async () => {
     const response = await handleRequest(new Request('http://localhost/api/health'), createTestDependencies());

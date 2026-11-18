@@ -1,4 +1,4 @@
-import type { Channel, ChannelCommission, DateRange, Hotel, IsoDate, Segment } from '@aurora/shared';
+import type { Channel, ChannelCommission, DateRange, GroupBlock, Hotel, IsoDate, Segment, SuggestedQuestion } from '@aurora/shared';
 
 // ---------------------------------------------------------------------------
 // THE PLANTED STORY
@@ -79,6 +79,40 @@ export const CONGRESS_DATES: IsoDate[] = ['2026-11-10', '2026-11-11', '2026-11-1
 export const CONGRESS_ROOMS_PER_NIGHT = 68;
 export const CONGRESS_NAME = 'EU Health Congress';
 export const CONGRESS_CANCELLED_ON: IsoDate = '2026-10-28';
+
+/** The group blocks table: the congress this year (cancelled) and last year (it took place). */
+export const DEMO_GROUP_BLOCKS: GroupBlock[] = [
+  {
+    id: 'eu-health-congress-2026',
+    hotelId: 'sablon-bru',
+    name: CONGRESS_NAME,
+    segment: 'mice',
+    firstNight: '2026-11-10',
+    lastNight: '2026-11-12',
+    roomsPerNight: CONGRESS_ROOMS_PER_NIGHT,
+    status: 'cancelled',
+    cancelledOn: CONGRESS_CANCELLED_ON,
+  },
+  {
+    id: 'eu-health-congress-2025',
+    hotelId: 'sablon-bru',
+    name: CONGRESS_NAME,
+    segment: 'mice',
+    firstNight: '2025-11-10',
+    lastNight: '2025-11-12',
+    roomsPerNight: 50,
+    status: 'confirmed',
+    cancelledOn: null,
+  },
+];
+
+/** The starter questions on the idle screen. */
+export const DEMO_SUGGESTED_QUESTIONS: SuggestedQuestion[] = [
+  { hotelId: 'sablon-bru', position: 1, topic: 'Revenue', question: 'Why is my hotel revenue below target this month?' },
+  { hotelId: 'sablon-bru', position: 2, topic: 'Channels', question: 'What are OTA commissions costing us this month?' },
+  { hotelId: 'sablon-bru', position: 3, topic: 'Pace', question: 'Are we on pace for the last 10 days of November?' },
+  { hotelId: 'sablon-bru', position: 4, topic: 'Segments', question: 'Which segment moved most vs last year?' },
+];
 
 export const CURRENT_PERIOD_MICE_TARGET_BY_DATE: Record<IsoDate, number> = {
   ...CURRENT_PERIOD_MICE_ACTUAL_BY_DATE,

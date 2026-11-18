@@ -1,4 +1,8 @@
-// Writes worker/migrations/0002_seed.sql from the deterministic demo dataset.
+// Writes the seed migrations from the deterministic demo dataset:
+//   0002_seed.sql            hotels, channels, daily_stats, targets, on_the_books
+//   0004_seed_workspace.sql  group_blocks, suggested_questions (added in step 12)
+// A migration runs once per database, so new data goes into a new file instead of
+// changing one that is already applied.
 //
 //   npm run db:seed:generate
 //
@@ -13,9 +17,10 @@ import { generateDemoDataset } from '@aurora/demo-data';
 /** Rows per INSERT statement. Keeps each statement well under D1's size limit. */
 const ROWS_PER_INSERT = 200;
 
-type SqlValue = string | number;
+type SqlValue = string | number | null;
 
 function toSqlLiteral(value: SqlValue): string {
+  if (value === null) return 'NULL';
   return typeof value === 'number' ? String(value) : `'${value.replaceAll("'", "''")}'`;
 }
 
@@ -68,6 +73,36 @@ const header = [
   '',
 ].join('\n');
 
-const outputPath = resolve(dirname(fileURLToPath(import.meta.url)), '../migrations/0002_seed.sql');
-writeFileSync(outputPath, `${header}\n${statements.join('\n\n')}\n`);
-console.log(`Wrote ${statements.length} INSERT statements to ${outputPath}`);
+const migrationsDirectory = resolve(dirname(fileURLToPath(import.meta.url)), '../migrations');
+writeFileSync(resolve(migrationsDirectory, '0002_seed.sql'), `${header}\n${statements.join('\n\n')}\n`);
+console.log(`Wrote ${statements.length} INSERT statements to 0002_seed.sql`);
+
+const workspaceStatements = [
+  ...buildInsertStatements(
+    'group_blocks',
+    ['id', 'hotel_id', 'name', 'segment', 'first_night', 'last_night', 'rooms_per_night', 'status', 'cancelled_on'],
+    dataset.groupBlocks.map((block) => [
+      block.id,
+      block.hotelId,
+      block.name,
+      block.segment,
+      block.firstNight,
+      block.lastNight,
+      block.roomsPerNight,
+      block.status,
+      block.cancelledOn,
+    ]),
+  ),
+  ...buildInsertStatements(
+    'suggested_questions',
+    ['hotel_id', 'position', 'topic', 'question'],
+    dataset.suggestedQuestions.map((suggestion) => [suggestion.hotelId, suggestion.position, suggestion.topic, suggestion.question]),
+  ),
+];
+const workspaceHeader = [
+  '-- GENERATED FILE, do not edit by hand.',
+  '-- Source: packages/demo-data (group blocks and starter questions), via worker/scripts/generate-seed-sql.ts',
+  '',
+].join('\n');
+writeFileSync(resolve(migrationsDirectory, '0004_seed_workspace.sql'), `${workspaceHeader}\n${workspaceStatements.join('\n\n')}\n`);
+console.log(`Wrote ${workspaceStatements.length} INSERT statements to 0004_seed_workspace.sql`);

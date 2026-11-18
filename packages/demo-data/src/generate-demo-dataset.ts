@@ -6,10 +6,12 @@ import {
   type ChannelCommission,
   type DailyStat,
   type DailyTarget,
+  type GroupBlock,
   type Hotel,
   type IsoDate,
   type OnTheBooks,
   type Segment,
+  type SuggestedQuestion,
 } from '@aurora/shared';
 import { allocateByLargestRemainder, balanceIntegerMatrix } from './allocate';
 import { createSeededRandom, type SeededRandom } from './seeded-random';
@@ -31,9 +33,11 @@ import {
   DAY_OF_WEEK_RATE_FACTOR,
   DEMO_CHANNEL_COMMISSIONS,
   DEMO_CURRENT_PERIOD,
+  DEMO_GROUP_BLOCKS,
   DEMO_HISTORY_START,
   DEMO_HOTEL,
   DEMO_RANDOM_SEED,
+  DEMO_SUGGESTED_QUESTIONS,
   DEMO_TODAY,
   LAST_YEAR_CHANNEL_SHARES,
   LAST_YEAR_MICE_BY_DATE,
@@ -55,6 +59,8 @@ export interface DemoDataset {
   dailyStats: DailyStat[];
   dailyTargets: DailyTarget[];
   onTheBooks: OnTheBooks[];
+  groupBlocks: GroupBlock[];
+  suggestedQuestions: SuggestedQuestion[];
 }
 
 const NON_MICE_SEGMENTS = ['corporate', 'leisure', 'group'] as const satisfies readonly Segment[];
@@ -134,6 +140,8 @@ export function generateDemoDataset(): DemoDataset {
     dailyStats,
     dailyTargets,
     onTheBooks: generateOnTheBooks(hotelId),
+    groupBlocks: DEMO_GROUP_BLOCKS,
+    suggestedQuestions: DEMO_SUGGESTED_QUESTIONS,
   };
 }
 

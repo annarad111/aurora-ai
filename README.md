@@ -80,6 +80,7 @@ The headline, chips, KPI cards, charts and provenance are always deterministic; 
 
 | Route | What it does |
 |---|---|
+| `GET /api/workspace?hotel=` | Everything the UI shows before a question: hotels, period, starter and recent questions (all from D1) |
 | `POST /api/chat` | `{ question, hotelId }` → Server-Sent Events: `run_started`, `step`, `kpi`, `chart`, `insight`, `text_delta`, `provenance`, `followups`, `done` (or `error`) |
 | `GET /api/hotels/:id/overview?from=&to=` | The overview tool as plain JSON, no AI. Defaults to month to date. |
 | `GET /api/health` | Worker and database status |
@@ -112,7 +113,8 @@ packages/
     allocate.ts                 splits whole numbers without losing any (largest remainder, matrix fitting)
 wrangler.jsonc                  one Worker: static assets + D1 + vars (demo "today", stream pacing)
 worker/
-  migrations/                   0001_schema.sql (5 tables), 0002_seed.sql (generated, committed)
+  migrations/                   0001_schema.sql (5 tables), 0002_seed.sql (generated), 0003 group_blocks +
+                                suggested_questions + asked_questions, 0004_seed_workspace.sql (generated)
   src/
     index.ts                    Worker entry: builds the real dependencies (D1, assets)
     app.ts                      router: /api/chat, /api/hotels/:id/overview, /api/health, else assets

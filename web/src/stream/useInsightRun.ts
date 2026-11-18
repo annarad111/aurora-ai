@@ -31,14 +31,14 @@ async function readErrorMessage(response: Response): Promise<string> {
  * Connects the UI to POST /api/chat: sends the question, reads the event
  * stream and feeds every event into the run reducer.
  */
-export function useInsightRun(hotelId: string): InsightRun {
+export function useInsightRun(hotelId: string | null): InsightRun {
   const [state, dispatch] = useReducer(runReducer, initialRunState);
   const activeRequest = useRef<AbortController | null>(null);
 
   const start = useCallback(
     (question: string) => {
       const trimmedQuestion = question.trim();
-      if (!trimmedQuestion) return;
+      if (!trimmedQuestion || !hotelId) return;
 
       activeRequest.current?.abort();
       const abortController = new AbortController();

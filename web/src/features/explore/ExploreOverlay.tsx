@@ -1,11 +1,10 @@
 import { useRef } from 'react';
 import { CloseIcon } from '../../design-system/icons';
 import type { RunState } from '../../stream/run-reducer';
-import { followupsForView, viewForFact, type InsightView } from '../insights/context-followups';
 import type { FactInteraction } from '../insights/fact-links';
 import { BridgeExploreView } from './BridgeExploreView';
 import { ChannelExploreView } from './ChannelExploreView';
-import { describeView, readExploreData } from './explore-views';
+import { describeView, MAIN_FACT_OF_VIEW, readExploreData, type InsightView } from './explore-views';
 import { OccupancyExploreView } from './OccupancyExploreView';
 import { PaceExploreView } from './PaceExploreView';
 import { useDialogFocus } from './useDialogFocus';
@@ -28,11 +27,11 @@ export function ExploreOverlay({ view, run, interaction, onClose, onAskQuestion 
 
   const data = readExploreData(run);
   const { title, subtitle } = describeView(view, data);
-  // "Suggested next, based on X" only when X belongs to this view; the questions are about the view.
-  const focusedProvenance =
-    interaction.focusedFactId && viewForFact(interaction.focusedFactId) === view
-      ? run.provenanceByFactId[interaction.focusedFactId]
-      : undefined;
+  // "Suggested next, based on X" only when the selected figure X belongs to this view; otherwise the
+  // questions of the view's main figure. Both are written by the server from the data.
+  const selectedProvenance = interaction.focusedFactId ? run.provenanceByFactId[interaction.focusedFactId] : undefined;
+  const focusedProvenance = selectedProvenance?.exploreView === view ? selectedProvenance : undefined;
+  const footerQuestions = (focusedProvenance ?? run.provenanceByFactId[MAIN_FACT_OF_VIEW[view]])?.followupQuestions ?? run.followups;
 
   return (
     <div className="explore-overlay">
@@ -61,7 +60,7 @@ export function ExploreOverlay({ view, run, interaction, onClose, onAskQuestion 
             {focusedProvenance ? `Suggested next, based on ${focusedProvenance.contextLabel}` : 'Suggested next'}
           </span>
           <div className="follow-ups__list">
-            {followupsForView(view).map((question) => (
+            {footerQuestions.map((question) => (
               <button key={question} type="button" className="follow-up" onClick={() => onAskQuestion(question)}>
                 {question}
               </button>

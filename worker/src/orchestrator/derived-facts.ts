@@ -1,7 +1,7 @@
-import { divideOrZero } from '@aurora/analytics';
+import { countNightsInRange, divideOrZero } from '@aurora/analytics';
 import {
-  isCancelledBlockNight,
   type ChannelMixOutput,
+  type GroupBlock,
   type DateRange,
   type HotelOverviewOutput,
   type IsoDate,
@@ -41,20 +41,32 @@ export function findShareShift(drivers: RevenueDriversOutput): { losing: Segment
   };
 }
 
-/** The nights with a cancelled group block (see isCancelledBlockNight), as one range, or null. */
-export function findCancelledBlock(overview: HotelOverviewOutput): DateRange | null {
-  const blockNights = overview.dailyOccupancy
-    .filter((night) => isCancelledBlockNight(night, overview.hotel.roomCount))
-    .map((night) => night.date);
-  if (blockNights.length === 0) return null;
-  return { from: blockNights[0]!, to: blockNights[blockNights.length - 1]! };
+export interface CancelledBlock {
+  block: GroupBlock;
+  /** The block's nights that fall inside the analysed period. */
+  nights: DateRange;
+  nightCount: number;
+  /** Rooms per night × nights in the period: what the cancellation cost in volume. */
+  cancelledRoomNights: number;
 }
 
-/** Room nights cancelled for the nights of a range (e.g. the cancelled block). Used by every text that quotes this number. */
-export function countCancelledRoomsIn(overview: HotelOverviewOutput, range: DateRange): number {
-  return overview.dailyOccupancy
-    .filter((night) => night.date >= range.from && night.date <= range.to)
-    .reduce((total, night) => total + night.roomsCancelled, 0);
+/**
+ * The cancelled group block with the most room nights in the period, read from
+ * the group_blocks table (via the overview tool), or null. Every text that
+ * quotes the cancelled block uses this, so the numbers always agree.
+ */
+export function findCancelledBlock(overview: HotelOverviewOutput): CancelledBlock | null {
+  const candidates = overview.groupBlocks
+    .filter((block) => block.status === 'cancelled')
+    .map((block): CancelledBlock => {
+      const nights = {
+        from: block.firstNight > overview.period.from ? block.firstNight : overview.period.from,
+        to: block.lastNight < overview.period.to ? block.lastNight : overview.period.to,
+      };
+      const nightCount = countNightsInRange(nights);
+      return { block, nights, nightCount, cancelledRoomNights: block.roomsPerNight * nightCount };
+    });
+  return candidates.sort((first, second) => second.cancelledRoomNights - first.cancelledRoomNights)[0] ?? null;
 }
 
 export function findChannelLine(channelMix: ChannelMixOutput, channel: ChannelMixOutput['channels'][number]['channel']) {

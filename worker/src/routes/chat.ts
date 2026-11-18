@@ -35,6 +35,13 @@ export async function handleChat(request: Request, dependencies: AppDependencies
   const hotel = await dependencies.toolContext.repository.findHotel(hotelId);
   if (!hotel) return errorResponse(404, 'unknown_hotel', `No hotel with id "${hotelId}"`);
 
+  // Remembered for the sidebar's "Recent" list. Runs in the background; a failure never blocks the answer.
+  dependencies.waitUntil(
+    dependencies.toolContext.repository
+      .recordAskedQuestion({ hotelId, question, askedAt: new Date().toISOString() })
+      .catch((error: unknown) => console.warn('[Aurora] could not record the question', error)),
+  );
+
   const stream = new SseEventStream(`run_${crypto.randomUUID()}`);
   request.signal?.addEventListener('abort', () => stream.abort(), { once: true });
 

@@ -1,6 +1,5 @@
 import type { RunState } from '../../stream/run-reducer';
-import { followupsForFact, viewForFact, type InsightView } from '../insights/context-followups';
-import { isViewAvailable, readExploreData } from '../explore/explore-views';
+import { isViewAvailable, readExploreData, type InsightView } from '../explore/explore-views';
 import { ContextualInsightCard } from '../insights/ContextualInsightCard';
 import type { FactInteraction } from '../insights/fact-links';
 import { KpiGrid } from '../insights/KpiCard';
@@ -26,8 +25,9 @@ interface AnswerViewProps {
  */
 export function AnswerView({ run, interaction, onAskQuestion, onRetry, onShowProvenance, onClearFocus, onOpenExplore }: AnswerViewProps) {
   const focusedProvenance = interaction.focusedFactId ? run.provenanceByFactId[interaction.focusedFactId] : undefined;
-  const followups = focusedProvenance ? followupsForFact(focusedProvenance.factId) : run.followups;
-  const focusedView = focusedProvenance ? viewForFact(focusedProvenance.factId) : null;
+  // Follow-ups and the Explore view of the selected figure come with its provenance, written by the server from the data.
+  const followups = focusedProvenance ? focusedProvenance.followupQuestions : run.followups;
+  const focusedView = focusedProvenance ? focusedProvenance.exploreView : null;
   const canExploreFocusedFact = focusedView !== null && isViewAvailable(focusedView, readExploreData(run));
 
   return (

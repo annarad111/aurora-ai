@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { channelSchema, dateRangeSchema, hotelSchema, isoDateSchema, segmentSchema } from './domain';
+import { channelSchema, dateRangeSchema, groupBlockSchema, hotelSchema, isoDateSchema, segmentSchema } from './domain';
 import { findingSchema } from './findings';
 import { metricIdSchema, metricStatusSchema } from './metric-meta';
 
@@ -68,6 +68,8 @@ export const hotelOverviewOutputSchema = z.object({
   kpis: z.array(kpiComparisonSchema),
   segments: z.array(segmentPerformanceSchema),
   dailyOccupancy: z.array(dailyOccupancySchema),
+  /** Group blocks with at least one night in the period, confirmed or cancelled. */
+  groupBlocks: z.array(groupBlockSchema),
 });
 export type HotelOverviewOutput = z.infer<typeof hotelOverviewOutputSchema>;
 

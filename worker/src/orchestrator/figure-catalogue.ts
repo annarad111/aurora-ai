@@ -64,7 +64,10 @@ export function buildFigureCatalogue(analysis: AnalysisContext): CatalogueEntry[
     );
     const cancelledBlock = findCancelledBlock(overview);
     if (cancelledBlock) {
-      entries.push({ key: 'block_nights', text: describeNights(cancelledBlock), meaning: 'the nights of the cancelled group block' });
+      entries.push(
+        { key: 'block_name', text: cancelledBlock.block.name, meaning: `the ${SEGMENT_LABELS[cancelledBlock.block.segment]} group block that was cancelled` },
+        { key: 'block_nights', text: describeNights(cancelledBlock.nights), meaning: `the nights of the cancelled ${cancelledBlock.block.name}` },
+      );
     }
   }
 

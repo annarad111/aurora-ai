@@ -1,6 +1,7 @@
 import { classifyMetricStatus } from '@aurora/analytics';
 import { formatCount, formatEuro, formatPercent, SEGMENT_LABELS, type Segment, type ToolName } from '@aurora/shared';
 import type { AnalysisContext } from './analysis-context';
+import { followupsForIntent } from './followups';
 import {
   describeNights,
   findBiggestVolumeLoss,
@@ -32,21 +33,6 @@ function requireResult<Result>(result: Result | undefined, toolName: ToolName): 
   if (result === undefined) throw new Error(`The narrative needs the result of ${toolName}`);
   return result;
 }
-
-const FOLLOWUPS: Record<InsightIntent, string[]> = {
-  revenue_gap: [
-    'Which segments replaced the lost MICE nights?',
-    'What would moving 10% of OTA to direct be worth?',
-    'Are we on pace for the last 10 days of November?',
-  ],
-  channel_cost: ['What would moving 10% of OTA to direct be worth?', 'Which OTA has the highest commission?', 'Show Net RevPAR by channel'],
-  booking_pace: ['Which dates have the weakest pickup?', 'Compare pace by segment', 'Why is my hotel revenue below target this month?'],
-  segment_shift: [
-    'Which segments could fill 10–12 Nov next year?',
-    'Are other group blocks at risk this quarter?',
-    'What are OTA commissions costing us this month?',
-  ],
-};
 
 export class ScriptedNarrativeWriter implements NarrativeWriter {
   headlineDependsOn(intent: InsightIntent): ToolName[] {
@@ -83,8 +69,8 @@ export class ScriptedNarrativeWriter implements NarrativeWriter {
     return { provider: 'scripted', segments: [...explanations[intent](analysis)] };
   }
 
-  suggestFollowups(intent: InsightIntent): string[] {
-    return FOLLOWUPS[intent];
+  suggestFollowups(intent: InsightIntent, analysis: AnalysisContext): string[] {
+    return followupsForIntent(intent, analysis);
   }
 }
 
@@ -101,8 +87,8 @@ function writeRevenueGapInsight(analysis: AnalysisContext): InsightDraft {
   const gapDirection = drivers.revenueGap < 0 ? 'below' : 'above';
 
   const firstClause =
-    cancelledBlock && lostRooms > 0
-      ? `A cancelled ${segmentInSentence(biggestLoss.segment)} block left ${formatCount(lostRooms)} room nights empty`
+    cancelledBlock && cancelledBlock.block.segment === biggestLoss.segment && lostRooms > 0
+      ? `The cancelled ${cancelledBlock.block.name} left ${formatCount(lostRooms)} room nights empty`
       : `Revenue is ${formatEuro(Math.abs(drivers.revenueGap))} ${gapDirection} target, mostly through ${segmentInSentence(biggestLoss.segment)} volume`;
 
   let secondClause = '.';
@@ -157,8 +143,8 @@ function* explainRevenueGap(analysis: AnalysisContext): Iterable<NarrativeSegmen
   if (roomNightDifference < 0 && lostRooms > 0) {
     const cancelledBlock = findCancelledBlock(overview);
     yield plain(
-      cancelledBlock
-        ? `, and the cancelled ${segmentInSentence(biggestLoss.segment)} block on ${describeNights(cancelledBlock)} accounts for `
+      cancelledBlock && cancelledBlock.block.segment === biggestLoss.segment
+        ? `, and the cancelled ${cancelledBlock.block.name} on ${describeNights(cancelledBlock.nights)} accounts for `
         : `, and ${segmentInSentence(biggestLoss.segment)} accounts for `,
     );
     yield figure(`volume_${biggestLoss.segment}`, `${formatCount(lostRooms)} of them`);

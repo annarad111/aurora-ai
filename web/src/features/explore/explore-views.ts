@@ -1,6 +1,16 @@
 import { formatPeriodLabel } from '@aurora/shared';
-import type { RunState } from '../../stream/run-reducer';
-import type { InsightView } from '../insights/context-followups';
+import type { ProvenanceData, RunState } from '../../stream/run-reducer';
+
+/** The four Explore overlay views. Each figure's provenance says which one explains it. */
+export type InsightView = ProvenanceData['exploreView'];
+
+/** The figure whose follow-up questions the overlay footer shows when nothing else is selected. */
+export const MAIN_FACT_OF_VIEW: Record<InsightView, string> = {
+  occupancy: 'occupancy',
+  bridge: 'revenue_gap',
+  channel: 'ota_share',
+  pace: 'booking_pace',
+};
 
 // Which chart data each Explore view needs, and its title. A view can only
 // open when its tool has answered (a pace question has no revenue bridge).

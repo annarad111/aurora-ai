@@ -12,7 +12,8 @@ import {
 } from '@aurora/shared';
 import type { AnalysisContext } from './analysis-context';
 import { buildContextNote } from './context-notes';
-import { countCancelledRoomsIn, describeNights, findCancelledBlock, findChannelLine, readKpi, relativeChange } from './derived-facts';
+import { exploreViewForFact, followupsForFact } from './followups';
+import { describeDate, describeNights, findCancelledBlock, findChannelLine, readKpi, relativeChange } from './derived-facts';
 
 // ---------------------------------------------------------------------------
 // "How was this calculated?" for every fact id the answer can mention:
@@ -23,7 +24,7 @@ import { countCancelledRoomsIn, describeNights, findCancelledBlock, findChannelL
 export type ProvenancePayload = Omit<StreamEventOfType<'provenance'>, 'type' | 'runId' | 'sequence'>;
 
 /** The calculation part of a provenance event; the context note is added by buildProvenance. */
-type CalculationDetails = Omit<ProvenancePayload, 'contextLabel' | 'contextText'>;
+type CalculationDetails = Omit<ProvenancePayload, 'contextLabel' | 'contextText' | 'exploreView' | 'followupQuestions'>;
 
 type InputRow = ProvenancePayload['inputs'][number];
 const row = (label: string, value: string): InputRow => ({ label, value });
@@ -65,6 +66,8 @@ export function buildProvenance(factId: string, analysis: AnalysisContext): Prov
     ...calculation,
     contextLabel: contextNote?.contextLabel ?? calculation.title,
     contextText: contextNote?.contextText || `${calculation.title}: ${calculation.displayValue}.`,
+    exploreView: exploreViewForFact(factId, analysis),
+    followupQuestions: followupsForFact(factId, analysis),
   };
 }
 
@@ -328,8 +331,13 @@ function buildSegmentVolumeProvenance(segment: Segment, analysis: AnalysisContex
 
   const cancelledBlock = overview ? findCancelledBlock(overview) : null;
   const isBiggestLoss = drivers.segments.every((candidate) => candidate.volumeEffect >= variance.volumeEffect);
-  if (overview && cancelledBlock && isBiggestLoss && roomDifference < 0) {
-    inputs.push(row(`Cancelled, ${describeNights(cancelledBlock)}`, `${formatCount(countCancelledRoomsIn(overview, cancelledBlock))} room nights`));
+  if (cancelledBlock && cancelledBlock.block.segment === segment && isBiggestLoss && roomDifference < 0) {
+    const { block } = cancelledBlock;
+    inputs.push(
+      row('Cancelled block', block.name),
+      row(`Cancelled, ${describeNights(cancelledBlock.nights)}`, `${block.roomsPerNight} × ${cancelledBlock.nightCount} = ${formatCount(cancelledBlock.cancelledRoomNights)} room nights`),
+      ...(block.cancelledOn ? [row('Cancelled on', describeDate(block.cancelledOn))] : []),
+    );
   }
 
   return {

@@ -1,7 +1,7 @@
 import { formatCount, formatEuro, formatPercent, formatPercentagePoints, SEGMENT_LABELS, type Segment } from '@aurora/shared';
 import type { AnalysisContext } from './analysis-context';
 import {
-  countCancelledRoomsIn,
+  describeDate,
   describeNights,
   findBiggestVolumeLoss,
   findCancelledBlock,
@@ -40,8 +40,9 @@ function describePercentRange(values: number[]): string {
 function describeCancelledBlock(analysis: AnalysisContext) {
   const overview = analysis.results.overview;
   if (!overview) return null;
-  const blockRange = findCancelledBlock(overview);
-  if (!blockRange) return null;
+  const cancelledBlock = findCancelledBlock(overview);
+  if (!cancelledBlock) return null;
+  const blockRange = cancelledBlock.nights;
 
   const blockNights = overview.dailyOccupancy.filter((night) => night.date >= blockRange.from && night.date <= blockRange.to);
   const otherNights = overview.dailyOccupancy.filter((night) => night.date < blockRange.from || night.date > blockRange.to);
@@ -49,8 +50,8 @@ function describeCancelledBlock(analysis: AnalysisContext) {
   const targetsKnown = overview.dailyOccupancy.every((night) => night.occupancyTarget !== null);
 
   return {
+    cancelledBlock,
     blockRange,
-    cancelledRooms: countCancelledRoomsIn(overview, blockRange),
     occupancyOnBlockNights: blockNights.map((night) => night.occupancy),
     targetOnBlockNights: targetsKnown ? blockNights.map((night) => night.occupancyTarget ?? 0) : null,
     occupancyWithoutBlock: average(otherNights.map((night) => night.occupancy)),
@@ -69,12 +70,15 @@ export function buildContextNote(factId: string, analysis: AnalysisContext): Con
     const isBiggestLoss = findBiggestVolumeLoss(drivers).segment === segment && roomDifference < 0;
     const block = isBiggestLoss ? describeCancelledBlock(analysis) : null;
 
-    if (block) {
+    if (block && block.cancelledBlock.block.segment === segment) {
+      const { block: groupBlock, nightCount, cancelledRoomNights } = block.cancelledBlock;
       const targetText = block.targetOnBlockNights ? ` against a ${describePercentRange(block.targetOnBlockNights)} target` : '';
+      const cancelledOnText = groupBlock.cancelledOn ? ` was cancelled on ${describeDate(groupBlock.cancelledOn)}` : ' was cancelled';
       return {
         contextLabel: `${formatCount(Math.abs(roomDifference))} lost room nights`,
         contextText:
-          `The ${segmentInSentence(segment)} shortfall sits on ${describeNights(block.blockRange)}: ${formatCount(block.cancelledRooms)} room nights were cancelled for those nights and never resold. ` +
+          `The ${groupBlock.name} (${groupBlock.roomsPerNight} rooms × ${nightCount} nights, ${describeNights(block.blockRange)}, ` +
+          `${formatCount(cancelledRoomNights)} room nights)${cancelledOnText} and the rooms were never resold. ` +
           `Occupancy on those nights fell to ${describePercentRange(block.occupancyOnBlockNights)}${targetText}.`,
       };
     }
@@ -114,7 +118,7 @@ export function buildContextNote(factId: string, analysis: AnalysisContext): Con
         occupancy.target === null ? '' : `Occupancy is ${formatPercentagePoints(occupancy.actual - occupancy.target).replace('−', '')} below target. `;
       const withoutBlockText =
         block && block.targetWithoutBlock !== null
-          ? `Without ${describeNights(block.blockRange)} it would be ${formatPercent(block.occupancyWithoutBlock)}, against ${formatPercent(block.targetWithoutBlock)} planned for those nights.`
+          ? `Without the ${block.cancelledBlock.block.name} nights (${describeNights(block.blockRange)}) it would be ${formatPercent(block.occupancyWithoutBlock)}, against ${formatPercent(block.targetWithoutBlock)} planned for those nights.`
           : '';
       return { contextLabel: `Occupancy ${formatPercent(occupancy.actual)}`, contextText: `${shortfallText}${withoutBlockText}`.trim() };
     }

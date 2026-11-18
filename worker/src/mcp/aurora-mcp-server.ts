@@ -1,5 +1,5 @@
 import { McpServer, type CallToolResult, type StandardSchemaWithJSON } from '@modelcontextprotocol/server';
-import type { ToolName } from '@aurora/shared';
+import type { Hotel, ToolName } from '@aurora/shared';
 import { createMcpHandler } from 'agents/mcp/server';
 import { monthToDate, paceWindowFor } from '../orchestrator/analysis-context';
 import { callTool, TOOL_DEFINITIONS, type ToolDefinition } from '../tools/registry';
@@ -19,13 +19,17 @@ import { ToolInputError, type ToolContext } from '../tools/tool-context';
 
 const SERVER_INFO = { name: 'aurora', title: 'Aurora revenue analytics', version: '0.1.0' };
 
-/** Tells the client's model how to fill in the inputs. */
-function buildServerInstructions(toolContext: ToolContext): string {
+/** Tells the client's model how to fill in the inputs. The hotels are read from the database. */
+function buildServerInstructions(toolContext: ToolContext, hotels: Hotel[]): string {
   const monthToDatePeriod = monthToDate(toolContext.today);
   const paceWindow = paceWindowFor(toolContext.today);
+  const hotelLines = hotels.map(
+    (hotel) => `- ${hotel.name}, ${hotel.city}: hotelId "${hotel.id}", ${hotel.roomCount} rooms, currency ${hotel.currency}.`,
+  );
   return [
-    'Read-only revenue analytics for a hotel. Every figure is computed deterministically from the hotel data.',
-    'Demo hotel: Hotel Sablon, Brussels, hotelId "sablon-bru", 111 rooms, currency EUR.',
+    'Read-only revenue analytics for hotels. Every figure is computed deterministically from the hotel data.',
+    'Hotels:',
+    ...hotelLines,
     `Today is ${toolContext.today}. Month to date is period { "from": "${monthToDatePeriod.from}", "to": "${monthToDatePeriod.to}" }.`,
     `For booking pace use future stay dates, e.g. stayFrom "${paceWindow.from}", stayTo "${paceWindow.to}".`,
     'Dates are YYYY-MM-DD and ranges are inclusive. Ratios are fractions (0.62 = 62%), money is in euros.',
@@ -66,8 +70,9 @@ function registerRegistryTool(server: McpServer, tool: ToolDefinition<ToolName>,
   );
 }
 
-export function createAuroraMcpServer(toolContext: ToolContext): McpServer {
-  const server = new McpServer(SERVER_INFO, { instructions: buildServerInstructions(toolContext) });
+export async function createAuroraMcpServer(toolContext: ToolContext): Promise<McpServer> {
+  const hotels = await toolContext.repository.listHotels();
+  const server = new McpServer(SERVER_INFO, { instructions: buildServerInstructions(toolContext, hotels) });
   for (const tool of TOOL_DEFINITIONS) {
     registerRegistryTool(server, tool as unknown as ToolDefinition<ToolName>, toolContext);
   }

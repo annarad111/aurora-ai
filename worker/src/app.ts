@@ -6,6 +6,7 @@ import { handleChat } from './routes/chat';
 import { handleHealth } from './routes/health';
 import { handleHotelOverview } from './routes/hotels';
 import { handleMcp } from './routes/mcp';
+import { handleWorkspace } from './routes/workspace';
 import type { ToolContext } from './tools/tool-context';
 
 /**
@@ -36,6 +37,10 @@ export async function handleRequest(request: Request, dependencies: AppDependenc
   try {
     if (pathname === '/api/health') {
       return request.method === 'GET' ? await handleHealth(dependencies) : methodNotAllowed();
+    }
+
+    if (pathname === '/api/workspace') {
+      return request.method === 'GET' ? await handleWorkspace(url, dependencies) : methodNotAllowed();
     }
 
     if (pathname === '/api/chat') {

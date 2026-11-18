@@ -44,7 +44,7 @@ function sumCancellations(rows: readonly DailyStat[]): number {
 
 /**
  * get_hotel_overview: actual vs target vs last year for the core KPIs, per
- * segment, and night by night.
+ * segment, night by night, and the group blocks of the period.
  */
 export async function getHotelOverview(input: PeriodToolInput, context: ToolContext): Promise<HotelOverviewOutput> {
   const hotel = await requireHotel(context, input.hotelId);
@@ -52,10 +52,11 @@ export async function getHotelOverview(input: PeriodToolInput, context: ToolCont
   const lastYearPeriod = shiftRangeByYears(period, -1);
   const roomsAvailable = calculateRoomsAvailable(hotel.roomCount, countNightsInRange(period));
 
-  const [actualRows, lastYearRows, targetRows] = await Promise.all([
+  const [actualRows, lastYearRows, targetRows, groupBlocks] = await Promise.all([
     context.repository.listDailyStats(hotel.id, period),
     context.repository.listDailyStats(hotel.id, lastYearPeriod),
     context.repository.listDailyTargets(hotel.id, period),
+    context.repository.listGroupBlocks(hotel.id, period),
   ]);
 
   const actual = summarizePerformance(sumRoomsAndRevenue(actualRows), roomsAvailable);
@@ -110,5 +111,6 @@ export async function getHotelOverview(input: PeriodToolInput, context: ToolCont
     kpis,
     segments,
     dailyOccupancy,
+    groupBlocks,
   };
 }

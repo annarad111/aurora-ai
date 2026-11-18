@@ -1,16 +1,18 @@
+import { formatPeriodLabel, type DateRange } from '@aurora/shared';
 import { RUN_PHASE_LABELS, type RunPhase } from '../../features/conversation/run-phase';
-import { REPORTING_PERIOD_LABEL } from '../workspace-content';
 
 interface ConversationHeaderProps {
   runPhase: RunPhase;
+  /** The period answers are about; null while the workspace is loading. */
+  period: DateRange | null;
 }
 
-export function ConversationHeader({ runPhase }: ConversationHeaderProps) {
+export function ConversationHeader({ runPhase, period }: ConversationHeaderProps) {
   return (
     <header className="conversation-header">
       <div className="conversation-header__title-group">
         <span className="conversation-header__title">Revenue workspace</span>
-        <span className="conversation-header__period">{REPORTING_PERIOD_LABEL}</span>
+        {period && <span className="conversation-header__period">{formatPeriodLabel(period)} · month to date</span>}
       </div>
       {/* The modifier class (run-status--streaming, ...) picks the dot colour. */}
       <div className={`run-status run-status--${runPhase}`} role="status">

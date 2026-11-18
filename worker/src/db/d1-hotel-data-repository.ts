@@ -1,4 +1,15 @@
-import type { ChannelCommission, DailyStat, DailyTarget, DateRange, Hotel, IsoDate, OnTheBooks } from '@aurora/shared';
+import type {
+  AskedQuestion,
+  ChannelCommission,
+  DailyStat,
+  DailyTarget,
+  DateRange,
+  GroupBlock,
+  Hotel,
+  IsoDate,
+  OnTheBooks,
+  SuggestedQuestion,
+} from '@aurora/shared';
 import type { HotelDataRepository } from './hotel-data-repository';
 
 // The only file that writes SQL. Columns are snake_case in the database and
@@ -45,16 +56,98 @@ interface OnTheBooksRow {
   revenue_otb: number;
 }
 
+interface GroupBlockRow {
+  id: string;
+  hotel_id: string;
+  name: string;
+  segment: GroupBlock['segment'];
+  first_night: string;
+  last_night: string;
+  rooms_per_night: number;
+  status: GroupBlock['status'];
+  cancelled_on: string | null;
+}
+
+interface SuggestedQuestionRow {
+  hotel_id: string;
+  position: number;
+  topic: string;
+  question: string;
+}
+
+function toHotel(row: HotelRow): Hotel {
+  return { id: row.id, name: row.name, city: row.city, roomCount: row.room_count, currency: row.currency, timezone: row.timezone };
+}
+
 export class D1HotelDataRepository implements HotelDataRepository {
   constructor(private readonly database: D1Database) {}
+
+  async listHotels(): Promise<Hotel[]> {
+    const { results } = await this.database
+      .prepare('SELECT id, name, city, room_count, currency, timezone FROM hotels ORDER BY name')
+      .all<HotelRow>();
+    return results.map(toHotel);
+  }
 
   async findHotel(hotelId: string): Promise<Hotel | null> {
     const row = await this.database
       .prepare('SELECT id, name, city, room_count, currency, timezone FROM hotels WHERE id = ?')
       .bind(hotelId)
       .first<HotelRow>();
-    if (!row) return null;
-    return { id: row.id, name: row.name, city: row.city, roomCount: row.room_count, currency: row.currency, timezone: row.timezone };
+    return row ? toHotel(row) : null;
+  }
+
+  async listGroupBlocks(hotelId: string, period: DateRange): Promise<GroupBlock[]> {
+    const { results } = await this.database
+      .prepare(
+        `SELECT id, hotel_id, name, segment, first_night, last_night, rooms_per_night, status, cancelled_on
+         FROM group_blocks
+         WHERE hotel_id = ? AND first_night <= ? AND last_night >= ?
+         ORDER BY first_night`,
+      )
+      .bind(hotelId, period.to, period.from)
+      .all<GroupBlockRow>();
+    return results.map((row) => ({
+      id: row.id,
+      hotelId: row.hotel_id,
+      name: row.name,
+      segment: row.segment,
+      firstNight: row.first_night,
+      lastNight: row.last_night,
+      roomsPerNight: row.rooms_per_night,
+      status: row.status,
+      cancelledOn: row.cancelled_on,
+    }));
+  }
+
+  async listSuggestedQuestions(hotelId: string): Promise<SuggestedQuestion[]> {
+    const { results } = await this.database
+      .prepare('SELECT hotel_id, position, topic, question FROM suggested_questions WHERE hotel_id = ? ORDER BY position')
+      .bind(hotelId)
+      .all<SuggestedQuestionRow>();
+    return results.map((row) => ({ hotelId: row.hotel_id, position: row.position, topic: row.topic, question: row.question }));
+  }
+
+  async recordAskedQuestion(askedQuestion: AskedQuestion): Promise<void> {
+    await this.database
+      .prepare('INSERT INTO asked_questions (hotel_id, question, asked_at) VALUES (?, ?, ?)')
+      .bind(askedQuestion.hotelId, askedQuestion.question, askedQuestion.askedAt)
+      .run();
+  }
+
+  async listRecentQuestions(hotelId: string, limit: number): Promise<Array<{ question: string; askedAt: string }>> {
+    const { results } = await this.database
+      .prepare(
+        `SELECT question, MAX(asked_at) AS asked_at
+         FROM asked_questions
+         WHERE hotel_id = ?
+         GROUP BY question
+         ORDER BY asked_at DESC
+         LIMIT ?`,
+      )
+      .bind(hotelId, limit)
+      .all<{ question: string; asked_at: string }>();
+    return results.map((row) => ({ question: row.question, askedAt: row.asked_at }));
   }
 
   async listDailyStats(hotelId: string, period: DateRange): Promise<DailyStat[]> {

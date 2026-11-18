@@ -1,4 +1,4 @@
-import { formatCount, formatPercent, formatPeriodLabel, isCancelledBlockNight, type HotelOverviewOutput } from '@aurora/shared';
+import { formatCount, formatPercent, formatPeriodLabel, isNightInCancelledBlock, type HotelOverviewOutput } from '@aurora/shared';
 import { useState } from 'react';
 import { joinClassNames } from '../../lib/class-names';
 import { dayOfMonth, formatWeekdayDate } from '../../lib/dates';
@@ -53,7 +53,9 @@ export function OccupancyExploreView({ overview }: OccupancyExploreViewProps) {
         )}
 
         {nights.map((night, nightIndex) => {
-          const isBlockNight = visibleLayers.cancelledBlock && isCancelledBlockNight(night, overview.hotel.roomCount);
+          // Which nights belonged to a cancelled block comes from the group_blocks table.
+          const cancelledBlock = isNightInCancelledBlock(night.date, overview.groupBlocks);
+          const isBlockNight = visibleLayers.cancelledBlock && cancelledBlock !== null;
           const isHovered = hoveredNightIndex === nightIndex;
           return (
             <div
@@ -79,8 +81,10 @@ export function OccupancyExploreView({ overview }: OccupancyExploreViewProps) {
                     {night.occupancyTarget !== null && ` · target ${formatPercent(night.occupancyTarget)}`}
                   </span>
                   <span>Last year {formatPercent(night.occupancyLastYear)}</span>
-                  {isCancelledBlockNight(night, overview.hotel.roomCount) && (
-                    <strong>{formatCount(night.roomsCancelled)} room nights cancelled</strong>
+                  {cancelledBlock && (
+                    <strong>
+                      {cancelledBlock.name} cancelled ({formatCount(cancelledBlock.roomsPerNight)} rooms)
+                    </strong>
                   )}
                 </ChartTooltip>
               )}
@@ -93,7 +97,7 @@ export function OccupancyExploreView({ overview }: OccupancyExploreViewProps) {
           <span
             key={night.date}
             className={joinClassNames(
-              visibleLayers.cancelledBlock && isCancelledBlockNight(night, overview.hotel.roomCount) && 'column-chart__label--alert',
+              visibleLayers.cancelledBlock && isNightInCancelledBlock(night.date, overview.groupBlocks) && 'column-chart__label--alert',
             )}
           >
             {dayOfMonth(night.date)}

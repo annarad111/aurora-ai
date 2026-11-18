@@ -89,6 +89,45 @@ export const channelCommissionSchema = z.object({
 });
 export type ChannelCommission = z.infer<typeof channelCommissionSchema>;
 
+export const GROUP_BLOCK_STATUSES = ['confirmed', 'cancelled'] as const;
+
+/**
+ * Table `group_blocks`: a named block of rooms for an event (a congress, a tour group),
+ * with its nights and status. This is how the analysis knows *what* was cancelled,
+ * not only that rooms were cancelled.
+ */
+export const groupBlockSchema = z.object({
+  id: z.string(),
+  hotelId: z.string(),
+  name: z.string(),
+  segment: segmentSchema,
+  /** First and last night of the stay, inclusive. */
+  firstNight: isoDateSchema,
+  lastNight: isoDateSchema,
+  roomsPerNight: z.number().int().positive(),
+  status: z.enum(GROUP_BLOCK_STATUSES),
+  cancelledOn: isoDateSchema.nullable(),
+});
+export type GroupBlock = z.infer<typeof groupBlockSchema>;
+
+/** Table `suggested_questions`: the starter questions shown on the idle screen, per hotel. */
+export const suggestedQuestionSchema = z.object({
+  hotelId: z.string(),
+  position: z.number().int().nonnegative(),
+  topic: z.string(),
+  question: z.string(),
+});
+export type SuggestedQuestion = z.infer<typeof suggestedQuestionSchema>;
+
+/** Table `asked_questions`: every question asked in the chat, for the "Recent" list. */
+export const askedQuestionSchema = z.object({
+  hotelId: z.string(),
+  question: z.string(),
+  /** ISO timestamp, e.g. 2026-11-18T09:30:00.000Z. */
+  askedAt: z.string(),
+});
+export type AskedQuestion = z.infer<typeof askedQuestionSchema>;
+
 /** Table `on_the_books`: rooms already booked for a future night, as seen on a snapshot date. */
 export const onTheBooksSchema = z.object({
   hotelId: z.string(),

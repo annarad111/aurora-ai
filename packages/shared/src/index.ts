@@ -5,3 +5,4 @@ export * from './tools';
 export * from './stream-events';
 export * from './format';
 export * from './rules';
+export * from './workspace';
