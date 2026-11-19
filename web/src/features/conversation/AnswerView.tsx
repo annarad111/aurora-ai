@@ -23,6 +23,7 @@ interface AnswerViewProps {
   onShowProvenance: (factId: string) => void;
   onClearFocus: () => void;
   onOpenExplore: (view: InsightView) => void;
+  onOpenDecisions: () => void;
   /** An investigation action of a selected KPI. */
   onAction: (action: InvestigationAction) => void;
   /** "Save insight" for this answer, shown in the main finding. */
@@ -43,6 +44,7 @@ export function AnswerView({
   onShowProvenance,
   onClearFocus,
   onOpenExplore,
+  onOpenDecisions,
   onAction,
   saveButton,
 }: AnswerViewProps) {
@@ -96,6 +98,7 @@ export function AnswerView({
           canOpenView={(view) => isViewAvailable(view, readExploreData(run))}
           onAskQuestion={onAskQuestion}
           onOpenExplore={onOpenExplore}
+          onOpenDecisions={onOpenDecisions}
         />
       )}
 

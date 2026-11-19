@@ -38,7 +38,7 @@ export function MainFinding({ insight, interaction, onShowCalculation, saveButto
       <p className="main-finding__headline">{insight.headline}</p>
 
       <div className="main-finding__investigate">
-        <span className="main-finding__prompt">Select an insight to investigate:</span>
+        {insight.chips.length > 0 && <span className="main-finding__prompt">Select an insight to investigate:</span>}
         <div className="main-finding__chips">
           {insight.chips.map((chip) => {
             const isSelected = interaction.focusedFactId === chip.factId;

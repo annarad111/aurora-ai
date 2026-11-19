@@ -307,6 +307,10 @@ export function App() {
                         selectTurn(turn.key);
                         setExploreView(view);
                       }}
+                      onOpenDecisions={() => {
+                        clearSelection();
+                        setMainView('decisions');
+                      }}
                       onAction={(action) => handleInvestigationAction(turn.key, action)}
                       saveButton={
                         hotelId && (

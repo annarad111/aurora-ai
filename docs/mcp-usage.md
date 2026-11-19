@@ -1,6 +1,6 @@
 # Using Aurora's analyses from any agent (MCP)
 
-Aurora's seven tools are published as a **Model Context Protocol** server at `/mcp`.
+Aurora's eight tools are published as a **Model Context Protocol** server at `/mcp`.
 They are the same tools the chat uses, from the same registry (`worker/src/tools/registry.ts`),
 so any MCP client (Claude Desktop, Claude Code, MCP Inspector, your own agent) gets the same
 numbers as the Aurora UI.
@@ -14,6 +14,7 @@ numbers as the Aurora UI.
 | `query_performance` | Any past metric for any period, split by night, weekday, weekend/weekday, segment or channel, with filters and last year |
 | `get_group_blocks` | Named group blocks (congresses, tour groups) with nights, rooms and status, cancelled ones with their date |
 | `simulate_scenario` | What-if for future stay dates: win back part of the pace gap, change the rate of rooms still to sell, move OTA bookings to direct; revenue, commission and net revenue before and after |
+| `get_decisions` | The Decisions workspace: saved insights and actions with status, priority, owner, due date, overdue flag and the observed outcome of completed actions; filter by status or priority. Titles and notes are user-written text |
 
 All tools are read-only (`readOnlyHint: true`). The server's instructions tell the client the demo
 hotel id (`sablon-bru`), the fixed "today" (2026-11-17) and the date format. `simulate_scenario`

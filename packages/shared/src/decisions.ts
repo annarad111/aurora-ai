@@ -2,8 +2,8 @@ import { z } from 'zod';
 import { dateRangeSchema, isoDateSchema } from './domain';
 import { investigationContextSchema } from './investigation';
 import { metricIdSchema } from './metric-meta';
-import { conversationIdSchema } from './stream-events';
-import { toolNameSchema } from './tools';
+import { conversationIdSchema } from './ids';
+import { toolNameSchema } from './tool-names';
 
 // ---------------------------------------------------------------------------
 // Insight to action: insights the user saved, the actions they decided on,
@@ -149,3 +149,44 @@ export const decisionsSchema = z.object({
   unreadableRecordCount: z.number().int().nonnegative(),
 });
 export type Decisions = z.infer<typeof decisionsSchema>;
+
+// --- get_decisions: the Decisions workspace, for the chat and MCP agents ----------------
+
+export const getDecisionsInputSchema = z.object({
+  hotelId: z.string().min(1).max(64),
+  /** Only actions with these statuses (all when absent). */
+  statuses: z.array(actionStatusSchema).min(1).optional(),
+  /** Only actions with these priorities (all when absent). */
+  priorities: z.array(actionPrioritySchema).min(1).optional(),
+});
+export type GetDecisionsInput = z.infer<typeof getDecisionsInputSchema>;
+
+export const decisionActionDigestSchema = decisionActionSchema.extend({
+  /** The saved insight the action belongs to. */
+  insightTitle: z.string(),
+  /** Open (to do or in progress) with a due date before today. */
+  isOverdue: z.boolean(),
+  /** For completed actions: what the data shows since. */
+  outcome: actionOutcomeSchema.nullable(),
+});
+export type DecisionActionDigest = z.infer<typeof decisionActionDigestSchema>;
+
+export const getDecisionsOutputSchema = z.object({
+  /** The hotel's today, for due dates. */
+  today: isoDateSchema,
+  insights: z.array(savedInsightSchema.extend({ actionCount: z.number().int().nonnegative() })),
+  /** Open actions first (high priority, then the earliest due date), then completed, then dismissed. */
+  actions: z.array(decisionActionDigestSchema),
+  counts: z.object({
+    savedInsights: z.number().int().nonnegative(),
+    todo: z.number().int().nonnegative(),
+    inProgress: z.number().int().nonnegative(),
+    completed: z.number().int().nonnegative(),
+    dismissed: z.number().int().nonnegative(),
+    overdue: z.number().int().nonnegative(),
+  }),
+  /** True when statuses or priorities were given, so `actions` is only part of the list. */
+  isFiltered: z.boolean(),
+  unreadableRecordCount: z.number().int().nonnegative(),
+});
+export type GetDecisionsOutput = z.infer<typeof getDecisionsOutputSchema>;

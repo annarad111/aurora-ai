@@ -8,7 +8,8 @@ import { buildInsightTrail } from './insight-trail';
 import { planForInvestigation, type RunStepPlan } from './insight-plan';
 import { buildSuggestions } from './suggestions';
 import { writeConversationReply } from './conversation';
-import { isConversationPlan, KeywordInsightPlanner, type InsightPlanner, type PlannedRun } from './insight-planners';
+import { isConversationPlan, isDecisionsPlan, KeywordInsightPlanner, type InsightPlanner, type PlannedRun } from './insight-planners';
+import { toolInputFor, writeDecisionsAnswer } from './decisions-answer';
 import type { NarrativeWriter } from './narrative-writer';
 import { pause } from './pause';
 import { buildProvenance, listKnownFactIds } from './provenance';
@@ -101,6 +102,57 @@ export async function runInsight(options: RunInsightOptions): Promise<void> {
         toolsChosenBy: planResult.plannedBy,
         verifiedFigureCount: 0,
         answerKind: 'conversation',
+      });
+      return;
+    }
+
+    // --- The saved decisions: read from the Decisions workspace, answered by fixed rules ---
+    if (isDecisionsPlan(planResult)) {
+      const step = { stepId: 'decisions', label: 'Reading your saved decisions', tool: 'get_decisions' } as const;
+      await emit({ type: 'step', ...step, status: 'pending' });
+      await emit({ type: 'step', ...step, status: 'running' });
+      await pause(pacing.stepDelayMs, signal);
+      if (signal.aborted) return;
+      const output = await callTool('get_decisions', toolInputFor(hotel.id, planResult.focus), toolContext);
+      await emit({ type: 'step', ...step, status: 'done' });
+      const answer = writeDecisionsAnswer(output, planResult.focus);
+      await emit({ type: 'insight', headline: answer.headline, impactEur: null, factIds: ['decisions'], chips: [] });
+      await emit({ type: 'trail', stages: answer.trail });
+      for (const word of splitIntoWords(answer.text)) {
+        if (signal.aborted) return;
+        await emit({ type: 'text_delta', text: word });
+        await pause(pacing.textTokenDelayMs, signal);
+      }
+      await emit({
+        type: 'provenance',
+        factId: 'decisions',
+        title: 'Saved decisions',
+        displayValue: `${output.counts.savedInsights} insights, ${output.counts.todo + output.counts.inProgress} open actions`,
+        tool: 'get_decisions',
+        formula: 'Saved insights and actions, as recorded in the Decisions workspace; overdue = open with a due date before today',
+        inputs: [
+          { label: 'Saved insights', value: String(output.counts.savedInsights) },
+          { label: 'To do', value: String(output.counts.todo) },
+          { label: 'In progress', value: String(output.counts.inProgress) },
+          { label: 'Completed', value: String(output.counts.completed) },
+          { label: 'Dismissed', value: String(output.counts.dismissed) },
+          { label: 'Overdue', value: String(output.counts.overdue) },
+          { label: 'Today', value: output.today },
+        ],
+        sourceQuery: `decision_records WHERE hotel_id = ${hotel.id}`,
+        contextLabel: 'Saved decisions',
+        contextText: answer.contextText,
+        exploreView: null,
+        followupQuestions: answer.followups,
+      });
+      if (answer.followups.length > 0) await emit({ type: 'followups', questions: answer.followups });
+      await emit({
+        type: 'done',
+        durationMs: Date.now() - startedAt,
+        provider: 'scripted',
+        toolsChosenBy: planResult.plannedBy,
+        verifiedFigureCount: 0,
+        answerKind: 'analysis',
       });
       return;
     }
@@ -251,8 +303,9 @@ function hasResultFor(tool: ToolName, results: ToolResults): boolean {
     get_booking_pace: results.pace,
     query_performance: results.queries?.[0],
     get_group_blocks: results.groupBlocks,
-    // The chat never plans the what-if (it has its own screen).
+    // The chat never plans the what-if (it has its own screen), and decisions have their own answer.
     simulate_scenario: undefined,
+    get_decisions: undefined,
   };
   return resultForTool[tool] !== undefined;
 }

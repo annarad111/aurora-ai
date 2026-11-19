@@ -93,7 +93,7 @@ The headline, chips, KPI cards, charts and provenance are always deterministic; 
 | `POST /api/simulate` | `{ hotelId, stayFrom, stayTo, paceRecovery?, rateChange?, otaToDirect? }` → the what-if result (`simulate_scenario`) |
 | `GET /api/hotels/:id/overview?from=&to=` | The overview tool as plain JSON, no AI. Defaults to month to date. |
 | `GET /api/health` | Worker and database status |
-| `/mcp` | All seven tools, including the what-if simulation, for external agents (MCP, Streamable HTTP). Bearer token, 60 requests/min. See [docs/mcp-usage.md](docs/mcp-usage.md). |
+| `/mcp` | All eight tools, including the what-if simulation and the saved decisions, for external agents (MCP, Streamable HTTP). Bearer token, 60 requests/min. See [docs/mcp-usage.md](docs/mcp-usage.md). |
 
 `POST /api/chat` is limited to 20 answers per minute per client.
 
@@ -130,7 +130,7 @@ worker/
     env.ts                      bindings and the checked config
     routes/                     one file per route
     db/                         HotelDataRepository interface, D1 implementation (the only SQL), in-memory implementation
-    tools/                      the 7 tools + registry.ts (one source for chat and MCP)
+    tools/                      the 8 tools + registry.ts (one source for chat and MCP)
     sse/sse-event-stream.ts     validated, numbered SSE events, heartbeat, stop on disconnect
     orchestrator/
       run-insight.ts            the run: steps → tools → KPI/charts → insight → text → provenance → follow-ups → done

@@ -13,6 +13,7 @@ import type { LanguageModel, LanguageModelToolCall } from '../llm/language-model
 import { CHAT_TOOL_DEFINITIONS } from '../tools/registry';
 import { monthToDate } from './analysis-context';
 import { acceptModelReply, classifyConversation, isAboutTheHotel, type ConversationReason } from './conversation';
+import { focusFromModelArguments, parseDecisionsQuestion, type DecisionsFocus } from './decisions-answer';
 import { isFollowUpQuestion, planFollowUp } from './follow-up';
 import { dataQuestionPlan, groupBlocksPlan, planFromToolNames, planInsightRun, type InsightPlan } from './insight-plan';
 import { buildPlannerRequest, buildPlannerSystemPrompt } from './prompts';
@@ -40,10 +41,27 @@ export interface ConversationPlan {
   plannedBy: 'llm' | 'keywords';
 }
 
-export type PlanResult = PlannedRun | ConversationPlan;
+/** A question about the saved decisions and actions: answered from get_decisions. */
+export interface DecisionsPlan {
+  kind: 'decisions';
+  focus: DecisionsFocus;
+  plannedBy: 'llm' | 'keywords';
+}
+
+export type PlanResult = PlannedRun | ConversationPlan | DecisionsPlan;
 
 export function isConversationPlan(plan: PlanResult): plan is ConversationPlan {
   return 'kind' in plan && plan.kind === 'conversation';
+}
+
+export function isDecisionsPlan(plan: PlanResult): plan is DecisionsPlan {
+  return 'kind' in plan && plan.kind === 'decisions';
+}
+
+/** "What decisions are saved?", "which actions are overdue?": recognised by fixed rules in both planners. */
+function planAsDecisionsQuestion(question: string): DecisionsPlan | null {
+  const focus = parseDecisionsQuestion(question);
+  return focus ? { kind: 'decisions', focus, plannedBy: 'keywords' } : null;
 }
 
 /** A follow-up resolved by the deterministic rules, or null. Both planners try this first. */
@@ -69,6 +87,8 @@ export class KeywordInsightPlanner implements InsightPlanner {
   async plan(question: string, _signal: AbortSignal, context: PlanningContext): Promise<PlanResult> {
     const socialMessage = planAsSocialMessage(question, context);
     if (socialMessage) return socialMessage;
+    const decisions = planAsDecisionsQuestion(question);
+    if (decisions) return decisions;
     const followUp = planAsFollowUp(question, context);
     if (followUp) return followUp;
     if (classifyConversation(question, context.today) === 'off_topic') return { kind: 'conversation', reason: 'off_topic', plannedBy: 'keywords' };
@@ -185,6 +205,8 @@ export class LanguageModelInsightPlanner implements InsightPlanner {
   async plan(question: string, signal: AbortSignal, context: PlanningContext): Promise<PlanResult> {
     const socialMessage = planAsSocialMessage(question, context);
     if (socialMessage) return socialMessage;
+    const decisions = planAsDecisionsQuestion(question);
+    if (decisions) return decisions;
     const followUp = planAsFollowUp(question, context);
     if (followUp) return followUp;
     const previousTurn = context.history?.at(-1);
@@ -212,6 +234,11 @@ export class LanguageModelInsightPlanner implements InsightPlanner {
         }
         // Include the start of what the model said instead, to diagnose prompt or format problems.
         throw new Error(`The model called no known tool. It answered: ${JSON.stringify(response.text.slice(0, 300))}`);
+      }
+      // The model may ask for the saved decisions in words the rules did not catch.
+      const decisionsCall = response.toolCalls.find((call) => call.name === 'get_decisions');
+      if (decisionsCall) {
+        return { kind: 'decisions', focus: focusFromModelArguments(normalizeModelArguments(decisionsCall.arguments)), plannedBy: 'llm' };
       }
       const plan = planFromToolCalls(response.toolCalls, question, context.today);
       // The model saw the earlier questions; a short question it answered with their help is a follow-up too.

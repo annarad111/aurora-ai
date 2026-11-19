@@ -3,6 +3,7 @@ import type { z } from 'zod';
 import { analyzeRevenueDrivers } from './analyze-revenue-drivers';
 import { getBookingPace } from './get-booking-pace';
 import { getChannelMix } from './get-channel-mix';
+import { getDecisions } from './get-decisions';
 import { getGroupBlocks } from './get-group-blocks';
 import { getHotelOverview } from './get-hotel-overview';
 import { queryPerformance } from './query-performance';
@@ -108,9 +109,24 @@ export const TOOL_REGISTRY: { [Name in ToolName]: ToolDefinition<Name> } = {
     outputSchema: TOOL_SCHEMAS.simulate_scenario.output,
     run: simulateScenarioTool,
   },
+  get_decisions: {
+    name: 'get_decisions',
+    title: 'Saved decisions',
+    description:
+      "The hotel's Decisions workspace: insights the user saved and the actions they decided on, with status (todo, " +
+      'in_progress, completed, dismissed), priority (high, medium, low), owner, due date, whether it is overdue, and for ' +
+      'completed actions the outcome observed in the data since. Optionally filtered by status or priority. Use it for ' +
+      '"what decisions are saved", "which actions are high priority", "what is overdue". Titles and notes are written by users.',
+    inputSchema: TOOL_SCHEMAS.get_decisions.input,
+    outputSchema: TOOL_SCHEMAS.get_decisions.output,
+    run: getDecisions,
+  },
 };
 
-/** Tools the chat planner may choose. The what-if has its own screen (the simulator), so the chat leaves it out. */
+/**
+ * Tools the chat planner may choose. The what-if has its own screen (the simulator), so the chat leaves it out.
+ * get_decisions is offered too: a question about the saved decisions is answered from the Decisions workspace.
+ */
 export const CHAT_TOOL_DEFINITIONS = Object.values(TOOL_REGISTRY).filter((tool) => tool.name !== 'simulate_scenario');
 
 export const TOOL_DEFINITIONS = Object.values(TOOL_REGISTRY);

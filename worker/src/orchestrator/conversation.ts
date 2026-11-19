@@ -29,6 +29,7 @@ const HOTEL_TOPIC = new RegExp(
     'segments?', 'corporate', 'leisure', 'groups?', 'mice', 'congress', 'conference', 'events?', 'blocks?',
     'cancell?ations?', 'cancell?ed', 'nights?', 'rooms?', 'guests?', 'stays?', 'weekends?', 'weekdays?',
     'hotel', 'property', 'month', 'week', 'year', 'yoy', 'today', 'yesterday', 'tonight', 'season',
+    'decisions?', 'actions?', 'tasks?', 'to-?dos?', 'overdue', 'priority', 'priorities', 'saved',
     'why', 'gap', 'drivers?', 'trend', 'compare', 'comparison', 'split', 'breakdown', 'what if', 'scenario', 'simulat\\w*',
     'recommend\\w*', 'improve', 'increase', 'grow', 'strategy', 'competitors?', 'comp set', 'market',
   ].map((word) => `\\b${word}\\b`).join('|'),
@@ -68,12 +69,13 @@ export function writeConversationReply(reason: ConversationReason, hotel: Hotel)
       return (
         `I am Aurora, the revenue analyst for ${hotel.name}. I can explain revenue against target, occupancy, ADR and RevPAR, ` +
         'what channels and commissions cost, how bookings are pacing, how segments and group blocks moved, and what a change ' +
-        'in pace, rate or channel mix would be worth. Ask about any date or period, or start with one of these.'
+        'in pace, rate or channel mix would be worth. I can also tell you what is saved in Decisions: your insights, actions, ' +
+        'priorities and what is overdue. Ask about any date or period, or start with one of these.'
       );
     case 'off_topic':
       return (
-        `I can only help with the business of ${hotel.name}: revenue, occupancy, rates, channels, booking pace, segments and ` +
-        'group blocks. What would you like to look at?'
+        `I can only help with the business of ${hotel.name}: revenue, occupancy, rates, channels, booking pace, segments, ` +
+        'group blocks and your saved decisions. What would you like to look at?'
       );
   }
 }

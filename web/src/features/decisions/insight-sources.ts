@@ -124,6 +124,8 @@ function measureOfAnswer(run: RunState): { metric: MetricId | null; measure: Sav
 export function insightFromAnswer(run: RunState, hotelId: string, conversationId: string): NewSavedInsight | null {
   const sourceKey = answerSourceKey(run);
   if (!sourceKey || run.phase !== 'done' || !run.insight || run.completion?.answerKind !== 'analysis') return null;
+  // An answer about the saved decisions themselves is not a new insight to save.
+  if (run.steps.some((step) => step.tool === 'get_decisions')) return null;
   const { metric, measure } = measureOfAnswer(run);
   const evidence: EvidenceReference[] = run.insight.factIds.flatMap((factId) => {
     const provenance = run.provenanceByFactId[factId];

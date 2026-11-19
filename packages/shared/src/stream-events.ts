@@ -154,6 +154,8 @@ export type TrailStageName = z.infer<typeof trailStageNameSchema>;
 export const trailActionSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('ask'), label: z.string(), question: z.string() }),
   z.object({ kind: z.literal('explore'), label: z.string(), view: z.enum(['occupancy', 'bridge', 'channel', 'pace']) }),
+  /** Opens another part of the app (the Decisions workspace). */
+  z.object({ kind: z.literal('navigate'), label: z.string(), destination: z.enum(['decisions']) }),
 ]);
 export type TrailAction = z.infer<typeof trailActionSchema>;
 
@@ -206,7 +208,8 @@ export type ConversationTurn = z.infer<typeof conversationTurnSchema>;
 /** How many earlier turns the browser sends. Only the last one is used for planning; the rest give the model context. */
 export const MAXIMUM_HISTORY_TURNS = 4;
 
-export const conversationIdSchema = z.string().regex(/^[A-Za-z0-9-]{8,64}$/, 'A conversation id is 8 to 64 letters, digits or dashes');
+export { conversationIdSchema } from './ids';
+import { conversationIdSchema } from './ids';
 
 export const doneEventSchema = z.object({
   ...eventEnvelope,

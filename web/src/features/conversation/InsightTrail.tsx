@@ -51,6 +51,8 @@ interface InsightTrailProps {
   canOpenView: (view: InsightView) => boolean;
   onAskQuestion: (question: string) => void;
   onOpenExplore: (view: InsightView) => void;
+  /** "Open Decisions" in an answer about the saved decisions. */
+  onOpenDecisions: () => void;
 }
 
 function prefersReducedMotion(): boolean {
@@ -108,7 +110,7 @@ function RevealedWords({ text, isAnimated }: { text: string; isAnimated: boolean
   );
 }
 
-export function InsightTrail({ run, interaction, isRestored, canOpenView, onAskQuestion, onOpenExplore }: InsightTrailProps) {
+export function InsightTrail({ run, interaction, isRestored, canOpenView, onAskQuestion, onOpenExplore, onOpenDecisions }: InsightTrailProps) {
   const isWorking = run.phase === 'streaming' && run.trail === null;
   const stagesByName = new Map((run.trail ?? []).map((stage) => [stage.stage, stage]));
   const visibleStages = run.trail ? TRAIL_STAGES.filter((name) => stagesByName.has(name)) : TRAIL_STAGES;
@@ -123,7 +125,8 @@ export function InsightTrail({ run, interaction, isRestored, canOpenView, onAskQ
 
   function runAction(action: TrailAction) {
     if (action.kind === 'ask') onAskQuestion(action.question);
-    else onOpenExplore(action.view);
+    else if (action.kind === 'explore') onOpenExplore(action.view);
+    else onOpenDecisions();
   }
 
   return (
@@ -148,7 +151,7 @@ export function InsightTrail({ run, interaction, isRestored, canOpenView, onAskQ
           const isLit = run.trail !== null && index < revealedCount;
           // While Aurora works, the first step waits for it; then each step in turn is next.
           const isCurrent = isWorking ? index === 0 : isRevealing && index === revealedCount;
-          const action = isLit && stage?.action && (stage.action.kind === 'ask' || canOpenView(stage.action.view)) ? stage.action : undefined;
+          const action = isLit && stage?.action && (stage.action.kind !== 'explore' || canOpenView(stage.action.view)) ? stage.action : undefined;
           const isActiveFact = Boolean(stage?.factId && interaction.activeFactId === stage.factId);
           return (
             <li

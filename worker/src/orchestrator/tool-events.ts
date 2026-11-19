@@ -80,5 +80,9 @@ export function buildEventsAfterTool(tool: ToolName, analysis: AnalysisContext):
     case 'simulate_scenario':
       // Not used by the chat: the what-if runs in the simulator.
       return [];
+
+    case 'get_decisions':
+      // Decisions are answered by their own branch (decisions-answer.ts).
+      return [];
   }
 }

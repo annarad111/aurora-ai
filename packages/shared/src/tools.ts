@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { breakdownDimensionSchema, dayTypeSchema } from './breakdown';
 import { channelSchema, dateRangeSchema, groupBlockSchema, hotelSchema, isoDateSchema, segmentSchema } from './domain';
 import { findingSchema } from './findings';
+import { getDecisionsInputSchema, getDecisionsOutputSchema } from './decisions';
 import { metricIdSchema, metricStatusSchema } from './metric-meta';
 
 // ---------------------------------------------------------------------------
@@ -13,17 +14,7 @@ import { metricIdSchema, metricStatusSchema } from './metric-meta';
 // Ratios are fractions (0.62), money is euros, counts are room nights.
 // ---------------------------------------------------------------------------
 
-export const TOOL_NAMES = [
-  'get_hotel_overview',
-  'analyze_revenue_drivers',
-  'get_channel_mix',
-  'get_booking_pace',
-  'query_performance',
-  'get_group_blocks',
-  'simulate_scenario',
-] as const;
-export const toolNameSchema = z.enum(TOOL_NAMES);
-export type ToolName = z.infer<typeof toolNameSchema>;
+export { TOOL_NAMES, toolNameSchema, type ToolName } from './tool-names';
 
 const hotelIdSchema = z.string().min(1).max(64);
 
@@ -328,4 +319,5 @@ export const TOOL_SCHEMAS = {
   query_performance: { input: queryPerformanceInputSchema, output: queryPerformanceOutputSchema },
   get_group_blocks: { input: periodToolInputSchema, output: groupBlocksOutputSchema },
   simulate_scenario: { input: simulateScenarioInputSchema, output: simulateScenarioOutputSchema },
+  get_decisions: { input: getDecisionsInputSchema, output: getDecisionsOutputSchema },
 } as const;
