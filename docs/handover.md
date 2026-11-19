@@ -323,7 +323,6 @@ The exact contracts (the source of truth) are the Zod schemas in `packages/share
 - **LLM quality.** Llama 3.3 sometimes picks the wrong tools or writes text that gets rejected. The fallback covers these cases, but the text then reads more like a template.
 
 ### Tech debt
-- **Docs behind the code.** `README.md` and `docs/architecture.md` still say "4 tools", "six chat tools" and "5 tables" in places. Correct: 10 tools and 12 tables. The "Where things are" list in the README does not include `briefing/`, `decisions/` and `property/`.
 - **Duplicated configuration.** `wrangler.jsonc` repeats D1, rate limits and vars for env `ai` (Wrangler does not inherit them). Every change has to be made in both places.
 - **No CI.** Tests and typecheck only run by hand. Recommendation: a GitHub Action with `npm ci && npm run typecheck && npm test`, possibly with a deploy on push to `main` using a Cloudflare API token as a secret.
 - **`dev:api` rebuilds the web app on every start,** and Wrangler sometimes loses the assets after a rebuild (404). Restarting fixes it; for UI work, Vite (`dev:web`) is better.
@@ -335,6 +334,6 @@ The exact contracts (the source of truth) are the Zod schemas in `packages/share
 ### Immediate recommendations for the next developer
 1. Run `npm install`, `npm run db:migrate:local`, `npm test` and `npm run dev`. Then go through the starter questions in the UI with `docs/architecture.md` open.
 2. Read in this order: `packages/shared/src/tools.ts`, `worker/src/tools/registry.ts`, `worker/src/orchestrator/run-insight.ts`, `web/src/stream/run-reducer.ts`.
-3. Add CI and update the README and architecture.md (see Tech debt).
+3. Add CI (see Tech debt).
 4. Before any real user: authentication and per-hotel authorization, a staging environment with its own D1, observability turned on.
 5. Conventions to keep: code and names in English, descriptive; Sass, not Tailwind; no figure written by the LLM; every new contract in `packages/shared` with Zod; tests for every new tool and rule.

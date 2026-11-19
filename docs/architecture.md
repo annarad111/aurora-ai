@@ -8,7 +8,7 @@
          ── POST ───▶│ /api/chat ─▶ orchestrator ─┐                                                │
             /api/chat│   SSE stream ◀─────────────┤                                                │
                      │                            ├─▶ tools/registry.ts ─▶ packages/analytics ─▶ D1 │
- MCP client ─ /mcp ─▶│ /mcp (createMcpHandler) ───┘      (4 read-only tools)   (pure maths)         │
+ MCP client ─ /mcp ─▶│ /mcp (createMcpHandler) ───┘      (10 read-only tools)  (pure maths)         │
                      │                                                                             │
                      │ orchestrator ⇄ Workers AI (tool choice + wording only, optional)            │
                      └─────────────────────────────────────────────────────────────────────────────┘
@@ -36,10 +36,17 @@ Rule: `analytics` knows nothing about HTTP, the model or React, so it is tested 
 
 ## Data
 
-Five D1 tables, daily granularity per segment and channel (no individual reservations):
-`hotels`, `channels` (commission rate), `daily_stats` (rooms, revenue, cancellations), `targets` (daily
-budget per segment), `on_the_books` (snapshots of future bookings). The seed migration is generated from
-`packages/demo-data` and committed, so the database content is reviewable and identical everywhere.
+Twelve D1 tables (migrations 0001–0010 in `worker/migrations/`):
+
+| Group | Tables |
+|---|---|
+| Results and plans, daily per segment and channel (no individual reservations) | `hotels`, `channels` (commission rate), `daily_stats` (rooms, revenue, cancellations), `targets` (daily budget per segment), `on_the_books` (snapshots of future bookings), `group_blocks` (confirmed and cancelled groups) |
+| The property | `property_profiles` (address, type, room types), `rooms` (111 numbered rooms with floor and type), `room_status_events` (out of order / out of service) |
+| What users create | `conversations` and `conversation_turns` (every finished answer with its streamed events), `decision_records` (saved insights and actions, as versioned JSON) |
+
+The seed migrations (0002, 0004, 0009, 0010) are generated from `packages/demo-data` with
+`npm run db:seed:generate` and committed, so the database content is reviewable and identical everywhere.
+A change to the seed of a migration that production already applied goes into a new migration.
 
 Targets are **daily** (the original plan had monthly): month-to-date then compares against exactly the
 budget of those days, and a group block can be budgeted on its own dates.
@@ -68,7 +75,7 @@ and keeps partial answers on Stop or error.
 
 | Responsibility | Deterministic | Model (optional) |
 |---|---|---|
-| Which tools to call | keyword rules (fallback) | function calling over the 6 chat tools |
+| Which tools to call | keyword rules (fallback) | function calling over all 10 tools |
 | Numbers, KPI statuses, charts, provenance | always | never |
 | Headline, chips, follow-ups | always (templates) | — |
 | Explanation text | templates (fallback) | writes sentences with `{placeholders}` |
@@ -172,7 +179,7 @@ One set of text roles for the whole app (`web/src/styles/abstracts/_mixins.scss`
 - The calculation is one pure function, `simulateScenario(basis, levers)` in `packages/analytics/src/scenario.ts`. The basis comes from the database (`worker/src/tools/simulate-scenario.ts`): rooms and revenue on the books, last year's rooms at the same point, the channel mix of the month so far, the commission per channel, and capacity.
 - Rooms already booked keep their rate; recovered room nights are sold at the rate on the books times the rate lever, and never past a full hotel. Commission is estimated from the channel mix. The four effects (recovered nights, rate, commission on the extra revenue, commission saved by direct) add up exactly to the change in net revenue.
 - The simulator in the pace Explore view calls `POST /api/simulate` once for the basis, then runs the same function in the browser on every slider move, so the numbers are the server's, without a request per move.
-- MCP clients get the same tool. The chat planner leaves it out: the what-if has its own screen.
+- MCP clients get the same tool.
 
 - **In the chat**: what-if questions ("what if we win back half the gap?", "what if we raise the rate by 5%?", "what if 20% of OTA bookings came direct?") are recognised by fixed rules (`what-if-answer.ts`), and the model may choose `simulate_scenario` for other wordings. The answer is written from the tool output, says it is a calculation on the bookings on the books (not a forecast), sends the pace chart so the evidence panel shows it, and ends with "Open the what-if simulator". A rate change alone only applies to rooms still to sell, so the answer says it changes nothing on its own and shows it combined with half the gap won back. With no lever named, "win back half the gap" is used as a labelled example.
 - **Telling people it exists**: the pace card's button reads "Expand · What-if" and has a what-if callout (open the simulator, or ask Aurora); a one-time pop-up points at the button the first time a pace card appears (remembered in the browser after "Got it"); the simulator lists questions to ask Aurora; and answers about pace or the revenue gap offer "What if we win back half the gap?" as a follow-up.
@@ -202,5 +209,10 @@ One set of text roles for the whole app (`web/src/styles/abstracts/_mixins.scss`
 - Split the MCP server into its own Worker only when it needs a different scale or audience
   (the registry already isolates it).
 - Replace the shared MCP token with OAuth, so each user sees only their own hotels.
-- Move from demo data to a PMS/RMS feed writing into the same five tables.
+- Move from demo data to a PMS/RMS feed writing into the same results, plans and property tables.
+- Add sign-in and per-hotel authorization on `/api/*` before real users (today anyone with the URL can
+  read and change conversations and decisions).
+- Add CI (typecheck + tests on every push) and a staging environment with its own D1 database.
+
+For running, deploying and taking over the project, see [handover.md](handover.md).
 - Add GOP/GOPPAR once operating cost data is available; Net RevPAR is the first step towards profit.
