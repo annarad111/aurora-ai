@@ -1,42 +1,42 @@
-# Aurora: document de handover tehnic
+# Aurora: technical handover
 
-> Scris pe 19 nov 2026, pe baza codului din `main` (commit `de310ac`). Tot ce e marcat
-> `[DE COMPLETAT MANUAL]` nu se poate deduce din cod și trebuie completat de proprietarul proiectului.
+> Written on 19 Nov 2026 from the code on `main` (commit `de310ac`). Anything marked
+> `[TO BE COMPLETED MANUALLY]` cannot be worked out from the code and has to be filled in by the project owner.
 
-## 0. Pe scurt
+## 0. In short
 
 | | |
 |---|---|
-| **Nume** | Aurora |
-| **Ce face** | Asistent AI pentru revenue managerii de hotel. Utilizatorul pune o întrebare („De ce suntem sub target luna asta?”). Aurora alege uneltele de analiză potrivite, calculează cifrele determinist din baza de date și scrie un răspuns în flux (SSE), cu KPI-uri, grafice, proveniența fiecărei cifre și pași următori. Aplicația mai are un Morning Briefing, o pagină Property Overview (camere, evenimente, financiar), un spațiu Decisions (insight-uri salvate → acțiuni → rezultat) și un simulator what-if. Aceleași 10 unelte sunt expuse agenților externi prin MCP. |
-| **Stadiu** | MVP funcțional, publicat pe Cloudflare: https://aurora.radulescuana111.workers.dev. Rulează pe **date demo deterministe** (un singur hotel, `sablon-bru`, 111 camere, „azi” fixat la 17 nov 2026). Nu e conectat la un PMS real. |
-| **Utilizatori** | B2B: revenue manageri de hotel (UI) și agenți AI externi (MCP). Proiectul e un concept independent pentru „Juyo assessment” (vezi `package.json`). `[DE COMPLETAT MANUAL]`: utilizatorii reali vizați după demo, dacă există. |
+| **Name** | Aurora |
+| **What it does** | An AI assistant for hotel revenue managers. The user asks a question ("Why are we below target this month?"). Aurora picks the analysis tools it needs, computes the figures deterministically from the database and streams the answer (SSE) with KPIs, charts, where every figure comes from (provenance) and next steps. The app also has a Morning Briefing, a Property Overview page (rooms, events, financials), a Decisions workspace (saved insights → actions → outcome) and a what-if simulator. The same 10 tools are offered to external AI agents over MCP. |
+| **Stage** | Working MVP, live on Cloudflare: https://aurora.radulescuana111.workers.dev. It runs on **deterministic demo data** (one hotel, `sablon-bru`, 111 rooms, "today" fixed at 17 Nov 2026). It is not connected to a real PMS. |
+| **Users** | B2B: hotel revenue managers (UI) and external AI agents (MCP). The project is an independent concept for the "Juyo assessment" (see `package.json`). `[TO BE COMPLETED MANUALLY]`: the real users targeted after the demo, if any. |
 
-Documente complementare, deja în repo:
-- [README.md](../README.md): comenzi și lista rutelor
-- [architecture.md](architecture.md): deciziile de arhitectură, mai pe larg
-- [mcp-usage.md](mcp-usage.md): cum se conectează un client MCP
-- [design-system.md](design-system.md): tokenuri și reguli vizuale
-- [ux-rationale-validation.md](ux-rationale-validation.md): justificarea UX
+Related documents already in the repo:
+- [README.md](../README.md): commands and the list of routes
+- [architecture.md](architecture.md): the architecture decisions in more detail
+- [mcp-usage.md](mcp-usage.md): how to connect an MCP client
+- [design-system.md](design-system.md): tokens and visual rules
+- [ux-rationale-validation.md](ux-rationale-validation.md): the reasoning behind the UX
 
 ---
 
-## 1. Arhitectura & tech stack
+## 1. Architecture & tech stack
 
-| Strat | Tehnologie |
+| Layer | Technology |
 |---|---|
-| Frontend | React 19, TypeScript 5.8, Vite 6, **Sass** (fără Tailwind, fără UI kit), fără router: o singură pagină cu state local |
-| Backend | Un singur **Cloudflare Worker** (TypeScript, `compatibility_date` 2025-09-01, `nodejs_compat`). Rutare manuală în `worker/src/app.ts`, fără framework. |
-| Contracte | **Zod 4**, în `packages/shared`: aceleași scheme validează pe server și în browser (inclusiv fiecare eveniment SSE). |
-| Bază de date | **Cloudflare D1** (SQLite), binding `DB`, baza `aurora-db` |
-| AI | **Workers AI**, binding `AI`, model `@cf/meta/llama-3.3-70b-instruct-fp8-fast`. Doar în mediul `ai`. Modelul alege uneltele și scrie textul, dar **nu scrie nicio cifră** (vezi §5.2). |
-| MCP | `agents` (Cloudflare Agents SDK, `createMcpHandler`, stateless, Streamable HTTP) și `@modelcontextprotocol/server` |
-| Rate limiting | Binding-uri Cloudflare `ratelimits`: chat 20/min, MCP 60/min, per IP |
-| Teste | Vitest 3 în toate pachetele (în jur de 400 de teste). Testele UI folosesc `renderToStaticMarkup`, fără DOM. |
-| Hosting | Cloudflare Workers: aceeași origine servește assets statice, API și `/mcp` |
-| CI/CD | **Nu există.** Deploy-ul e manual (`npm run deploy`). Nu există director `.github/`. `[DE COMPLETAT MANUAL]` dacă se dorește un pipeline. |
+| Frontend | React 19, TypeScript 5.8, Vite 6, **Sass** (no Tailwind, no UI kit), no router: one page with local state |
+| Backend | One **Cloudflare Worker** (TypeScript, `compatibility_date` 2025-09-01, `nodejs_compat`). Hand-written routing in `worker/src/app.ts`, no framework. |
+| Contracts | **Zod 4** in `packages/shared`: the same schemas validate on the server and in the browser (every SSE event included). |
+| Database | **Cloudflare D1** (SQLite), binding `DB`, database `aurora-db` |
+| AI | **Workers AI**, binding `AI`, model `@cf/meta/llama-3.3-70b-instruct-fp8-fast`. Only in the `ai` environment. The model picks the tools and writes the text, but **never writes a figure** (see §5.2). |
+| MCP | `agents` (Cloudflare Agents SDK, `createMcpHandler`, stateless, Streamable HTTP) and `@modelcontextprotocol/server` |
+| Rate limiting | Cloudflare `ratelimits` bindings: chat 20/min, MCP 60/min, per IP |
+| Tests | Vitest 3 in every package (about 400 tests). UI tests use `renderToStaticMarkup`, no DOM. |
+| Hosting | Cloudflare Workers: one origin serves the static assets, the API and `/mcp` |
+| CI/CD | **None.** Deploys are manual (`npm run deploy`). There is no `.github/` folder. `[TO BE COMPLETED MANUALLY]` if a pipeline is wanted. |
 
-### Fluxul principal de date
+### Main data flow
 
 ```
                 ┌──────────────────────── Cloudflare Worker "aurora" ─────────────────────────┐
@@ -46,295 +46,295 @@ Documente complementare, deja în repo:
          ├─POST /api/chat ──▶ routes/chat ─▶ orchestrator/run-insight ─┤                        │
          │  ◀── SSE: run_started, step, kpi, chart, insight,           │                        │
          │       text_delta, provenance, followups, done               ├─▶ tools/registry.ts    │
-         ├─POST /api/simulate ─────────────────────────────────────────┤   (10 unelte, Zod I/O) │
+         ├─POST /api/simulate ─────────────────────────────────────────┤   (10 tools, Zod I/O)  │
          │                                                             │        │               │
  Agent ──┴─/mcp (Bearer MCP_TOKEN) ─▶ mcp/aurora-mcp-server ───────────┘        ▼               │
-   MCP                                                               packages/analytics (calcul │
-                                                                     pur) ◀─ db/D1 repository ─▶ D1
-          orchestrator ⇄ Workers AI (doar alegerea uneltelor + textul cu placeholdere; opțional)│
-          orchestrator ─▶ D1: salvează răspunsul terminat (conversation_turns)                  │
+   MCP                                                               packages/analytics (pure   │
+                                                                     maths) ◀─ db/D1 repository ─▶ D1
+          orchestrator ⇄ Workers AI (only the tool choice + text with placeholders; optional)   │
+          orchestrator ─▶ D1: stores the finished answer (conversation_turns)                  │
                 └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
-Principii (aplicate peste tot în cod):
-1. **O singură origine, un singur deploy.** Nu există CORS și nici hop intern.
-2. **Un singur registru de unelte** (`worker/src/tools/registry.ts`), folosit atât de chat, cât și de MCP.
-3. **Cifrele sunt deterministe.** Vin doar din `packages/analytics` (funcții pure) și din reguli fixe. LLM-ul e opțional, iar fără el aplicația merge identic, cu template-uri.
+Principles (applied throughout the code):
+1. **One origin, one deploy.** No CORS and no internal network hop.
+2. **One tool registry** (`worker/src/tools/registry.ts`), used by both the chat and MCP.
+3. **Deterministic figures.** They come only from `packages/analytics` (pure functions) and fixed rules. The language model is optional: without it the app works the same, with templates.
 
 ---
 
-## 2. Structura proiectului
+## 2. Folder structure
 
-Monorepo cu **npm workspaces**:
+A monorepo with **npm workspaces**:
 
 ```
 aurora-ai/
-├─ wrangler.jsonc            config Worker: assets, D1, rate limits, vars; mediul "ai" adaugă Workers AI
-├─ package.json              scripturile de la rădăcină (dev, test, deploy, migrări)
-├─ .dev.vars.example         model pentru secretele locale (MCP_TOKEN)
-├─ docs/                     arhitectură, MCP, design system, UX, acest handover
+├─ wrangler.jsonc            Worker config: assets, D1, rate limits, vars; the "ai" environment adds Workers AI
+├─ package.json              root scripts (dev, test, deploy, migrations)
+├─ .dev.vars.example         template for the local secrets (MCP_TOKEN)
+├─ docs/                     architecture, MCP, design system, UX, this handover
 ├─ packages/
-│  ├─ shared/src/            CONTRACTE Zod + tipuri: domain, tools, tool-names, stream-events,
+│  ├─ shared/src/            Zod CONTRACTS + types: domain, tools, tool-names, stream-events,
 │  │                         investigation, decisions, property, briefing, format (€, %, pp)
-│  ├─ analytics/src/         MATEMATICĂ PURĂ: kpi, variance (gap = volum + mix + preț), channels,
-│  │                         pace, scenario (what-if), breakdown, status, findings. Fără HTTP/LLM/React.
-│  └─ demo-data/src/         SETUL DEMO determinist: story.ts (povestea plantată: congresul anulat
-│                            etc.), generate-demo-dataset.ts, property.ts (111 camere, 6 etaje, evenimente)
+│  ├─ analytics/src/         PURE MATHS: kpi, variance (gap = volume + mix + price), channels,
+│  │                         pace, scenario (what-if), breakdown, status, findings. No HTTP/LLM/React.
+│  └─ demo-data/src/         The deterministic DEMO DATASET: story.ts (the planted story: the cancelled
+│                            congress etc.), generate-demo-dataset.ts, property.ts (111 rooms, 6 floors, events)
 ├─ worker/
-│  ├─ migrations/            0001–0010 *.sql (0002, 0004, 0009, 0010 sunt GENERATE, nu se editează de mână)
+│  ├─ migrations/            0001–0010 *.sql (0002, 0004, 0009, 0010 are GENERATED, never edit them by hand)
 │  ├─ scripts/               generate-seed-sql.ts, print-tool-outputs.ts, try-mcp.ts
-│  ├─ test/                  teste de integrare pe repository-ul in-memory
+│  ├─ test/                  integration tests on the in-memory repository
 │  └─ src/
-│     ├─ index.ts            entry: construiește dependențele reale (D1, AI, secrete, rate limiters)
-│     ├─ app.ts              router-ul (toate rutele într-un loc)
-│     ├─ env.ts              binding-uri + citirea/validarea variabilelor, cu valori implicite
-│     ├─ routes/             câte un fișier per rută
-│     ├─ tools/              cele 10 unelte + registry.ts
-│     ├─ orchestrator/       rularea unui răspuns: planificare, unelte, text, gardă, proveniență,
-│     │                      răspunsuri scrise prin reguli (decisions/property/what-if/briefing)
-│     ├─ db/                 HotelDataRepository (interfață), implementarea D1 (singurul SQL),
-│     │                      implementarea in-memory (teste, scripturi)
-│     ├─ decisions/          decision-service.ts (insight-uri, acțiuni, rezultate)
-│     ├─ llm/                interfața LanguageModel + adaptorul Workers AI (cu timeout)
-│     ├─ mcp/                serverul MCP (înregistrează toate uneltele din registry)
-│     ├─ sse/                stream SSE validat, numerotat, cu heartbeat, oprit la deconectare
-│     └─ http/               răspunsuri JSON, token Bearer (comparație constant-time), rate limit
+│     ├─ index.ts            entry point: builds the real dependencies (D1, AI, secrets, rate limiters)
+│     ├─ app.ts              the router (every route in one place)
+│     ├─ env.ts              bindings + reading/checking the variables, with defaults
+│     ├─ routes/             one file per route
+│     ├─ tools/              the 10 tools + registry.ts
+│     ├─ orchestrator/       running one answer: planning, tools, text, number guard, provenance,
+│     │                      rule-written answers (decisions/property/what-if/briefing)
+│     ├─ db/                 HotelDataRepository (interface), the D1 implementation (the only SQL),
+│     │                      the in-memory implementation (tests, scripts)
+│     ├─ decisions/          decision-service.ts (insights, actions, outcomes)
+│     ├─ llm/                the LanguageModel interface + the Workers AI adapter (with timeout)
+│     ├─ mcp/                the MCP server (registers every tool in the registry)
+│     ├─ sse/                validated, numbered SSE stream, with heartbeat, stopped on disconnect
+│     └─ http/               JSON responses, Bearer token (constant-time comparison), rate limit
 └─ web/
-   ├─ vite.config.ts         proxy /api și /mcp → AURORA_API_ORIGIN (implicit 127.0.0.1:8787)
+   ├─ vite.config.ts         proxies /api and /mcp → AURORA_API_ORIGIN (default 127.0.0.1:8787)
    └─ src/
       ├─ app/                App.tsx, layout/ (Sidebar, ConversationHeader, EvidencePanel, ThemeSwitch)
-      ├─ features/           briefing, conversation, decisions, empty-state, evidence (carduri,
-      │                      what-if), explore (overlay-ul simulatorului), insights, investigation, property
-      ├─ stream/             parse-sse.ts (fetch + ReadableStream), run-reducer.ts (state-ul unui
-      │                      răspuns), useConversation.ts
+      ├─ features/           briefing, conversation, decisions, empty-state, evidence (cards,
+      │                      what-if), explore (the simulator overlay), insights, investigation, property
+      ├─ stream/             parse-sse.ts (fetch + ReadableStream), run-reducer.ts (the state of one
+      │                      answer), useConversation.ts
       ├─ design-system/      ThemeProvider (Light/Dark), icons
-      ├─ lib/                formatare date, metrici, timp relativ
-      └─ styles/             Sass 7-1: abstracts (tokenuri, mixin-uri de tipografie text-*),
+      ├─ lib/                formatting of dates, metrics, relative time
+      └─ styles/             Sass 7-1: abstracts (tokens, text-* typography mixins),
                              base, components, layout, themes; main.scss
 ```
 
-Dependențele merg strict într-o direcție: `shared` ← `analytics` ← `demo-data` ← `worker`, iar `web` depinde doar de `shared` și `analytics`.
+Dependencies go one way only: `shared` ← `analytics` ← `demo-data` ← `worker`, and `web` depends only on `shared` and `analytics`.
 
 ---
 
-## 3. Setup local & variabile de mediu
+## 3. Local setup & environment variables
 
-### Cerințe
-- **Node.js 22** (proiectul e rulat cu v22.15.1; nu există `.nvmrc` sau `engines`) și npm.
-- Docker, Python etc. **nu** sunt necesare. Wrangler (CLI-ul Cloudflare) e devDependency.
-- Doar pentru modul AI: cont Cloudflare și `npx wrangler login`.
+### Requirements
+- **Node.js 22** (the project runs on v22.15.1; there is no `.nvmrc` or `engines`) and npm.
+- Docker, Python etc. are **not** needed. Wrangler (the Cloudflare CLI) is a devDependency.
+- For the AI mode only: a Cloudflare account and `npx wrangler login`.
 
-### Pornire
+### Getting started
 ```bash
 npm install
-npm run db:migrate:local          # creează D1 local în .wrangler/ cu schema + datele demo
-cp .dev.vars.example .dev.vars    # pune un șir aleator lung în MCP_TOKEN (doar dacă vrei /mcp local)
+npm run db:migrate:local          # creates the local D1 in .wrangler/ with the schema + the demo data
+cp .dev.vars.example .dev.vars    # put a long random string in MCP_TOKEN (only if you want /mcp locally)
 
-npm run dev       # Worker :8787 + Vite :5173, fără AI, merge offline → http://localhost:5173
-npm run dev:ai    # la fel, cu Workers AI (cere wrangler login; modelul rulează mereu în cloud)
-npm test          # Vitest în toate pachetele
+npm run dev       # Worker :8787 + Vite :5173, no AI, works offline → http://localhost:5173
+npm run dev:ai    # the same with Workers AI (needs wrangler login; the model always runs in the cloud)
+npm test          # Vitest in every package
 npm run typecheck
 ```
 
-Utile:
-- `npm run tools:demo [-- --json]` rulează uneltele pe datele demo.
-- `npm run mcp:try` se conectează la `/mcp` ca un client real.
-- Worker-ul pe alt port: `AURORA_API_ORIGIN=http://127.0.0.1:8789 npm run dev:web`.
+Useful:
+- `npm run tools:demo [-- --json]` runs the tools on the demo data.
+- `npm run mcp:try` connects to `/mcp` as a real client.
+- Worker on another port: `AURORA_API_ORIGIN=http://127.0.0.1:8789 npm run dev:web`.
 
-### Variabile de mediu
+### Environment variables
 
-Secrete (fișierul `.dev.vars` local, `wrangler secret put` în producție):
+Secrets (the `.dev.vars` file locally, `wrangler secret put` in production):
 
-| Variabilă | Rol | Format exemplu |
+| Variable | Purpose | Example format |
 |---|---|---|
-| `MCP_TOKEN` | Token Bearer pentru `/mcp`. Lipsă → `/mcp` e dezactivat. | `9fK2…` (≥ 24 caractere aleatoare, base64url) |
+| `MCP_TOKEN` | Bearer token for `/mcp`. Missing → `/mcp` is disabled. | `9fK2…` (≥ 24 random characters, base64url) |
 
-Variabile publice (`vars` în `wrangler.jsonc`, separat pentru mediul implicit și pentru `ai`):
+Public variables (`vars` in `wrangler.jsonc`, set separately for the default and the `ai` environment):
 
-| Variabilă | Rol | Exemplu / implicit |
+| Variable | Purpose | Example / default |
 |---|---|---|
-| `NARRATIVE_PROVIDER` | `scripted` = doar template-uri; `llm` = Workers AI cu fallback pe template-uri | `scripted` (implicit), `llm` (env `ai`) |
-| `AI_MODEL` | Modelul Workers AI | `@cf/meta/llama-3.3-70b-instruct-fp8-fast` |
-| `AI_TIMEOUT_MS` | Timpul maxim pentru un apel la model, apoi preiau template-urile | `15000` |
-| `DEMO_TODAY` | „Azi” al hotelului. Datele demo sunt generate în jurul lui. | `2026-11-17` |
-| `STREAM_STEP_DELAY_MS` | Pauza între pașii stream-ului (estetic); `0` o dezactivează | `450` |
-| `TEXT_TOKEN_DELAY_MS` | Pauza între cuvintele streamate; `0` o dezactivează | `30` |
+| `NARRATIVE_PROVIDER` | `scripted` = templates only; `llm` = Workers AI with template fallback | `scripted` (default), `llm` (env `ai`) |
+| `AI_MODEL` | The Workers AI model | `@cf/meta/llama-3.3-70b-instruct-fp8-fast` |
+| `AI_TIMEOUT_MS` | How long one model call may take before the templates take over | `15000` |
+| `DEMO_TODAY` | The hotel's "today". The demo data is generated around it. | `2026-11-17` |
+| `STREAM_STEP_DELAY_MS` | Pause between the stream's steps (cosmetic); `0` turns it off | `450` |
+| `TEXT_TOKEN_DELAY_MS` | Pause between streamed words; `0` turns it off | `30` |
 
-Variabile de build și dev (shell, nu Worker):
+Build and dev variables (shell, not the Worker):
 
-| Variabilă | Rol | Exemplu |
+| Variable | Purpose | Example |
 |---|---|---|
-| `AURORA_API_ORIGIN` | Ținta proxy-ului Vite pentru `/api` și `/mcp` | `http://127.0.0.1:8787` |
+| `AURORA_API_ORIGIN` | Where the Vite proxy sends `/api` and `/mcp` | `http://127.0.0.1:8787` |
 
-Binding-uri (nu sunt variabile, dar sunt obligatorii): `DB` (D1), `ASSETS`, `AI` (doar `ai`), `CHAT_RATE_LIMITER`, `MCP_RATE_LIMITER`.
+Bindings (not variables, but required): `DB` (D1), `ASSETS`, `AI` (only `ai`), `CHAT_RATE_LIMITER`, `MCP_RATE_LIMITER`.
 
-Tokenul MCP de producție e păstrat local, în `.secrets/production.env` (ignorat de git), pe mașina care l-a setat. `[DE COMPLETAT MANUAL]`: predarea lui pe un canal sigur (nu prin repo sau chat).
+The production MCP token is kept locally in `.secrets/production.env` (ignored by git) on the machine that set it. `[TO BE COMPLETED MANUALLY]`: hand it over through a secure channel (never through the repo or a chat).
 
 ---
 
-## 4. Baza de date & modele de date
+## 4. Database & data models
 
-D1 (SQLite). Granularitatea este **zilnică, per segment și canal**; nu există rezervări individuale.
+D1 (SQLite). The granularity is **daily, per segment and channel**; there are no individual reservations.
 
-| Tabel | Cheie | Conținut |
+| Table | Key | Contents |
 |---|---|---|
-| `hotels` | `id` | nume, oraș, `room_count`, monedă (doar EUR), fus orar |
+| `hotels` | `id` | name, city, `room_count`, currency (EUR only), timezone |
 | `channels` | `code` (direct/ota/gds/wholesale) | `commission_rate` |
-| `daily_stats` | (hotel, date, segment, channel) | `rooms_sold`, `room_revenue`, `cancellations` (realizat) |
-| `targets` | (hotel, date, segment) | buget zilnic: camere și venit |
-| `on_the_books` | (hotel, snapshot_date, stay_date) | rezervări viitoare la o anumită dată (pace) |
-| `group_blocks` | `id` | grupuri/MICE: nopți, camere/noapte, `confirmed`/`cancelled` + `cancelled_on` |
-| `conversations` | `id` (generat în browser) | titlu, hotel, timestampuri |
-| `conversation_turns` | (conversation_id, position), `ON DELETE CASCADE` | întrebarea + **evenimentele SSE exacte** (`events_json`), redate fără a rula din nou uneltele |
-| `decision_records` | `id` | insight-uri și acțiuni ca **JSON versionat** (`record_version`, `record_json`); `source_key` unic per hotel/tip (salvarea dublă nu creează un al doilea rând), `parent_id` leagă acțiunea de insight |
-| `property_profiles` | `hotel_id` | adresă, tip proprietate, `room_types_json`, `is_demo_data` |
-| `rooms` | (hotel, room_number) | etaj, tip cameră (101–119 … 601–618 = 111 camere) |
-| `room_status_events` | `id` → FK (hotel, room) | `out_of_order` / `out_of_service`, motiv, nopți |
+| `daily_stats` | (hotel, date, segment, channel) | `rooms_sold`, `room_revenue`, `cancellations` (actuals) |
+| `targets` | (hotel, date, segment) | daily budget: rooms and revenue |
+| `on_the_books` | (hotel, snapshot_date, stay_date) | future bookings as of a given date (pace) |
+| `group_blocks` | `id` | groups/MICE: nights, rooms per night, `confirmed`/`cancelled` + `cancelled_on` |
+| `conversations` | `id` (made in the browser) | title, `title_is_custom`, hotel, timestamps |
+| `conversation_turns` | (conversation_id, position), `ON DELETE CASCADE` | the question + the **exact SSE events** (`events_json`), replayed without running the tools again |
+| `decision_records` | `id` | insights and actions as **versioned JSON** (`record_version`, `record_json`); `source_key` is unique per hotel and kind (saving twice keeps one row), `parent_id` links an action to its insight |
+| `property_profiles` | `hotel_id` | address, property type, `room_types_json`, `is_demo_data` |
+| `rooms` | (hotel, room_number) | floor, room type (101–119 … 601–618 = 111 rooms) |
+| `room_status_events` | `id` → FK (hotel, room) | `out_of_order` / `out_of_service`, reason, nights |
 
-Relații: totul atârnă de `hotels.id`. Conversation 1→N turns. Insight 1→N acțiuni (prin `parent_id`, fără FK). Room 1→N status events.
+Relationships: everything hangs off `hotels.id`. A conversation has many turns. An insight has many actions (through `parent_id`, no foreign key). A room has many status events.
 
-Câteva lucruri de știut:
-- `suggested_questions` și `asked_questions` (din 0003) au fost **șterse în 0005**.
-- `decision_records` nu are coloane per câmp: Worker-ul validează fiecare record cu Zod la citire și îl sare pe cel care nu mai corespunde. Schimbarea formatului se face prin `DECISION_RECORD_VERSION`, nu printr-o migrare.
+Worth knowing:
+- `suggested_questions` and `asked_questions` (from 0003) were **dropped in 0005**.
+- `decision_records` has no per-field columns: the Worker validates every record with Zod when it reads it and skips one that no longer fits. The format changes through `DECISION_RECORD_VERSION`, not through a migration.
 
-### Migrări și seed
+### Migrations and seed
 
 ```bash
 npm run db:migrate:local     # local (.wrangler/)
-npm run db:migrate:remote    # producție (env ai), întotdeauna ÎNAINTE de deploy dacă există migrări noi
-npm run db:seed:generate     # rescrie 0002, 0004, 0009, 0010 din packages/demo-data
+npm run db:migrate:remote    # production (env ai), always BEFORE deploying when there are new migrations
+npm run db:seed:generate     # rewrites 0002, 0004, 0009, 0010 from packages/demo-data
 ```
 
-Reguli:
-- Migrările deja aplicate **nu se editează**; se adaugă `0011_*.sql`.
-- După o schimbare în `packages/demo-data`, rulezi `db:seed:generate`. Atenție: dacă seed-ul unei migrări deja aplicate se schimbă, producția **nu** îl reaplică, deci schimbarea trebuie pusă într-o migrare nouă (așa s-a procedat cu 0010).
-- Testele `packages/demo-data/test/data-validity.test.ts` și `property-data.test.ts` verifică plauzibilitatea datelor (ocupare ≤ 100%, buget ≤ capacitate, numere de camere valide etc.).
+Rules:
+- Migrations that have already been applied are **never edited**; add `0011_*.sql` instead.
+- After a change in `packages/demo-data`, run `db:seed:generate`. Careful: if the seed of an already applied migration changes, production does **not** apply it again, so the change has to go into a new migration (this is what 0010 is).
+- The tests `packages/demo-data/test/data-validity.test.ts` and `property-data.test.ts` check that the data is plausible (occupancy ≤ 100%, budget ≤ capacity, valid room numbers etc.).
 
 ---
 
-## 5. Fluxuri critice & logica de business
+## 5. Critical flows & business logic
 
-### 5.1 Un răspuns în chat (`POST /api/chat`)
-1. `routes/chat.ts` aplică rate limit-ul (20/min/IP), validează `{ question, hotelId, conversationId, investigation? }` și deschide un stream SSE (`sse/sse-event-stream.ts`): evenimente validate Zod, cu `runId` și `sequence` crescător, heartbeat; dacă clientul se deconectează, rularea se oprește.
-2. **Planificarea** (`orchestrator/insight-planners.ts`, `insight-plan.ts`). Ordinea regulilor este: salut/social → what-if → decisions → property → follow-up → off-topic → cuvinte-cheie.
-   - Cu LLM: modelul primește uneltele prin function calling, iar alegerea lui e convertită într-un plan. Uneltele obligatorii se adaugă oricum, iar ordinea de rulare e fixă.
-   - Fără LLM sau dacă modelul eșuează: reguli de cuvinte-cheie.
-   - Un `investigation` (context de investigație) (venit din briefing, un grafic, un card KPI sau pagina de proprietate) fixează intenția, perioada, segmentul etc.
-3. `run-insight.ts` rulează uneltele, iar după fiecare emite `step`, `kpi` și `chart` (`tool-events.ts`). Apoi vin `insight` (titlul), `text_delta`, `provenance` (pentru fiecare `factId`), `followups` și `done`.
-4. Planurile scrise prin reguli (decisions, property, impactul mentenanței, what-if, morning briefing) trec prin helper-ul `emitWrittenAnswer`, fără LLM.
-5. Răspunsul terminat se salvează în `conversation_turns` (prin `waitUntil`). Primul răspuns analitic dă titlul conversației, dacă userul nu l-a redenumit (`title_is_custom`).
-6. Clientul: `web/src/stream/parse-sse.ts` citește stream-ul (fetch + ReadableStream, ca să poată face POST și abort), iar `run-reducer.ts` construiește state-ul afișat.
+### 5.1 A chat answer (`POST /api/chat`)
+1. `routes/chat.ts` applies the rate limit (20/min/IP), validates `{ question, hotelId, conversationId, investigation? }` and opens an SSE stream (`sse/sse-event-stream.ts`): Zod-validated events with a `runId` and an increasing `sequence`, a heartbeat, and the run stops if the client disconnects.
+2. **Planning** (`orchestrator/insight-planners.ts`, `insight-plan.ts`). The rules are checked in this order: greeting/social → what-if → decisions → property → follow-up → off-topic → keywords.
+   - With the LLM: the model gets the tools through function calling, and its choice is turned into a plan. The tools an answer cannot do without are added anyway, and they always run in a fixed order.
+   - Without the LLM, or if the model fails: keyword rules.
+   - An `investigation` (context sent from the briefing, a chart, a KPI card or the property page) fixes the intent, the period, the segment etc.
+3. `run-insight.ts` runs the tools and after each one sends `step`, `kpi` and `chart` (`tool-events.ts`). Then come `insight` (the headline), `text_delta`, `provenance` (for every `factId`), `followups` and `done`.
+4. Rule-written plans (decisions, property, maintenance impact, what-if, morning briefing) go through the `emitWrittenAnswer` helper, without the LLM.
+5. The finished answer is stored in `conversation_turns` (through `waitUntil`). The first analytical answer gives the conversation its title, unless the user renamed it (`title_is_custom`).
+6. The client: `web/src/stream/parse-sse.ts` reads the stream (fetch + ReadableStream, so it can POST and abort), and `run-reducer.ts` builds the state that is shown.
 
-### 5.2 Garda cifrelor (de ce LLM-ul nu poate inventa numere)
-1. `figure-catalogue.ts` dă modelului doar placeholdere cu sens, de exemplu `{revenue_gap} = "€33,917" (cât e venitul SUB target)`.
-2. Modelul scrie un text de felul „Revenue is {revenue_gap} below target…”.
-3. `narrative-guard.ts` respinge textul dacă găsește o cifră în afara unui placeholder, un placeholder necunoscut, mai puțin de 3 cifre sau o lungime greșită. Modelul are un singur retry, cu motivele respingerii.
-4. La eșec, timeout (15 s) sau a doua respingere, preia `scripted-narrative-writer.ts`, iar footer-ul spune „Scripted narrative (model unavailable)”.
-5. Regulile de stil pentru model sunt în `prompts.ts`. Regula 10, de exemplu, interzice legarea congresului anulat de pace-ul viitor.
+### 5.2 The number guard (why the LLM cannot make up figures)
+1. `figure-catalogue.ts` gives the model only placeholders with a meaning, for example `{revenue_gap} = "€33,917" (how far revenue is BELOW target)`.
+2. The model writes text such as "Revenue is {revenue_gap} below target…".
+3. `narrative-guard.ts` rejects the text if it finds a digit outside a placeholder, an unknown placeholder, fewer than 3 figures or the wrong length. The model gets one retry, with the reasons.
+4. On failure, timeout (15 s) or a second rejection, `scripted-narrative-writer.ts` takes over, and the answer's footer says "Scripted narrative (model unavailable)".
+5. The model's style rules are in `prompts.ts`. Rule 10, for example, forbids linking the cancelled congress to future pace.
 
-### 5.3 Morning briefing → investigație → decizie
-1. `GET /api/briefing` (`orchestrator/morning-briefing.ts`) produce cel mult 3 itemi, ordonați după reguli fixe (prioritate, abatere față de bază, sursă). Fiecare item are contextul investigației pe care o deschide.
-2. Click pe un item, un punct de grafic sau un card KPI deschide `InvestigationPanel`. Panoul are acțiuni (`investigation-actions.ts`) care trimit în chat o întrebare plus un context structurat (`investigation`).
-3. Orice insight se poate salva (`SaveInsightButton`, `POST /api/decisions/insights`). Pe el se creează acțiuni cu prioritate și termen, iar o acțiune încheiată primește un rezultat (`decision-service.ts`).
-4. Chat-ul răspunde și despre decizii („ce decizii am salvate?”, „ce e întârziat?”) prin unealta `get_decisions`.
+### 5.3 Morning briefing → investigation → decision
+1. `GET /api/briefing` (`orchestrator/morning-briefing.ts`) gives at most 3 items, ranked by fixed rules (priority, deviation from the baseline, source). Each item carries the context of the investigation it opens.
+2. A click on a briefing item, a chart point or a KPI card opens the `InvestigationPanel`. The panel has actions (`investigation-actions.ts`) that send a question to the chat together with a structured context (`investigation`).
+3. Any insight can be saved (`SaveInsightButton`, `POST /api/decisions/insights`). Actions with a priority and a due date are created on it, and a completed action gets an outcome (`decision-service.ts`).
+4. The chat also answers about decisions ("what decisions have I saved?", "what is overdue?") through the `get_decisions` tool.
 
-### 5.4 Property Overview și răspunsurile despre camere
-`GET /api/property` (`routes/property.ts`) întoarce:
-- camerele în seara asta: ocupate, libere, out of order, out of service
-- evenimentele (mentenanță, grup sosit, grup anulat), cu impactul măsurat
-- luna completă anterioară, față de target și anul trecut
+### 5.4 Property Overview and answers about rooms
+`GET /api/property` (`routes/property.ts`) returns:
+- the rooms tonight: occupied, vacant, out of order, out of service
+- the events (maintenance, group arrival, group cancellation), with their measured impact
+- the previous completed month against target and last year
 
-Chat-ul răspunde la „câte camere sunt libere?” prin `get_property_status` și `get_room_events` (`property-answer.ts`). Răspunsul include o acțiune `navigate` care deschide secțiunea exactă a paginii (`destination: 'property'`, `section: 'inventory' | 'events' | …`).
+The chat answers "how many rooms are available?" through `get_property_status` and `get_room_events` (`property-answer.ts`). The answer includes a `navigate` action that opens the exact section of the page (`destination: 'property'`, `section: 'inventory' | 'events' | …`).
 
 ### 5.5 What-if
-`POST /api/simulate` și unealta `simulate_scenario` (`packages/analytics/src/scenario.ts`) primesc `paceRecovery`, `rateChange` și `otaToDirect` pe o perioadă de ședere și calculează efectul în euro.
-- În UI simulatorul e în `ExploreOverlay`: se deschide din cardul de pace („Expand · What-if”), are un callout și un pop-up afișat o singură dată (`localStorage` `aurora.hint.what-if-seen`).
-- În chat, întrebările „What if…” trec prin `what-if-answer.ts`.
+`POST /api/simulate` and the `simulate_scenario` tool (`packages/analytics/src/scenario.ts`) take `paceRecovery`, `rateChange` and `otaToDirect` for a stay period and compute the effect in euros.
+- In the UI, the simulator is in `ExploreOverlay`: it opens from the pace card ("Expand · What-if"), with a callout and a one-time pop-up (`localStorage` key `aurora.hint.what-if-seen`).
+- In the chat, "What if…" questions go through `what-if-answer.ts`.
 
-**Autentificare/autorizare:** nu există pentru UI și `/api/*` (vezi §8). Doar `/mcp` are token.
+**Authentication/authorization:** there is none for the UI and `/api/*` (see §8). Only `/mcp` needs a token.
 
 ---
 
-## 6. API endpoints / integrări externe
+## 6. API endpoints / external integrations
 
-Toate sunt pe aceeași origine. Erorile au forma `{ error: { code, message } }` (`http/json-response.ts`).
+Everything is on the same origin. Errors look like `{ error: { code, message } }` (`http/json-response.ts`).
 
-| Metodă | Endpoint | Rol | Payload / parametri |
+| Method | Endpoint | Purpose | Payload / parameters |
 |---|---|---|---|
-| GET | `/api/health` | starea Worker-ului și a DB | — |
-| GET | `/api/workspace?hotel=` | hoteluri, perioadă, întrebări de start scrise din date, `today` | — |
-| GET | `/api/briefing?hotel=` | morning briefing (≤ 3 itemi) | — |
+| GET | `/api/health` | Worker and database status | — |
+| GET | `/api/workspace?hotel=` | hotels, period, starter questions written from the data, `today` | — |
+| GET | `/api/briefing?hotel=` | morning briefing (≤ 3 items) | — |
 | GET | `/api/property?hotel=` | Property Overview | — |
-| POST | `/api/chat` | răspuns în stream SSE | `{ question, hotelId, conversationId, investigation? }` |
-| GET | `/api/conversations?hotel=` | lista Recent | — |
-| GET | `/api/conversations/:id` | conversația cu evenimentele salvate | — |
-| PATCH | `/api/conversations/:id?hotel=` | redenumire | `{ title }` |
-| DELETE | `/api/conversations/:id?hotel=` | ștergere (cu turn-urile) | — |
-| GET | `/api/decisions?hotel=` | insight-uri, acțiuni, rezultate | — |
-| POST | `/api/decisions/insights` | salvare insight (idempotent pe `source_key`) | insight Zod (`packages/shared/src/decisions.ts`) |
-| DELETE | `/api/decisions/insights/:id?hotel=` | ștergere, doar dacă insight-ul nu are acțiuni | — |
-| POST | `/api/decisions/actions` | creare acțiune | acțiune Zod |
-| PATCH / DELETE | `/api/decisions/actions/:id?hotel=` | modificare / ștergere | câmpurile modificate |
+| POST | `/api/chat` | streamed SSE answer | `{ question, hotelId, conversationId, investigation? }` |
+| GET | `/api/conversations?hotel=` | the Recent list | — |
+| GET | `/api/conversations/:id` | the conversation with its stored events | — |
+| PATCH | `/api/conversations/:id?hotel=` | rename | `{ title }` |
+| DELETE | `/api/conversations/:id?hotel=` | delete (with its turns) | — |
+| GET | `/api/decisions?hotel=` | insights, actions, outcomes | — |
+| POST | `/api/decisions/insights` | save an insight (idempotent on `source_key`) | Zod insight (`packages/shared/src/decisions.ts`) |
+| DELETE | `/api/decisions/insights/:id?hotel=` | delete, only when the insight has no actions | — |
+| POST | `/api/decisions/actions` | create an action | Zod action |
+| PATCH / DELETE | `/api/decisions/actions/:id?hotel=` | change / delete | the changed fields |
 | POST | `/api/simulate` | what-if | `{ hotelId, stayFrom, stayTo, paceRecovery?, rateChange?, otaToDirect? }` |
-| GET | `/api/hotels/:id/overview?from=&to=` | unealta overview ca JSON simplu | — |
-| POST/GET | `/mcp` | server MCP (Streamable HTTP), cele 10 unelte | `Authorization: Bearer <MCP_TOKEN>`, 60/min |
+| GET | `/api/hotels/:id/overview?from=&to=` | the overview tool as plain JSON | — |
+| POST/GET | `/mcp` | MCP server (Streamable HTTP), the 10 tools | `Authorization: Bearer <MCP_TOKEN>`, 60/min |
 
-Contractele exacte (sursa de adevăr) sunt schemele Zod din `packages/shared/src/`, iar uneltele sunt în `tools/registry.ts`. Cele 10 unelte sunt:
+The exact contracts (the source of truth) are the Zod schemas in `packages/shared/src/`, and the tools are in `tools/registry.ts`. The 10 tools are:
 - `get_hotel_overview`, `query_performance`, `analyze_revenue_drivers`
 - `get_channel_mix`, `get_booking_pace`, `get_group_blocks`
 - `simulate_scenario`, `get_decisions`, `get_property_status`, `get_room_events`
 
-**Integrări externe:** doar Cloudflare (D1, Workers AI, Rate Limiting). Nu există PMS, channel manager, email sau plăți. `[DE COMPLETAT MANUAL]`: sursa de date reală (PMS/RMS) dacă proiectul trece de demo.
+**External integrations:** Cloudflare only (D1, Workers AI, Rate Limiting). There is no PMS, channel manager, email or payments. `[TO BE COMPLETED MANUALLY]`: the real data source (PMS/RMS) if the project goes beyond the demo.
 
 ---
 
-## 7. Deployment & mentenanță
+## 7. Deployment & maintenance
 
-- **Medii.** Există un singur mediu deploy-at: env `ai`, Worker `aurora` (https://aurora.radulescuana111.workers.dev). Mediul implicit (fără AI) e doar pentru dezvoltare locală. **Nu există staging**: `[DE COMPLETAT MANUAL]` dacă e nevoie de unul (un env nou în `wrangler.jsonc`, cu o bază D1 separată).
-- **Branch-uri.** Se lucrează direct pe `main`: fiecare pas e testat, commit-uit și push-uit pe GitHub, apoi deploy-at. Nu există protecție de branch sau PR-uri obligatorii.
+- **Environments.** There is one deployed environment: env `ai`, Worker `aurora` (https://aurora.radulescuana111.workers.dev). The default environment (no AI) is only for local development. **There is no staging**: `[TO BE COMPLETED MANUALLY]` if one is needed (a new env in `wrangler.jsonc` with its own D1 database).
+- **Branches.** Work happens directly on `main`: each step is tested, committed and pushed to GitHub, then deployed. There is no branch protection and no required PRs.
 - **Release:**
   ```bash
   npm test && npm run typecheck
-  npm run db:migrate:remote      # doar dacă au apărut migrări noi
-  npm run deploy                 # build web (tsc + vite) + wrangler deploy --env ai
+  npm run db:migrate:remote      # only when there are new migrations
+  npm run deploy                 # web build (tsc + vite) + wrangler deploy --env ai
   ```
-- **Setup unic** (deja făcut): `wrangler login`, `wrangler d1 create aurora-db` (id-ul se pune în `wrangler.jsonc` în **ambele** locuri), `wrangler secret put MCP_TOKEN --env ai`. Contul Cloudflare aparține proprietarului; `[DE COMPLETAT MANUAL]`: transferul sau invitarea noului developer în cont.
-- **Rotirea tokenului MCP:** valoarea nouă se pune în `.secrets/production.env`, apoi rulezi `npx wrangler secret put MCP_TOKEN --env ai`.
-- **Log-uri:**
-  - `npx wrangler tail --env ai` arată log-urile live (erorile 500 apar ca `[Aurora] request failed`).
-  - Mai sunt Cloudflare Dashboard → Workers → aurora → Logs/Metrics, și D1 → aurora-db → Console pentru interogări SQL.
-  - Observability persistentă (`observability` în wrangler) **nu** e activată.
-- **Debugging în producție:**
-  - `GET /api/health` arată starea Worker-ului și a DB.
-  - `npx wrangler d1 execute aurora-db --remote --env ai --command "SELECT …"` rulează interogări direct pe baza de producție.
-  - Dacă modelul cade, footer-ul răspunsului spune „Scripted narrative (model unavailable)”.
-- **Rollback:** `npx wrangler rollback --env ai` (versiunea anterioară a Worker-ului). Migrările D1 nu au rollback automat.
+- **One-time setup** (already done): `wrangler login`, `wrangler d1 create aurora-db` (the id goes into `wrangler.jsonc` in **both** places), `wrangler secret put MCP_TOKEN --env ai`. The Cloudflare account belongs to the owner; `[TO BE COMPLETED MANUALLY]`: transfer it or invite the new developer to it.
+- **Rotating the MCP token:** put the new value in `.secrets/production.env`, then run `npx wrangler secret put MCP_TOKEN --env ai`.
+- **Logs:**
+  - `npx wrangler tail --env ai` shows live logs (500 errors appear as `[Aurora] request failed`).
+  - There are also Cloudflare Dashboard → Workers → aurora → Logs/Metrics, and D1 → aurora-db → Console for SQL queries.
+  - Persistent observability (`observability` in wrangler) is **not** turned on.
+- **Debugging in production:**
+  - `GET /api/health` shows the Worker and database status.
+  - `npx wrangler d1 execute aurora-db --remote --env ai --command "SELECT …"` runs queries directly on the production database.
+  - If the model fails, the answer's footer says "Scripted narrative (model unavailable)".
+- **Rollback:** `npx wrangler rollback --env ai` (the previous version of the Worker). D1 migrations have no automatic rollback.
 
 ---
 
 ## 8. Known issues, tech debt & next steps
 
-### Limitări cunoscute (asumate pentru demo)
-- **Fără autentificare și fără multi-tenancy.** Oricine are URL-ul poate citi, crea și șterge conversații și decizii pentru orice `hotel=`. Pentru utilizatori reali e nevoie de auth (ex.: Cloudflare Access sau OAuth) și de verificarea apartenenței la hotel pe fiecare rută.
-- **Date demo, un singur hotel.** „Azi” e fixat la 17 nov 2026 (`DEMO_TODAY`), iar header-ul afișează „Demo data · today is 17 Nov 2026”. Sosirile și plecările nu există în date, iar UI-ul spune asta explicit.
-- **Nu există pagină Performance.** Butoanele respective deschid chat-ul (decizie de produs: „Not now”).
-- **MCP cu token partajat.** Pasul următor e OAuth (vezi `docs/mcp-usage.md`).
-- **Rate limit per `cf-connecting-ip`.** Fără header (local) cheia devine `local`, deci toți clienții locali împart aceeași limită.
-- **Calitatea LLM-ului.** Llama 3.3 alege uneori unelte greșite sau scrie text respins. Fallback-ul acoperă cazurile, dar textul devine mai „template”.
+### Known limitations (accepted for the demo)
+- **No authentication and no multi-tenancy.** Anyone with the URL can read, create and delete conversations and decisions for any `hotel=`. Real users need auth (for example Cloudflare Access or OAuth) and a check that the user belongs to the hotel on every route.
+- **Demo data, one hotel.** "Today" is fixed at 17 Nov 2026 (`DEMO_TODAY`), and the header shows "Demo data · today is 17 Nov 2026". Arrivals and departures are not in the data, and the UI says so.
+- **No Performance page.** Those buttons open the chat (a product decision: "Not now").
+- **MCP uses a shared token.** The next step is OAuth (see `docs/mcp-usage.md`).
+- **Rate limit per `cf-connecting-ip`.** Without that header (locally) the key becomes `local`, so all local clients share one limit.
+- **LLM quality.** Llama 3.3 sometimes picks the wrong tools or writes text that gets rejected. The fallback covers these cases, but the text then reads more like a template.
 
 ### Tech debt
-- **Documentație rămasă în urmă.** `README.md` și `docs/architecture.md` vorbesc încă în unele locuri de „4 tools”, „six chat tools” și „5 tables”. Corect: 10 unelte și 12 tabele. Lista „Where things are” din README nu include `briefing/`, `decisions/` și `property/`.
-- **Configurație duplicată.** `wrangler.jsonc` repetă D1, rate limits și vars pentru env `ai` (Wrangler nu le moștenește). Orice schimbare trebuie făcută în ambele locuri.
-- **Fără CI.** Testele și typecheck-ul rulează doar manual. Recomandare: un GitHub Action cu `npm ci && npm run typecheck && npm test`, eventual și deploy la push pe `main`, cu un token Cloudflare ca secret.
-- **`dev:api` reconstruiește web-ul la fiecare pornire,** iar Wrangler pierde uneori assets după rebuild (404). Soluția e repornirea; pentru lucru pe UI e mai bun Vite (`dev:web`).
-- **Windows.** Procesele `workerd` rămân uneori orfane și țin ocupate porturile 8787/8788. Se închid din Task Manager sau se pornește pe alt port (vezi `AURORA_API_ORIGIN`).
-- **Planificatorul pe cuvinte-cheie** (`insight-plan.ts`) a crescut prin reguli adăugate succesiv (social → what-if → decisions → property → …). E un candidat de refactor: reguli declarative, cu teste per regulă.
-- **`App.tsx` concentrează mult state** (conversație, panouri, overlay, navigare). Un router minim sau un context per feature ar simplifica.
-- **Baza live conține conversații de test** create în timpul dezvoltării. Se pot șterge din UI sau cu `DELETE FROM conversations WHERE …` pe `--remote`.
+- **Docs behind the code.** `README.md` and `docs/architecture.md` still say "4 tools", "six chat tools" and "5 tables" in places. Correct: 10 tools and 12 tables. The "Where things are" list in the README does not include `briefing/`, `decisions/` and `property/`.
+- **Duplicated configuration.** `wrangler.jsonc` repeats D1, rate limits and vars for env `ai` (Wrangler does not inherit them). Every change has to be made in both places.
+- **No CI.** Tests and typecheck only run by hand. Recommendation: a GitHub Action with `npm ci && npm run typecheck && npm test`, possibly with a deploy on push to `main` using a Cloudflare API token as a secret.
+- **`dev:api` rebuilds the web app on every start,** and Wrangler sometimes loses the assets after a rebuild (404). Restarting fixes it; for UI work, Vite (`dev:web`) is better.
+- **Windows.** `workerd` processes are sometimes left orphaned and keep ports 8787/8788 busy. Close them in Task Manager, or start on another port (see `AURORA_API_ORIGIN`).
+- **The keyword planner** (`insight-plan.ts`) grew through rules added one after another (social → what-if → decisions → property → …). It is a refactoring candidate: declarative rules, with a test per rule.
+- **`App.tsx` holds a lot of state** (conversation, panels, overlay, navigation; about 430 lines). A minimal router or a context per feature would simplify it.
+- **The live database has test conversations** created during development. They can be deleted from the UI or with `DELETE FROM conversations WHERE …` on `--remote`.
 
-### Recomandări imediate pentru următorul developer
-1. Rulează `npm install`, `npm run db:migrate:local`, `npm test` și `npm run dev`. Apoi parcurge întrebările de start din UI cu `docs/architecture.md` deschis.
-2. Citește în ordinea asta: `packages/shared/src/tools.ts`, `worker/src/tools/registry.ts`, `worker/src/orchestrator/run-insight.ts`, `web/src/stream/run-reducer.ts`.
-3. Adaugă CI și actualizează README-ul și architecture.md (§ Tech debt).
-4. Înainte de orice utilizator real: autentificare și autorizare per hotel, un mediu de staging cu D1 separat, observability activată.
-5. Convenții de păstrat: cod și nume în engleză, descriptive; Sass, nu Tailwind; nicio cifră scrisă de LLM; fiecare contract nou în `packages/shared` cu Zod; teste pentru fiecare unealtă și regulă nouă.
+### Immediate recommendations for the next developer
+1. Run `npm install`, `npm run db:migrate:local`, `npm test` and `npm run dev`. Then go through the starter questions in the UI with `docs/architecture.md` open.
+2. Read in this order: `packages/shared/src/tools.ts`, `worker/src/tools/registry.ts`, `worker/src/orchestrator/run-insight.ts`, `web/src/stream/run-reducer.ts`.
+3. Add CI and update the README and architecture.md (see Tech debt).
+4. Before any real user: authentication and per-hotel authorization, a staging environment with its own D1, observability turned on.
+5. Conventions to keep: code and names in English, descriptive; Sass, not Tailwind; no figure written by the LLM; every new contract in `packages/shared` with Zod; tests for every new tool and rule.
