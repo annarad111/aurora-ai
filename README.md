@@ -82,6 +82,9 @@ The headline, chips, KPI cards, charts and provenance are always deterministic; 
 |---|---|
 | `GET /api/workspace?hotel=` | Everything the UI shows before a question: hotels, period, and starter questions written from the data |
 | `GET /api/briefing?hotel=` | The morning briefing: up to three items ranked by fixed rules (priority, figure vs baseline, source, and the investigation each one opens) |
+| `GET /api/decisions?hotel=` | Saved insights, actions and the outcome of each completed action |
+| `POST /api/decisions/insights` · `DELETE …/insights/:id?hotel=` | Save an insight (saving it again returns the same one) · remove it when it has no actions |
+| `POST /api/decisions/actions` · `PATCH`/`DELETE …/actions/:id?hotel=` | Create, change or delete an action |
 | `POST /api/chat` | `{ question, hotelId, conversationId }` → Server-Sent Events: `run_started`, `step`, `kpi`, `chart`, `insight`, `text_delta`, `provenance`, `followups`, `done` (or `error`). The finished answer is stored with the conversation; follow-ups use the earlier answers. |
 | `GET /api/conversations?hotel=…` | The hotel's saved conversations, newest first (the "Recent" list) |
 | `GET /api/conversations/:id` | One conversation with the stored events of every answer, to show it again as it was |

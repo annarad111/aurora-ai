@@ -1,4 +1,5 @@
 import { formatEuro } from '@aurora/shared';
+import type { ReactNode } from 'react';
 import { STATUS_DISPLAY } from '../../lib/metric-display';
 import type { InsightData } from '../../stream/run-reducer';
 import type { FactInteraction } from './fact-links';
@@ -8,13 +9,15 @@ interface MainFindingProps {
   interaction: FactInteraction;
   /** Opens the provenance of the headline number in the evidence panel. */
   onShowCalculation: () => void;
+  /** "Save insight", once the answer is complete. */
+  saveButton?: ReactNode;
 }
 
 /**
  * The executive summary: the only strongly coloured element of the answer.
  * Its chips are the shortcuts into the investigation.
  */
-export function MainFinding({ insight, interaction, onShowCalculation }: MainFindingProps) {
+export function MainFinding({ insight, interaction, onShowCalculation, saveButton }: MainFindingProps) {
   // Data answers ("occupancy on 5 November") have no target, so no impact pill.
   const impactEur = insight.impactEur;
   const isNegative = impactEur !== null && impactEur < 0;
@@ -29,6 +32,7 @@ export function MainFinding({ insight, interaction, onShowCalculation }: MainFin
             {formatEuro(impactEur, { signDisplay: 'always' })} vs target
           </span>
         )}
+        {saveButton}
       </div>
 
       <p className="main-finding__headline">{insight.headline}</p>

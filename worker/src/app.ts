@@ -10,6 +10,7 @@ import { handleMcp } from './routes/mcp';
 import { handleSimulate } from './routes/simulate';
 import { handleWorkspace } from './routes/workspace';
 import { handleBriefing } from './routes/briefing';
+import { handleDecisions } from './routes/decisions';
 import type { ToolContext } from './tools/tool-context';
 
 /**
@@ -48,6 +49,11 @@ export async function handleRequest(request: Request, dependencies: AppDependenc
 
     if (pathname === '/api/briefing') {
       return request.method === 'GET' ? await handleBriefing(url, dependencies) : methodNotAllowed();
+    }
+
+    if (pathname.startsWith('/api/decisions')) {
+      const response = await handleDecisions(request, url, dependencies);
+      if (response) return response;
     }
 
     if (pathname === '/api/chat') {

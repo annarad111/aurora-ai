@@ -11,7 +11,7 @@ import type {
   OnTheBooks,
 } from '@aurora/shared';
 import { streamEventSchema } from '@aurora/shared';
-import type { HotelDataRepository, NewConversationTurn } from './hotel-data-repository';
+import type { DecisionRecord, HotelDataRepository, NewConversationTurn } from './hotel-data-repository';
 
 // The only file that writes SQL. Columns are snake_case in the database and
 // mapped to the camelCase domain types here, so nothing else knows about tables.
@@ -81,6 +81,18 @@ interface GroupBlockRow {
   cancelled_on: string | null;
 }
 
+
+interface DecisionRecordRow {
+  id: string;
+  hotel_id: string;
+  kind: 'insight' | 'action';
+  source_key: string | null;
+  parent_id: string | null;
+  record_version: number;
+  record_json: string;
+  created_at: string;
+  updated_at: string;
+}
 
 function toHotel(row: HotelRow): Hotel {
   return { id: row.id, name: row.name, city: row.city, roomCount: row.room_count, currency: row.currency, timezone: row.timezone };
@@ -187,6 +199,53 @@ export class D1HotelDataRepository implements HotelDataRepository {
         )
         .bind(turn.conversationId, turn.conversationId, turn.question, JSON.stringify(turn.events), turn.createdAt, turn.isAnalysis ? 1 : 0),
     ]);
+  }
+
+  async listDecisionRecords(hotelId: string): Promise<DecisionRecord[]> {
+    const { results } = await this.database
+      .prepare(
+        `SELECT id, hotel_id, kind, source_key, parent_id, record_version, record_json, created_at, updated_at
+         FROM decision_records WHERE hotel_id = ? ORDER BY created_at, id`,
+      )
+      .bind(hotelId)
+      .all<DecisionRecordRow>();
+    return results.map((row) => ({
+      id: row.id,
+      hotelId: row.hotel_id,
+      kind: row.kind,
+      sourceKey: row.source_key,
+      parentId: row.parent_id,
+      recordVersion: row.record_version,
+      recordJson: row.record_json,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+    }));
+  }
+
+  async insertDecisionRecord(record: DecisionRecord): Promise<'inserted' | 'duplicate'> {
+    // The unique index on (hotel_id, kind, source_key) makes a second save of the same insight a no-op.
+    const result = await this.database
+      .prepare(
+        `INSERT INTO decision_records (id, hotel_id, kind, source_key, parent_id, record_version, record_json, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT DO NOTHING`,
+      )
+      .bind(record.id, record.hotelId, record.kind, record.sourceKey, record.parentId, record.recordVersion, record.recordJson, record.createdAt, record.updatedAt)
+      .run();
+    return result.meta.changes > 0 ? 'inserted' : 'duplicate';
+  }
+
+  async updateDecisionRecord(hotelId: string, id: string, recordJson: string, updatedAt: string): Promise<boolean> {
+    const result = await this.database
+      .prepare('UPDATE decision_records SET record_json = ?, updated_at = ? WHERE hotel_id = ? AND id = ?')
+      .bind(recordJson, updatedAt, hotelId, id)
+      .run();
+    return result.meta.changes > 0;
+  }
+
+  async deleteDecisionRecord(hotelId: string, id: string): Promise<boolean> {
+    const result = await this.database.prepare('DELETE FROM decision_records WHERE hotel_id = ? AND id = ?').bind(hotelId, id).run();
+    return result.meta.changes > 0;
   }
 
   async listDailyStats(hotelId: string, period: DateRange): Promise<DailyStat[]> {

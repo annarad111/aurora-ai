@@ -191,7 +191,10 @@ export function useConversation(hotelId: string | null, onAnswerStored: () => vo
 
   const newChat = useCallback(() => {
     activeRequest.current?.abort();
-    dispatch({ type: 'new_chat', conversationId: createConversationId() });
+    const conversationId = createConversationId();
+    // Set at once, so a question asked right after ("investigate again") goes to the new chat.
+    conversationIdRef.current = conversationId;
+    dispatch({ type: 'new_chat', conversationId });
   }, []);
 
   const open = useCallback((conversationId: string) => {

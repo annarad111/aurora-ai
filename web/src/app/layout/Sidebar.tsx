@@ -13,9 +13,23 @@ interface SidebarProps {
   onNewChat: () => void;
   onOpenConversation: (conversationId: string) => void;
   onSelectHotel: (hotelId: string) => void;
+  /** True while the decision workspace is open. */
+  isDecisionsOpen: boolean;
+  openActionCount: number;
+  onOpenDecisions: () => void;
 }
 
-export function Sidebar({ workspace, conversations, activeConversationId, onNewChat, onOpenConversation, onSelectHotel }: SidebarProps) {
+export function Sidebar({
+  workspace,
+  conversations,
+  activeConversationId,
+  onNewChat,
+  onOpenConversation,
+  onSelectHotel,
+  isDecisionsOpen,
+  openActionCount,
+  onOpenDecisions,
+}: SidebarProps) {
   const hotel = workspace?.hotel;
 
   return (
@@ -32,6 +46,21 @@ export function Sidebar({ workspace, conversations, activeConversationId, onNewC
       <button type="button" className="sidebar__new-analysis" onClick={onNewChat}>
         <PlusIcon />
         New chat
+      </button>
+
+      <button
+        type="button"
+        className={joinClassNames('sidebar__decisions', isDecisionsOpen && 'sidebar__decisions--active')}
+        aria-current={isDecisionsOpen ? 'page' : undefined}
+        onClick={onOpenDecisions}
+      >
+        <span>Decisions</span>
+        {openActionCount > 0 && (
+          <span className="sidebar__decisions-count">
+            {openActionCount}
+            <span className="visually-hidden"> open action{openActionCount === 1 ? '' : 's'}</span>
+          </span>
+        )}
       </button>
 
       <section className="sidebar__section" aria-labelledby="sidebar-property-title">
@@ -74,7 +103,7 @@ export function Sidebar({ workspace, conversations, activeConversationId, onNewC
           <button
             key={summary.id}
             type="button"
-            className={joinClassNames('recent-question', summary.id === activeConversationId && 'recent-question--active')}
+            className={joinClassNames('recent-question', !isDecisionsOpen && summary.id === activeConversationId && 'recent-question--active')}
             aria-current={summary.id === activeConversationId ? 'true' : undefined}
             onClick={() => onOpenConversation(summary.id)}
           >

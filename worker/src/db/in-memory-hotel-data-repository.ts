@@ -12,11 +12,13 @@ import type {
   IsoDate,
   OnTheBooks,
 } from '@aurora/shared';
-import type { HotelDataRepository, NewConversationTurn } from './hotel-data-repository';
+import type { DecisionRecord, HotelDataRepository, NewConversationTurn } from './hotel-data-repository';
 
 /** Serves a dataset held in memory. Same behaviour as the D1 version, without a database. */
 export class InMemoryHotelDataRepository implements HotelDataRepository {
   private readonly conversations = new Map<string, Conversation & { hasAnalysis: boolean }>();
+  /** Saved insights and actions, in insertion order. */
+  readonly decisionRecords: DecisionRecord[] = [];
 
   constructor(private readonly dataset: DemoDataset) {}
 
@@ -84,5 +86,33 @@ export class InMemoryHotelDataRepository implements HotelDataRepository {
     conversation.updatedAt = turn.createdAt;
     conversation.turns.push({ question: turn.question, events: turn.events, createdAt: turn.createdAt });
     this.conversations.set(conversation.id, conversation);
+  }
+
+  async listDecisionRecords(hotelId: string): Promise<DecisionRecord[]> {
+    return this.decisionRecords.filter((record) => record.hotelId === hotelId).map((record) => ({ ...record }));
+  }
+
+  async insertDecisionRecord(record: DecisionRecord): Promise<'inserted' | 'duplicate'> {
+    const isDuplicate =
+      record.sourceKey !== null &&
+      this.decisionRecords.some((other) => other.hotelId === record.hotelId && other.kind === record.kind && other.sourceKey === record.sourceKey);
+    if (isDuplicate) return 'duplicate';
+    this.decisionRecords.push({ ...record });
+    return 'inserted';
+  }
+
+  async updateDecisionRecord(hotelId: string, id: string, recordJson: string, updatedAt: string): Promise<boolean> {
+    const record = this.decisionRecords.find((candidate) => candidate.hotelId === hotelId && candidate.id === id);
+    if (!record) return false;
+    record.recordJson = recordJson;
+    record.updatedAt = updatedAt;
+    return true;
+  }
+
+  async deleteDecisionRecord(hotelId: string, id: string): Promise<boolean> {
+    const index = this.decisionRecords.findIndex((candidate) => candidate.hotelId === hotelId && candidate.id === id);
+    if (index === -1) return false;
+    this.decisionRecords.splice(index, 1);
+    return true;
   }
 }

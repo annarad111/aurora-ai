@@ -36,6 +36,28 @@ export interface HotelDataRepository {
   findConversation(conversationId: string): Promise<Conversation | null>;
   /** Stores a finished answer, creating the conversation with its first one. */
   saveConversationTurn(turn: NewConversationTurn): Promise<void>;
+
+  // --- Insight to action. The rules live in worker/src/decisions; these only store records. ---
+  /** Every saved insight and action of the hotel, oldest first. */
+  listDecisionRecords(hotelId: string): Promise<DecisionRecord[]>;
+  /** "duplicate" when an insight with the same source key is already saved. */
+  insertDecisionRecord(record: DecisionRecord): Promise<'inserted' | 'duplicate'>;
+  /** False when there is no such record for this hotel. */
+  updateDecisionRecord(hotelId: string, id: string, recordJson: string, updatedAt: string): Promise<boolean>;
+  deleteDecisionRecord(hotelId: string, id: string): Promise<boolean>;
+}
+
+/** One stored insight or action: the record as JSON, with the version of its format. */
+export interface DecisionRecord {
+  id: string;
+  hotelId: string;
+  kind: 'insight' | 'action';
+  sourceKey: string | null;
+  parentId: string | null;
+  recordVersion: number;
+  recordJson: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface NewConversationTurn extends StoredTurn {

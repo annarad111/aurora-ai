@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import type { RunState } from '../../stream/run-reducer';
 import { isViewAvailable, readExploreData, type InsightView } from '../explore/explore-views';
 import { ContextualInsightCard } from '../insights/ContextualInsightCard';
@@ -24,6 +25,8 @@ interface AnswerViewProps {
   onOpenExplore: (view: InsightView) => void;
   /** An investigation action of a selected KPI. */
   onAction: (action: InvestigationAction) => void;
+  /** "Save insight" for this answer, shown in the main finding. */
+  saveButton?: ReactNode;
 }
 
 /**
@@ -41,6 +44,7 @@ export function AnswerView({
   onClearFocus,
   onOpenExplore,
   onAction,
+  saveButton,
 }: AnswerViewProps) {
   const focusedProvenance = interaction.focusedFactId ? run.provenanceByFactId[interaction.focusedFactId] : undefined;
   // Follow-ups and the Explore view of the selected figure come with its provenance, written by the server from the data.
@@ -99,6 +103,7 @@ export function AnswerView({
           insight={run.insight}
           interaction={interaction}
           onShowCalculation={() => onShowProvenance(run.insight?.factIds[0] ?? 'revenue_gap')}
+          saveButton={saveButton}
         />
       )}
 

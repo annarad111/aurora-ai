@@ -1,0 +1,518 @@
+@use '../abstracts' as *;
+
+// Insight to action: the save button, the sidebar entry, and the decision
+// workspace (saved insights, actions, outcomes). Data, user decisions and
+// what is unknown each have their own look.
+
+// --- Save insight ----------------------------------------------------------------
+
+.save-insight {
+  display: inline-flex;
+  align-items: center;
+  gap: $space-8;
+}
+
+.save-insight__button {
+  @include unstyled-button;
+  @include focus-visible-ring;
+  display: inline-flex;
+  align-items: center;
+  gap: $space-6;
+  height: 30px;
+  padding: 0 $space-12;
+  border-radius: $radius-pill;
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
+  font-size: $font-size-12;
+  font-weight: $font-weight-semibold;
+  transition: border-color $duration-fast;
+
+  &:hover {
+    border-color: var(--color-petrol);
+  }
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: progress;
+  }
+}
+
+.save-insight__button--compact {
+  height: 32px;
+}
+
+.save-insight__button--saved {
+  border-color: var(--color-petrol);
+  background: var(--color-petrol-soft);
+  color: var(--color-petrol);
+}
+
+// Feedback after saving or removing, read by screen readers.
+.save-insight__message {
+  margin: 0;
+  font-size: $font-size-12;
+  color: var(--color-ink-tertiary);
+
+  &:empty {
+    display: none;
+  }
+}
+
+.priority-insight__buttons {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: $space-8;
+}
+
+@include below-breakpoint(560px) {
+  .priority-insight__buttons {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+}
+
+// --- Sidebar entry ---------------------------------------------------------------
+
+.sidebar__decisions {
+  @include unstyled-button;
+  @include focus-visible-ring;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 36px;
+  padding: 0 $space-12;
+  border-radius: $radius-button;
+  font-weight: $font-weight-medium;
+  color: var(--color-ink-secondary);
+
+  &:hover {
+    background: var(--color-sunken);
+  }
+}
+
+.sidebar__decisions--active {
+  background: var(--color-sunken);
+  color: var(--color-ink);
+}
+
+.sidebar__decisions-count {
+  @include tabular-numbers;
+  min-width: 20px;
+  padding: 1px $space-6;
+  border-radius: $radius-pill;
+  background: var(--color-petrol);
+  color: var(--color-surface);
+  font-size: $font-size-11;
+  font-weight: $font-weight-semibold;
+  text-align: center;
+}
+
+// --- The workspace -----------------------------------------------------------------
+
+.decision-workspace {
+  display: flex;
+  flex-direction: column;
+  gap: $space-16;
+  padding: 4vh 0 $space-24;
+}
+
+.decision-workspace__header {
+  display: flex;
+  flex-direction: column;
+  gap: $space-6;
+}
+
+.decision-workspace__title {
+  margin: 0;
+  font-size: $font-size-24;
+  font-weight: $font-weight-semibold;
+  letter-spacing: -0.02em;
+}
+
+.decision-workspace__description {
+  margin: 0;
+  max-width: 62ch;
+  color: var(--color-ink-secondary);
+  font-size: $font-size-14;
+}
+
+.decision-workspace__summary {
+  @include tabular-numbers;
+  margin: 0;
+  font-size: $font-size-13;
+  color: var(--color-ink-tertiary);
+}
+
+.decision-workspace__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: $space-12;
+}
+
+.decision-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: $space-10;
+}
+
+.decision-filters__statuses {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $space-6;
+}
+
+.decision-filters__chip {
+  @include unstyled-button;
+  @include focus-visible-ring;
+  height: 30px;
+  padding: 0 $space-12;
+  border-radius: $radius-pill;
+  border: 1px solid var(--color-line);
+  font-size: $font-size-13;
+
+  &[aria-pressed='true'] {
+    border-color: var(--color-ink);
+    background: var(--color-ink);
+    color: var(--color-background);
+  }
+}
+
+.decision-filters__priority {
+  display: inline-flex;
+  align-items: center;
+  gap: $space-8;
+  font-size: $font-size-13;
+  color: var(--color-ink-tertiary);
+}
+
+// Form controls of the workspace share one look.
+.decision-filters select,
+.decision-action__status select,
+.action-editor input,
+.action-editor select,
+.action-editor textarea {
+  font: inherit;
+  font-size: $font-size-13;
+  color: var(--color-ink);
+  padding: $space-6 $space-8;
+  border-radius: $radius-button-small;
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--shadow-focus-ring);
+  }
+}
+
+// --- A saved insight ---------------------------------------------------------------
+
+.saved-insight {
+  @include enters-on-arrival(250ms);
+  display: flex;
+  flex-direction: column;
+  gap: $space-8;
+  padding: $space-14 $space-16;
+  border-radius: $radius-card;
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
+}
+
+.saved-insight--skeleton {
+  gap: $space-10;
+}
+
+.saved-insight__tags {
+  display: flex;
+  align-items: center;
+  gap: $space-8;
+}
+
+.saved-insight__origin {
+  @include eyebrow(var(--color-violet-ink));
+}
+
+.saved-insight__date {
+  font-size: $font-size-12;
+  color: var(--color-ink-tertiary);
+}
+
+.saved-insight__title {
+  margin: 0;
+  font-size: $font-size-16;
+  font-weight: $font-weight-semibold;
+  line-height: 1.35;
+}
+
+.saved-insight__measure {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: $space-8;
+}
+
+.saved-insight__value {
+  @include tabular-numbers;
+  font-size: $font-size-18;
+  font-weight: $font-weight-semibold;
+}
+
+.saved-insight__comparison {
+  font-size: $font-size-12;
+  color: var(--color-ink-tertiary);
+}
+
+.saved-insight__details {
+  font-size: $font-size-13;
+  color: var(--color-ink-secondary);
+
+  summary {
+    cursor: pointer;
+    color: var(--color-petrol);
+    font-weight: $font-weight-medium;
+  }
+
+  p,
+  ul {
+    margin: $space-6 0 0;
+  }
+
+  ul {
+    padding-left: $space-16;
+  }
+}
+
+.saved-insight__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: $space-8;
+}
+
+.saved-insight__actions {
+  margin: $space-4 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: $space-8;
+}
+
+.text-button {
+  @include unstyled-button;
+  @include focus-visible-ring;
+  padding: $space-4 $space-6;
+  border-radius: $radius-badge;
+  font-size: $font-size-13;
+  font-weight: $font-weight-medium;
+  color: var(--color-ink-secondary);
+
+  &:hover {
+    color: var(--color-ink);
+    text-decoration: underline;
+  }
+}
+
+.text-button--danger {
+  color: var(--color-coral);
+}
+
+// --- An action (the user's decision) --------------------------------------------------
+
+.decision-action {
+  display: flex;
+  flex-direction: column;
+  gap: $space-6;
+  padding: $space-12 $space-14;
+  border-radius: $radius-button;
+  border-left: 3px solid var(--color-violet);
+  background: var(--color-sunken);
+}
+
+.decision-action--completed {
+  border-left-color: var(--color-sage);
+}
+
+.decision-action--dismissed {
+  border-left-color: var(--color-line);
+  opacity: 0.75;
+}
+
+.decision-action__top {
+  display: flex;
+  align-items: center;
+  gap: $space-8;
+}
+
+.decision-action__priority {
+  padding: 1px $space-8;
+  border-radius: $radius-pill;
+  font-size: $font-size-11;
+  font-weight: $font-weight-semibold;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.decision-action__priority--high {
+  background: var(--color-coral-soft);
+  color: var(--color-coral);
+}
+
+.decision-action__priority--medium {
+  background: var(--color-amber-soft);
+  color: var(--color-amber-ink);
+}
+
+.decision-action__priority--low {
+  background: var(--color-sage-soft);
+  color: var(--color-sage);
+}
+
+.decision-action__recorded {
+  font-size: $font-size-11;
+  color: var(--color-ink-tertiary);
+}
+
+.decision-action__title {
+  margin: 0;
+  font-weight: $font-weight-semibold;
+}
+
+.decision-action__description,
+.decision-action__notes {
+  margin: 0;
+  font-size: $font-size-13;
+  color: var(--color-ink-secondary);
+}
+
+.decision-action__notes {
+  font-style: italic;
+}
+
+.decision-action__meta {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: $space-4 $space-12;
+  font-size: $font-size-12;
+  color: var(--color-ink-tertiary);
+
+  &:empty {
+    display: none;
+  }
+}
+
+.decision-action__controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: $space-8;
+}
+
+.decision-action__confirm {
+  display: inline-flex;
+  align-items: center;
+  gap: $space-4;
+  font-size: $font-size-13;
+  color: var(--color-coral);
+}
+
+// --- The action editor ---------------------------------------------------------------
+
+.action-editor {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: $space-10;
+  padding: $space-14;
+  border-radius: $radius-button;
+  border: 1px solid var(--color-petrol);
+  background: var(--color-surface);
+}
+
+.action-editor__suggestion {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: $space-8 $space-10;
+  border-radius: $radius-badge;
+  background: var(--color-violet-soft);
+  color: var(--color-violet-ink);
+  font-size: $font-size-13;
+}
+
+.action-editor__field {
+  display: flex;
+  flex-direction: column;
+  gap: $space-4;
+  font-size: $font-size-12;
+  color: var(--color-ink-tertiary);
+}
+
+.action-editor__field--wide {
+  grid-column: 1 / -1;
+}
+
+.action-editor__error {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--color-coral);
+  font-size: $font-size-13;
+}
+
+.action-editor__buttons {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: $space-8;
+}
+
+@include below-breakpoint(560px) {
+  .action-editor {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+// --- Outcome: observed data, cause unknown ---------------------------------------------
+
+.outcome-review {
+  display: flex;
+  flex-direction: column;
+  gap: $space-4;
+  padding: $space-10 $space-12;
+  border-radius: $radius-badge;
+  border: 1px solid var(--color-sage);
+  background: var(--color-surface);
+  font-size: $font-size-13;
+
+  p {
+    margin: 0;
+  }
+}
+
+.outcome-review--pending {
+  border-style: dashed;
+  border-color: var(--color-line);
+  color: var(--color-ink-secondary);
+}
+
+.outcome-review__label {
+  @include eyebrow(var(--color-sage));
+}
+
+.outcome-review--pending .outcome-review__label {
+  color: var(--color-ink-tertiary);
+}
+
+.outcome-review__figures {
+  @include tabular-numbers;
+}
+
+.outcome-review__caveat {
+  font-size: $font-size-12;
+  color: var(--color-amber-ink);
+}

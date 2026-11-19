@@ -124,6 +124,15 @@ Answers are read by people who run a hotel, not by developers, so the chat never
 - The question line keeps the selection readable after the chart is gone ("From the chart · Wed 11 Nov · occupancy 37.8% vs 93.7% target"), also when the conversation is reopened.
 - Stale answers cannot replace newer ones: a new question aborts the previous request, and the reducer ignores events of any other run.
 
+## Insight to action
+
+- A briefing item or a finished answer can be saved ("Save insight"). The saved record keeps the title, the figure and its baseline as they were, the period, the evidence (fact and tool), the conversation it came from, and the question and context that investigate it again.
+- From a saved insight the user creates actions (title, description, priority, status, optional owner and due date, notes). The editor starts from **Aurora's suggestion**, written by fixed rules from the insight's metric and labelled as such; nothing is stored until the user saves it.
+- The decision workspace (sidebar → Decisions) lists saved insights with their actions, filtered by status and priority, and reopens the original conversation as it was, or investigates again on today's data.
+- **Outcome**: for a completed action, the server measures the same figure on the nights after completion (rates and ratios via `query_performance`, OTA share via `get_channel_mix`, pace with a new bookings count). It is shown as *observed*, before and after, with "not verified as caused by this action". Totals over periods of different length are not compared. Without data after completion it says "Outcome not yet measurable" (always the case in the demo, whose data stops on 17 November).
+- **Storage**: D1 table `decision_records` (migration 0006). One row per insight or action, the record as JSON with a `record_version`. Every record is validated on read; one of another version or damaged is skipped and counted (`unreadableRecordCount`), never fatal. A unique index on `(hotel_id, kind, source_key)` makes saving twice a no-op. Rules (no duplicates, no removing an insight that has actions, `completedAt` on completion) live in `worker/src/decisions/decision-service.ts`.
+- **Limitation**: the demo has no sign-in, so decisions are per hotel and shared by everyone who opens the demo.
+
 ## What-if simulation
 
 `simulate_scenario` answers "what if we act on the coming nights?" with three levers: win back part of the room nights behind last year's pace, change the rate of the rooms still to sell, and move part of the OTA revenue to direct.

@@ -1,4 +1,4 @@
-import type { InvestigationContext } from '@aurora/shared';
+import type { AnsweredContext, InvestigationContext } from '@aurora/shared';
 import type { ChartKind, ChartPayload, StepStatus, StreamEvent, StreamEventOfType, TrailStage } from '@aurora/shared';
 
 // ---------------------------------------------------------------------------
@@ -47,6 +47,8 @@ export interface RunCompletion {
   followUpOf?: string;
   /** "conversation" for a reply in words only (a greeting, thanks, a message outside the hotel's business). */
   answerKind: 'analysis' | 'conversation';
+  /** What the answer covered (analysis, nights, query), for saving it as an insight. */
+  context?: AnsweredContext;
 }
 
 export interface RunError {
@@ -187,6 +189,7 @@ function applyStreamEvent(state: RunState, event: StreamEvent): RunState {
           ...(event.toolsChosenBy ? { toolsChosenBy: event.toolsChosenBy } : {}),
           ...(event.fallbackReason ? { fallbackReason: event.fallbackReason } : {}),
           ...(event.followUpOf ? { followUpOf: event.followUpOf } : {}),
+          ...(event.context ? { context: event.context } : {}),
           answerKind: event.answerKind,
         },
       };

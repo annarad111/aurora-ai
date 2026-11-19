@@ -5,6 +5,10 @@ import type { BriefingInsight } from '@aurora/shared';
 import type { InvestigationAction } from '../features/investigation/investigation-actions';
 import { MorningBriefing } from '../features/briefing/MorningBriefing';
 import { useMorningBriefing } from '../features/briefing/useMorningBriefing';
+import { DecisionWorkspace } from '../features/decisions/DecisionWorkspace';
+import { insightFromAnswer, insightFromBriefing } from '../features/decisions/insight-sources';
+import { SaveInsightButton } from '../features/decisions/SaveInsightButton';
+import { useDecisions } from '../features/decisions/useDecisions';
 import { SuggestedQuestions } from '../features/empty-state/SuggestedQuestions';
 import { ExploreOverlay } from '../features/explore/ExploreOverlay';
 import type { InsightView } from '../features/explore/explore-views';
@@ -36,6 +40,10 @@ export function App() {
   const { conversations, reload: reloadConversations } = useConversationList(hotelId);
   // Loaded once per hotel, not per chat: a new chat shows the same briefing without asking again.
   const { state: briefingState, retry: retryBriefing } = useMorningBriefing(hotelId);
+  // Saved insights and actions, shared by the save buttons and the decision workspace.
+  const decisions = useDecisions(hotelId);
+  /** The main column shows the chat, or the decision workspace. */
+  const [mainView, setMainView] = useState<'chat' | 'decisions'>('chat');
   const conversation = useConversation(hotelId, reloadConversations);
   const { turns } = conversation.state;
   const lastTurn = turns.at(-1);
@@ -120,6 +128,7 @@ export function App() {
   const handleAskQuestion = useCallback(
     (question: string) => {
       clearSelection();
+      setMainView('chat');
       conversation.ask(question);
     },
     [clearSelection, conversation],
@@ -129,6 +138,7 @@ export function App() {
   const handleInvestigate = useCallback(
     (insight: BriefingInsight) => {
       clearSelection();
+      setMainView('chat');
       conversation.ask(insight.action.question, insight.action.context);
     },
     [clearSelection, conversation],
@@ -160,12 +170,14 @@ export function App() {
 
   const handleNewChat = useCallback(() => {
     clearSelection();
+    setMainView('chat');
     conversation.newChat();
   }, [clearSelection, conversation]);
 
   const handleOpenConversation = useCallback(
     (conversationId: string) => {
       clearSelection();
+      setMainView('chat');
       conversation.open(conversationId);
     },
     [clearSelection, conversation],
@@ -192,80 +204,116 @@ export function App() {
         onNewChat={handleNewChat}
         onOpenConversation={handleOpenConversation}
         onSelectHotel={handleSelectHotel}
+        isDecisionsOpen={mainView === 'decisions'}
+        openActionCount={decisions.openActionCount}
+        onOpenDecisions={() => {
+          clearSelection();
+          setMainView('decisions');
+        }}
       />
 
       <main className="workspace__conversation" aria-label="Conversation">
-        <ConversationHeader title={conversationTitle} runPhase={lastTurn?.run.phase ?? 'idle'} period={workspace?.period ?? null} />
-        <div className="conversation-body" ref={conversationBody} onScroll={handleScroll}>
-          <div className="conversation-body__content">
-            {workspaceState.status === 'failed' && (
-              <div className="run-banner run-banner--error" role="alert">
-                <span>{workspaceState.message}</span>
-                <button type="button" className="run-banner__action" onClick={reloadWorkspace}>
-                  Retry
-                </button>
-              </div>
-            )}
-            {conversation.state.openError && (
-              <div className="run-banner run-banner--error" role="alert">
-                <span>{conversation.state.openError}</span>
-              </div>
-            )}
-            {conversation.state.isOpening && (
-              <p className="idle-state__loading" aria-busy="true">
-                Opening the conversation…
-              </p>
-            )}
-            {turns.length === 0 && !conversation.state.isOpening && workspaceState.status !== 'failed' &&
-              (workspace ? (
-                <div className="new-chat">
-                  <MorningBriefing state={briefingState} onRetry={retryBriefing} onInvestigate={handleInvestigate} />
-                  <SuggestedQuestions workspace={workspace} onAskQuestion={handleAskQuestion} />
-                </div>
-              ) : (
-                <p className="idle-state__loading" aria-busy="true">
-                  Loading the workspace…
-                </p>
-              ))}
-
-            {turns.map((turn, turnIndex) => (
-              <article
-                key={turn.key}
-                className={joinClassNames(
-                  'conversation-turn',
-                  turn.isRestored && 'conversation-turn--restored',
-                  turn.key === selectedTurn?.key && turns.length > 1 && 'conversation-turn--selected',
-                )}
-                aria-label={`Question ${turnIndex + 1}`}
-              >
-                <AnswerView
-                  run={turn.run}
-                  isRestored={turn.isRestored}
-                  isLatest={turnIndex === turns.length - 1}
-                  interaction={interactionFor(turn.key)}
-                  onAskQuestion={handleAskQuestion}
-                  onRetry={conversation.retry}
-                  onShowProvenance={(factId) => {
-                    selectTurn(turn.key);
-                    setProvenanceFactId(factId);
-                  }}
-                  onClearFocus={() => setFocusedFactId(null)}
-                  onOpenExplore={(view) => {
-                    selectTurn(turn.key);
-                    setExploreView(view);
-                  }}
-                  onAction={(action) => handleInvestigationAction(turn.key, action)}
-                />
-              </article>
-            ))}
+        {mainView === 'decisions' && workspace ? (
+          <div className="conversation-body">
+            <div className="conversation-body__content">
+              <DecisionWorkspace
+                hotelName={workspace.hotel.name}
+                store={decisions}
+                onOpenConversation={handleOpenConversation}
+                onInvestigateAgain={(question, context) => {
+                  clearSelection();
+                  setMainView('chat');
+                  conversation.newChat();
+                  conversation.ask(question, context ?? undefined);
+                }}
+              />
+            </div>
           </div>
-        </div>
-        <Composer
-          isStreaming={isStreaming}
-          isDisabled={!workspace || conversation.state.isOpening || (conversation.isBusy && !isStreaming)}
-          onAskQuestion={handleAskQuestion}
-          onStop={conversation.stop}
-        />
+        ) : (
+          <>
+            <ConversationHeader title={conversationTitle} runPhase={lastTurn?.run.phase ?? 'idle'} period={workspace?.period ?? null} />
+            <div className="conversation-body" ref={conversationBody} onScroll={handleScroll}>
+              <div className="conversation-body__content">
+                {workspaceState.status === 'failed' && (
+                  <div className="run-banner run-banner--error" role="alert">
+                    <span>{workspaceState.message}</span>
+                    <button type="button" className="run-banner__action" onClick={reloadWorkspace}>
+                      Retry
+                    </button>
+                  </div>
+                )}
+                {conversation.state.openError && (
+                  <div className="run-banner run-banner--error" role="alert">
+                    <span>{conversation.state.openError}</span>
+                  </div>
+                )}
+                {conversation.state.isOpening && (
+                  <p className="idle-state__loading" aria-busy="true">
+                    Opening the conversation…
+                  </p>
+                )}
+                {turns.length === 0 && !conversation.state.isOpening && workspaceState.status !== 'failed' &&
+                  (workspace ? (
+                    <div className="new-chat">
+                      <MorningBriefing
+                        state={briefingState}
+                        onRetry={retryBriefing}
+                        onInvestigate={handleInvestigate}
+                        renderSaveButton={(item) => <SaveInsightButton insight={insightFromBriefing(item, workspace.hotel.id)} store={decisions} compact />}
+                      />
+                      <SuggestedQuestions workspace={workspace} onAskQuestion={handleAskQuestion} />
+                    </div>
+                  ) : (
+                    <p className="idle-state__loading" aria-busy="true">
+                      Loading the workspace…
+                    </p>
+                  ))}
+
+                {turns.map((turn, turnIndex) => (
+                  <article
+                    key={turn.key}
+                    className={joinClassNames(
+                      'conversation-turn',
+                      turn.isRestored && 'conversation-turn--restored',
+                      turn.key === selectedTurn?.key && turns.length > 1 && 'conversation-turn--selected',
+                    )}
+                    aria-label={`Question ${turnIndex + 1}`}
+                  >
+                    <AnswerView
+                      run={turn.run}
+                      isRestored={turn.isRestored}
+                      isLatest={turnIndex === turns.length - 1}
+                      interaction={interactionFor(turn.key)}
+                      onAskQuestion={handleAskQuestion}
+                      onRetry={conversation.retry}
+                      onShowProvenance={(factId) => {
+                        selectTurn(turn.key);
+                        setProvenanceFactId(factId);
+                      }}
+                      onClearFocus={() => setFocusedFactId(null)}
+                      onOpenExplore={(view) => {
+                        selectTurn(turn.key);
+                        setExploreView(view);
+                      }}
+                      onAction={(action) => handleInvestigationAction(turn.key, action)}
+                      saveButton={
+                        hotelId && (
+                          <SaveInsightButton insight={insightFromAnswer(turn.run, hotelId, conversation.state.conversationId)} store={decisions} compact />
+                        )
+                      }
+                    />
+                  </article>
+                ))}
+              </div>
+            </div>
+            <Composer
+              isStreaming={isStreaming}
+              isDisabled={!workspace || conversation.state.isOpening || (conversation.isBusy && !isStreaming)}
+              onAskQuestion={handleAskQuestion}
+              onStop={conversation.stop}
+            />
+          </>
+        )}
       </main>
 
       <EvidencePanel

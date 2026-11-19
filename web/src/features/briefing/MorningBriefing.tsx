@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { BRIEFING_SOURCES, formatPeriodLabel, type BriefingInsight, type MorningBriefing as MorningBriefingData } from '@aurora/shared';
 import { ArrowRightIcon } from '../../design-system/icons';
 import { joinClassNames } from '../../lib/class-names';
@@ -26,9 +27,11 @@ interface MorningBriefingProps {
   onInvestigate: (insight: BriefingInsight) => void;
   /** The viewer's hour, for the greeting. */
   hour?: number;
+  /** "Save insight" for an item. */
+  renderSaveButton?: (insight: BriefingInsight) => ReactNode;
 }
 
-export function MorningBriefing({ state, onRetry, onInvestigate, hour = new Date().getHours() }: MorningBriefingProps) {
+export function MorningBriefing({ state, onRetry, onInvestigate, hour = new Date().getHours(), renderSaveButton }: MorningBriefingProps) {
   if (state.status === 'loading') return <BriefingSkeleton />;
 
   if (state.status === 'failed') {
@@ -88,7 +91,7 @@ export function MorningBriefing({ state, onRetry, onInvestigate, hour = new Date
         <ol className="morning-briefing__items">
           {briefing.insights.map((insight, index) => (
             <li key={insight.id} className="morning-briefing__item" style={{ animationDelay: `${index * 80}ms` }}>
-              <PriorityInsightCard insight={insight} onInvestigate={onInvestigate} />
+              <PriorityInsightCard insight={insight} onInvestigate={onInvestigate} saveButton={renderSaveButton?.(insight)} />
             </li>
           ))}
         </ol>
@@ -110,7 +113,15 @@ function BriefingFreshness({ briefing }: { briefing: MorningBriefingData }) {
   );
 }
 
-function PriorityInsightCard({ insight, onInvestigate }: { insight: BriefingInsight; onInvestigate: (insight: BriefingInsight) => void }) {
+function PriorityInsightCard({
+  insight,
+  onInvestigate,
+  saveButton,
+}: {
+  insight: BriefingInsight;
+  onInvestigate: (insight: BriefingInsight) => void;
+  saveButton?: ReactNode;
+}) {
   const { measure } = insight;
   const titleId = `briefing-${insight.id.replace(/[^a-z0-9-]/gi, '-')}`;
   return (
@@ -143,10 +154,13 @@ function PriorityInsightCard({ insight, onInvestigate }: { insight: BriefingInsi
         <span className="priority-insight__source">
           {formatPeriodLabel(insight.period)} · {insight.source}
         </span>
-        <button type="button" className="priority-insight__action" onClick={() => onInvestigate(insight)}>
-          {insight.action.label}
-          <ArrowRightIcon size={12} />
-        </button>
+        <span className="priority-insight__buttons">
+          {saveButton}
+          <button type="button" className="priority-insight__action" onClick={() => onInvestigate(insight)}>
+            {insight.action.label}
+            <ArrowRightIcon size={12} />
+          </button>
+        </span>
       </footer>
     </article>
   );
