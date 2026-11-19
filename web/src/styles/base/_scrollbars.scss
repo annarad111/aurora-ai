@@ -1,0 +1,67 @@
+@use '../abstracts' as *;
+
+// ---------------------------------------------------------------------------
+// Scrollbars: thin, quiet, and in the logo's violet.
+//
+// At rest the thumb is a faint violet line that does not compete with the
+// content; it gets clearer while the pointer is over the scrolling area, and
+// strongest while it is dragged. The track is invisible. Colours come from the
+// theme's violet, so Light and Dark both get a fitting shade.
+//
+// Firefox uses scrollbar-width / scrollbar-color; Chrome, Edge and Safari
+// use the ::-webkit-scrollbar pseudo-elements.
+// ---------------------------------------------------------------------------
+
+:root {
+  --scrollbar-thumb: color-mix(in srgb, var(--color-violet) 22%, transparent);
+  --scrollbar-thumb-hover: color-mix(in srgb, var(--color-violet) 45%, transparent);
+  --scrollbar-thumb-active: color-mix(in srgb, var(--color-violet) 65%, transparent);
+}
+
+// Firefox
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
+}
+
+*:hover {
+  scrollbar-color: var(--scrollbar-thumb-hover) transparent;
+}
+
+// Chrome, Edge, Safari
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  // A 2px transparent border inside the 8px gutter makes the visible thumb a slim 4px line.
+  border: 2px solid transparent;
+  border-radius: $radius-pill;
+  background: var(--scrollbar-thumb);
+  background-clip: padding-box;
+}
+
+// Over the scrolling area the thumb gets clearer, and a little wider, so it is easy to grab.
+:hover::-webkit-scrollbar-thumb {
+  background-color: var(--scrollbar-thumb-hover);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  border-width: 1px;
+  background-color: var(--scrollbar-thumb-hover);
+}
+
+::-webkit-scrollbar-thumb:active {
+  border-width: 1px;
+  background-color: var(--scrollbar-thumb-active);
+}
+
+::-webkit-scrollbar-button {
+  display: none;
+}
