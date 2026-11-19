@@ -400,6 +400,7 @@ export function App() {
           onCloseProvenance={() => setProvenanceFactId(null)}
           onOpenExplore={setExploreView}
           onAction={(action) => handleInvestigationAction(selectedTurn?.key, action)}
+          onAskQuestion={handleAskQuestion}
         />
       )}
 

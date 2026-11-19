@@ -74,7 +74,7 @@ describe('a selected night in the occupancy chart', () => {
 describe('a selected stay date in the pace chart', () => {
   it('asks about that night only, and offers the what-if when it can open', () => {
     const actions = actionsForSelection(weakPaceNight, everything);
-    expect(actions.map((action) => action.label)).toEqual(['Explain this gap', 'Explore recovery scenarios', 'Show supporting evidence']);
+    expect(actions.map((action) => action.label)).toEqual(['Explain this gap', 'Open the what-if simulator', 'Show supporting evidence']);
     expect(actions[0]?.kind === 'ask' && actions[0].context).toMatchObject({ intent: 'booking_pace', dateRange: { from: '2026-11-24', to: '2026-11-24' } });
   });
 

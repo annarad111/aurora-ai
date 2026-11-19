@@ -10,7 +10,7 @@ const finishedRun: RunState = {
     { stage: 'observation', text: '612 room nights are booked for 21–30 November, 16% behind last year.', factId: 'booking_pace' },
     { stage: 'discovery', text: '24 November is the weakest night: 13 rooms fewer than last year.' },
     { stage: 'understanding', text: 'New bookings are slower too.' },
-    { stage: 'decision', text: 'These nights have not happened yet.', action: { kind: 'explore', label: 'Explore recovery scenarios', view: 'pace' } },
+    { stage: 'decision', text: 'These nights have not happened yet.', action: { kind: 'explore', label: 'Open the what-if simulator', view: 'pace' } },
   ],
 };
 
@@ -28,7 +28,7 @@ describe('the insight trail', () => {
     expect(html.match(/insight-trail__stage--lit/g)).toHaveLength(4);
     expect(html).not.toContain('insight-trail--animated');
     expect(html).toContain('24 November is the weakest night');
-    expect(html).toContain('Explore recovery scenarios');
+    expect(html).toContain('Open the what-if simulator');
   });
 
   it('starts a live answer from placeholders, then lights the steps one by one', () => {
@@ -38,7 +38,7 @@ describe('the insight trail', () => {
     expect(html).toContain('What happened');
     // The first step is next; the button of the last step waits for its step.
     expect(html).toMatch(/insight-trail__stage--observation insight-trail__stage--current/);
-    expect(html).not.toContain('Explore recovery scenarios');
+    expect(html).not.toContain('Open the what-if simulator');
   });
 
   it('while Aurora works, the first step waits and the title says what is happening', () => {

@@ -37,14 +37,14 @@ function paceDecision(analysis: AnalysisContext, { repeatsPace }: { repeatsPace:
         ? `Bookings for ${nights} are ${percentChange(pace.changeVsLastYear)} behind last year: there is still time to win nights back.`
         : `These nights have not happened yet: see what winning bookings back, or moving guests to direct, would be worth.`,
       factId: 'booking_pace',
-      action: { kind: 'explore', label: 'Explore recovery scenarios', view: 'pace' },
+      action: { kind: 'explore', label: 'Open the what-if simulator', view: 'pace' },
     };
   }
   return {
     stage: 'decision',
     text: `Bookings for ${nights} are on pace with last year, so the focus can stay on rate.`,
     factId: 'booking_pace',
-    action: { kind: 'explore', label: 'Try a what-if', view: 'pace' },
+    action: { kind: 'explore', label: 'Open the what-if simulator', view: 'pace' },
   };
 }
 

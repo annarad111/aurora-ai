@@ -11,6 +11,9 @@ import { PaceExploreView } from './PaceExploreView';
 import { ScenarioSimulator } from './ScenarioSimulator';
 import { useDialogFocus } from './useDialogFocus';
 
+/** Questions the chat answers with the same simulator, to show it can. */
+export const WHAT_IF_QUESTIONS = ['What if we win back half the gap?', 'What if 20% of OTA bookings came direct?', 'What if we raise the rate by 5%?'];
+
 interface ExploreOverlayProps {
   view: InsightView;
   run: RunState;
@@ -65,8 +68,18 @@ export function ExploreOverlay({ view, run, interaction, onClose, onAskQuestion,
         {view === 'pace' && data.pace && (
           <PaceExploreView pace={data.pace} roomCount={data.overview?.hotel.roomCount ?? null} actionOptions={actionOptions} onAction={onAction} />
         )}
-        {view === 'pace' && data.pace && data.overview && (
-          <ScenarioSimulator hotelId={data.overview.hotel.id} stayFrom={data.pace.stayFrom} stayTo={data.pace.stayTo} />
+        {view === 'pace' && data.pace && (data.overview?.hotel.id ?? run.hotelId) && (
+          <>
+            <ScenarioSimulator hotelId={(data.overview?.hotel.id ?? run.hotelId)!} stayFrom={data.pace.stayFrom} stayTo={data.pace.stayTo} />
+            <div className="what-if-ask">
+              <span className="what-if-ask__label">Or ask Aurora in the chat:</span>
+              {WHAT_IF_QUESTIONS.map((question) => (
+                <button key={question} type="button" className="follow-up" onClick={() => onAskQuestion(question)}>
+                  {question}
+                </button>
+              ))}
+            </div>
+          </>
         )}
 
         <footer className="explore-overlay__footer">

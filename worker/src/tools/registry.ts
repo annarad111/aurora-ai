@@ -152,10 +152,10 @@ export const TOOL_REGISTRY: { [Name in ToolName]: ToolDefinition<Name> } = {
 };
 
 /**
- * Tools the chat planner may choose. The what-if has its own screen (the simulator), so the chat leaves it out.
- * get_decisions is offered too: a question about the saved decisions is answered from the Decisions workspace.
+ * Tools the chat planner may choose: all of them. A what-if question is answered from simulate_scenario
+ * (and opens the simulator), a question about the saved decisions from get_decisions.
  */
-export const CHAT_TOOL_DEFINITIONS = Object.values(TOOL_REGISTRY).filter((tool) => tool.name !== 'simulate_scenario');
+export const CHAT_TOOL_DEFINITIONS = Object.values(TOOL_REGISTRY);
 
 export const TOOL_DEFINITIONS = Object.values(TOOL_REGISTRY);
 

@@ -20,6 +20,7 @@ interface EvidencePanelProps {
   onCloseProvenance: () => void;
   onOpenExplore: (view: InsightView) => void;
   onAction: (action: InvestigationAction) => void;
+  onAskQuestion: (question: string) => void;
 }
 
 /**
@@ -35,6 +36,7 @@ export function EvidencePanel({
   onCloseProvenance,
   onOpenExplore,
   onAction,
+  onAskQuestion,
 }: EvidencePanelProps) {
   const revenueBridge = run.charts.revenue_bridge?.kind === 'revenue_bridge' ? run.charts.revenue_bridge.data : null;
   const channelMix = run.charts.channel_mix?.kind === 'channel_mix' ? run.charts.channel_mix.data : null;
@@ -84,6 +86,7 @@ export function EvidencePanel({
                 canOpenView: (view) => isViewAvailable(view, readExploreData(run)),
               }}
               onAction={onAction}
+              onAskQuestion={onAskQuestion}
               // A new answer starts without a selected night.
               key={run.runId ?? 'pace'}
             />

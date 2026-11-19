@@ -20,6 +20,7 @@ export function buildPlannerSystemPrompt(today: IsoDate, monthToDatePeriod: Date
     '- The saved decisions, actions, their priority, status, owner or due date (the Decisions workspace): call get_decisions.',
     '- Rooms tonight or on one night (available, occupied, out of order, maintenance, room types): call get_property_status.',
     '- Maintenance events, what is planned, or what a repair cost in sales: call get_room_events.',
+    '- A what-if for future nights (win back part of the pace gap, change the rate of rooms still to sell, move OTA bookings to direct): call simulate_scenario.',
     '- Any other question about past performance (a date, a period, weekends, a split by night, weekday, segment or channel, a comparison with last year): call query_performance once with the right arguments.',
     'If the message is not about this hotel or its business, call no tool. Reply in one or two short, friendly sentences without any numbers: say you only help with the hotel\'s revenue, occupancy, rates, channels, booking pace, segments and group blocks, and invite a question.',
     'If earlier questions are listed and the new one builds on them ("and October?", "only OTA"), keep everything from the last one that the new question does not change.',

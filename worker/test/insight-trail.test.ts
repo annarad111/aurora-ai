@@ -31,7 +31,7 @@ describe('the insight trail', () => {
       'Fewer nights cost more than the higher rates brought in.',
       'Bookings for 21–30 November are 16% behind last year: there is still time to win nights back.',
     ]);
-    expect(trail?.stages[3]?.action).toEqual({ kind: 'explore', label: 'Explore recovery scenarios', view: 'pace' });
+    expect(trail?.stages[3]?.action).toEqual({ kind: 'explore', label: 'Open the what-if simulator', view: 'pace' });
   });
 
   it('never shows a tool name', async () => {

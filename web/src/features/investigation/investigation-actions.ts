@@ -217,7 +217,7 @@ export function actionsForSelection(selection: InvestigationSelection, options: 
           baselineLabel: 'same point last year',
         },
       });
-      if (options.canOpenView('pace')) actions.push({ kind: 'explore', id: 'scenarios', label: 'Explore recovery scenarios', view: 'pace' });
+      if (options.canOpenView('pace')) actions.push({ kind: 'explore', id: 'scenarios', label: 'Open the what-if simulator', view: 'pace' });
       if (options.hasEvidenceFor('booking_pace')) actions.push({ kind: 'evidence', id: 'evidence', label: 'Show supporting evidence', factId: 'booking_pace' });
       break;
     }

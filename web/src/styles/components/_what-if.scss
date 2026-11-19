@@ -1,0 +1,168 @@
+@use '../abstracts' as *;
+
+// Telling people the what-if exists: a callout on the pace card, a one-time
+// pop-up pointing at "Expand · What-if", and questions to ask Aurora inside
+// the simulator. Violet, because these are Aurora's suggestions.
+
+// --- The callout on the pace card -------------------------------------------------------
+
+.what-if-callout {
+  display: flex;
+  gap: $space-10;
+  padding: $space-12;
+  border-radius: $radius-button;
+  border: 1px solid var(--color-violet-faint);
+  background: linear-gradient(135deg, var(--color-violet-soft), transparent 70%);
+}
+
+.what-if-callout__icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: $radius-button-small;
+  background: var(--gradient-brand);
+  color: var(--color-surface);
+  font-size: $font-size-13;
+}
+
+.what-if-callout__body {
+  display: flex;
+  flex-direction: column;
+  gap: $space-2;
+  min-width: 0;
+}
+
+.what-if-callout__title {
+  font-size: $font-size-14;
+  font-weight: $font-weight-semibold;
+  color: var(--color-ink);
+}
+
+.what-if-callout__text {
+  @include text-meta;
+}
+
+.what-if-callout__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: $space-6;
+  margin-top: $space-6;
+}
+
+.what-if-callout__open {
+  @include unstyled-button;
+  @include focus-visible-ring;
+  padding: $space-4 $space-12;
+  border-radius: $radius-pill;
+  background: var(--color-violet);
+  color: var(--color-surface);
+  font-size: $font-size-12;
+  font-weight: $font-weight-semibold;
+  transition: box-shadow $duration-fast ease;
+
+  &:hover {
+    box-shadow: 0 4px 12px var(--color-violet-glow);
+  }
+}
+
+// --- The one-time pop-up, pointing at "Expand · What-if" ----------------------------------
+
+.evidence-card {
+  position: relative;
+}
+
+.what-if-hint {
+  @include enters-on-arrival(300ms);
+  position: absolute;
+  top: 52px;
+  right: 12px;
+  z-index: 5;
+  width: min(280px, calc(100% - 24px));
+  display: flex;
+  flex-direction: column;
+  gap: $space-8;
+  padding: $space-12 $space-14;
+  border-radius: $radius-card;
+  border: 1px solid var(--color-violet);
+  background: var(--color-surface);
+  box-shadow: 0 12px 30px var(--color-violet-glow);
+
+  // The little arrow up to the button.
+  &::before {
+    content: '';
+    position: absolute;
+    top: -6px;
+    right: 28px;
+    width: 10px;
+    height: 10px;
+    border-top: 1px solid var(--color-violet);
+    border-left: 1px solid var(--color-violet);
+    background: var(--color-surface);
+    transform: rotate(45deg);
+  }
+}
+
+.what-if-hint__top {
+  display: flex;
+  align-items: center;
+  gap: $space-8;
+}
+
+.what-if-hint__badge {
+  padding: 1px $space-6;
+  border-radius: $radius-pill;
+  background: var(--gradient-brand);
+  color: var(--color-surface);
+  font-size: $font-size-11;
+  font-weight: $font-weight-semibold;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.what-if-hint__title {
+  flex: 1;
+  font-size: $font-size-14;
+  font-weight: $font-weight-semibold;
+  color: var(--color-ink);
+}
+
+.what-if-hint__text {
+  @include text-meta;
+  margin: 0;
+  color: var(--color-ink-secondary);
+}
+
+.what-if-hint__buttons {
+  display: flex;
+  align-items: center;
+  gap: $space-8;
+}
+
+.what-if-hint__primary {
+  @include unstyled-button;
+  @include focus-visible-ring;
+  padding: $space-6 $space-12;
+  border-radius: $radius-button-small;
+  background: var(--color-violet);
+  color: var(--color-surface);
+  font-size: $font-size-12;
+  font-weight: $font-weight-semibold;
+}
+
+// --- Inside the simulator: ask Aurora the same in words ------------------------------------
+
+.what-if-ask {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: $space-8;
+  padding-top: $space-4;
+}
+
+.what-if-ask__label {
+  @include text-meta;
+  margin-right: $space-4;
+}

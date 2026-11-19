@@ -8,8 +8,11 @@ import { buildInsightTrail } from './insight-trail';
 import { planForInvestigation, type RunStepPlan } from './insight-plan';
 import { buildSuggestions } from './suggestions';
 import { writeConversationReply } from './conversation';
-import { isConversationPlan, isDecisionsPlan, isPropertyPlan, KeywordInsightPlanner, type InsightPlanner, type PlannedRun } from './insight-planners';
+import { isConversationPlan, isDecisionsPlan, isPropertyPlan, isWhatIfPlan, KeywordInsightPlanner, type InsightPlanner, type PlannedRun } from './insight-planners';
 import { writeMaintenanceImpactAnswer, writePropertyAnswer } from './property-answer';
+import { whatIfWindow, writeWhatIfAnswer } from './what-if-answer';
+import { describeNights } from './derived-facts';
+import type { StreamEventPayload } from '../sse/sse-event-stream';
 import { toolInputFor, writeDecisionsAnswer } from './decisions-answer';
 import type { NarrativeWriter } from './narrative-writer';
 import { pause } from './pause';
@@ -79,6 +82,17 @@ export function withFinancialSnapshotLink(stages: TrailStage[], analysis: Analys
   );
 }
 
+/**
+ * After an answer about the coming nights (pace, or the revenue gap with its pace outlook), one
+ * follow-up offers the what-if, so users learn they can ask Aurora for one.
+ */
+export function withWhatIfFollowUp(followups: string[], intent: string, analysis: AnalysisContext): string[] {
+  const pace = analysis.results.pace;
+  if (!pace || (intent !== 'booking_pace' && intent !== 'revenue_gap') || pace.roomsOnTheBooks >= pace.roomsOnTheBooksLastYear) return followups;
+  const whatIf = `What if we win back half the gap for ${describeNights({ from: pace.stayFrom, to: pace.stayTo })}?`;
+  return [followups[0], whatIf, ...followups.slice(1)].filter((question): question is string => Boolean(question)).slice(0, 4);
+}
+
 /** Splits text into words, keeping the trailing spaces, so streamed words join back exactly. */
 export function splitIntoWords(text: string): string[] {
   return text.match(/\S+\s*|\s+/g) ?? [];
@@ -139,6 +153,8 @@ export async function runInsight(options: RunInsightOptions): Promise<void> {
         answer: { headline: string; text: string; trail: TrailStage[]; followups: string[]; contextText: string };
         factId: string;
         provenance: { title: string; displayValue: string; formula: string; inputs: Array<{ label: string; value: string }>; sourceQuery: string; contextLabel: string };
+        /** Charts or KPIs that go out right after the step (the pace chart of a what-if). */
+        events?: StreamEventPayload[];
       }>;
       plannedBy: 'llm' | 'keywords' | 'context';
     }) {
@@ -155,6 +171,7 @@ export async function runInsight(options: RunInsightOptions): Promise<void> {
       }
       await emit({ type: 'step', ...spec.step, status: 'done' });
       const { answer, factId, provenance } = result;
+      for (const event of result.events ?? []) await emit(event);
       await emit({ type: 'insight', headline: answer.headline, impactEur: null, factIds: [factId], chips: [] });
       await emit({ type: 'trail', stages: answer.trail });
       for (const word of splitIntoWords(answer.text)) {
@@ -201,6 +218,51 @@ export async function runInsight(options: RunInsightOptions): Promise<void> {
               sourceQuery: `decision_records WHERE hotel_id = ${hotel.id}`,
               contextLabel: 'Saved decisions',
             },
+          };
+        },
+        plannedBy: planResult.plannedBy,
+      });
+      return;
+    }
+
+    // --- A what-if: simulate_scenario on the bookings on the books, answered by fixed rules ---
+    if (isWhatIfPlan(planResult)) {
+      const { focus } = planResult;
+      const window = whatIfWindow(focus, toolContext.today);
+      await emitWrittenAnswer({
+        step: { stepId: 'what_if', label: 'Running the what-if on the bookings on the books', tool: 'simulate_scenario' },
+        read: async () => {
+          const input = { hotelId: hotel.id, stayFrom: window.from, stayTo: window.to };
+          const [result, pace] = await Promise.all([
+            callTool('simulate_scenario', { ...input, ...focus.levers }, toolContext),
+            callTool('get_booking_pace', { hotelId: hotel.id, stayFrom: window.from, stayTo: window.to }, toolContext),
+          ]);
+          // A rate alone only moves rooms still to sell: show it with half the gap won back as well.
+          const onlyRate = focus.levers.rateChange !== 0 && focus.levers.paceRecovery === 0 && focus.levers.otaToDirect === 0;
+          const combined = onlyRate ? await callTool('simulate_scenario', { ...input, paceRecovery: 0.5, rateChange: focus.levers.rateChange, otaToDirect: 0 }, toolContext) : null;
+          const answer = writeWhatIfAnswer(result, focus, combined);
+          const { outcome } = result;
+          return {
+            answer,
+            factId: 'what_if',
+            provenance: {
+              title: 'What-if on the bookings on the books',
+              displayValue: `${outcome.effects.netChange >= 0 ? '+' : '−'}€${Math.abs(Math.round(outcome.effects.netChange)).toLocaleString('en-GB')} net revenue`,
+              formula:
+                'recovered nights = room nights behind last year × pace recovery (capped by capacity); new revenue at the rate on the books × (1 + rate change); commission by channel mix; direct saves the OTA commission on the share moved',
+              inputs: [
+                { label: 'Stay dates', value: `${result.basis.stayFrom} to ${result.basis.stayTo}` },
+                { label: 'On the books', value: `${result.basis.roomsOnTheBooks} room nights` },
+                { label: 'Behind last year', value: `${outcome.roomNightsBehindLastYear} room nights` },
+                { label: 'Pace recovery', value: `${Math.round(result.levers.paceRecovery * 100)}%` },
+                { label: 'Rate change', value: `${Math.round(result.levers.rateChange * 100)}%` },
+                { label: 'OTA to direct', value: `${Math.round(result.levers.otaToDirect * 100)}%` },
+                { label: 'Net revenue change', value: `€${Math.round(outcome.effects.netChange).toLocaleString('en-GB')}` },
+              ],
+              sourceQuery: `on_the_books (snapshot ${toolContext.today}) for ${window.from} to ${window.to}, channel mix of the month so far`,
+              contextLabel: 'What-if',
+            },
+            events: [{ type: 'chart', chart: { kind: 'booking_pace', data: pace }, factIds: ['booking_pace'] }],
           };
         },
         plannedBy: planResult.plannedBy,
@@ -326,7 +388,7 @@ export async function runInsight(options: RunInsightOptions): Promise<void> {
     }
 
     // --- The insight trail: the reasoning in four plain steps, before the text ---
-    const followupQuestions = narrativeWriter.suggestFollowups(plan.intent, analysis);
+    const followupQuestions = withWhatIfFollowUp(narrativeWriter.suggestFollowups(plan.intent, analysis), plan.intent, analysis);
     const trailStages = withFinancialSnapshotLink(buildInsightTrail(plan.intent, analysis, followupQuestions), analysis, toolContext.today);
     if (trailStages.length > 0) await emit({ type: 'trail', stages: trailStages });
 
@@ -425,7 +487,7 @@ function hasResultFor(tool: ToolName, results: ToolResults): boolean {
     get_booking_pace: results.pace,
     query_performance: results.queries?.[0],
     get_group_blocks: results.groupBlocks,
-    // The chat never plans the what-if (it has its own screen), and decisions have their own answer.
+    // The what-if, decisions and the property have their own answers.
     simulate_scenario: undefined,
     get_decisions: undefined,
     get_property_status: undefined,

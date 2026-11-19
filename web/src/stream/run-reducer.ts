@@ -62,6 +62,8 @@ export interface RunState {
   question: string;
   /** What the question investigates, when it was opened from the briefing instead of typed. */
   investigation: InvestigationContext | null;
+  /** The hotel the answer is about, from run_started (the what-if simulator needs it). */
+  hotelId: string | null;
   /** Set by run_started. Events from any other run are ignored. */
   runId: string | null;
   lastSequence: number;
@@ -89,6 +91,7 @@ export const initialRunState: RunState = {
   phase: 'idle',
   question: '',
   investigation: null,
+  hotelId: null,
   runId: null,
   lastSequence: -1,
   steps: [],
@@ -140,7 +143,7 @@ function applyStreamEvent(state: RunState, event: StreamEvent): RunState {
 
   if (event.type === 'run_started') {
     if (state.runId !== null) return state;
-    return { ...state, runId: event.runId, lastSequence: event.sequence, investigation: event.investigation ?? state.investigation };
+    return { ...state, runId: event.runId, lastSequence: event.sequence, hotelId: event.hotelId, investigation: event.investigation ?? state.investigation };
   }
   // Ignore events from another run, and duplicates or out-of-order repeats.
   if (event.runId !== state.runId || event.sequence <= state.lastSequence) return state;

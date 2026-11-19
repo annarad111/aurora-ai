@@ -7,6 +7,7 @@ import { InvestigationPanel } from '../investigation/InvestigationPanel';
 import type { ActionOptions, InvestigationAction } from '../investigation/investigation-actions';
 import { useColumnSelection } from '../investigation/useColumnSelection';
 import { ExpandButton } from './ExpandButton';
+import { WhatIfHint } from './WhatIfHint';
 import { useDrawOnMount } from './useDrawOnMount';
 
 interface BookingPaceCardProps {
@@ -16,13 +17,15 @@ interface BookingPaceCardProps {
   onExpand: () => void;
   actionOptions: ActionOptions;
   onAction: (action: InvestigationAction) => void;
+  /** Asks Aurora a what-if in the chat. */
+  onAskQuestion: (question: string) => void;
 }
 
 /**
  * Rooms on the books for the coming nights vs the same point last year, in
  * total and per stay date. Each stay date can be selected to investigate it.
  */
-export function BookingPaceCard({ pace, interaction, onShowProvenance, onExpand, actionOptions, onAction }: BookingPaceCardProps) {
+export function BookingPaceCard({ pace, interaction, onShowProvenance, onExpand, actionOptions, onAction, onAskQuestion }: BookingPaceCardProps) {
   const { selectedIndex, clearSelection, columnProps } = useColumnSelection(pace.stayDates.length);
   const selectedDay = selectedIndex === null ? null : pace.stayDates[selectedIndex];
   const tallestNight = Math.max(...pace.stayDates.flatMap((day) => [day.roomsOnTheBooks, day.roomsOnTheBooksLastYear]), 1);
@@ -48,7 +51,7 @@ export function BookingPaceCard({ pace, interaction, onShowProvenance, onExpand,
             {status.label}
           </span>
         </span>
-        <ExpandButton chartName="pace" onExpand={onExpand} />
+        <ExpandButton chartName="pace and what-if" label="Expand · What-if" onExpand={onExpand} />
       </header>
 
       <div className="booking-pace__rows">
@@ -111,6 +114,26 @@ export function BookingPaceCard({ pace, interaction, onShowProvenance, onExpand,
           onClose={clearSelection}
         />
       )}
+
+      <div className="what-if-callout">
+        <span className="what-if-callout__icon" aria-hidden="true">
+          ✦
+        </span>
+        <div className="what-if-callout__body">
+          <span className="what-if-callout__title">What if?</span>
+          <span className="what-if-callout__text">See what winning nights back, a rate change or more direct bookings would be worth.</span>
+          <span className="what-if-callout__buttons">
+            <button type="button" className="what-if-callout__open" onClick={onExpand}>
+              Open the simulator
+            </button>
+            <button type="button" className="text-button" onClick={() => onAskQuestion('What if we win back half the gap?')}>
+              Ask Aurora
+            </button>
+          </span>
+        </div>
+      </div>
+
+      <WhatIfHint onOpenSimulator={onExpand} />
 
       <button type="button" className="evidence-card__link" onClick={() => onShowProvenance('booking_pace')}>
         Room nights, same point last year: {formatPercent(pace.changeVsLastYear, { decimals: 0, signDisplay: 'always' })}

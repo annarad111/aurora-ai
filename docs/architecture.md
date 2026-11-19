@@ -174,6 +174,9 @@ One set of text roles for the whole app (`web/src/styles/abstracts/_mixins.scss`
 - The simulator in the pace Explore view calls `POST /api/simulate` once for the basis, then runs the same function in the browser on every slider move, so the numbers are the server's, without a request per move.
 - MCP clients get the same tool. The chat planner leaves it out: the what-if has its own screen.
 
+- **In the chat**: what-if questions ("what if we win back half the gap?", "what if we raise the rate by 5%?", "what if 20% of OTA bookings came direct?") are recognised by fixed rules (`what-if-answer.ts`), and the model may choose `simulate_scenario` for other wordings. The answer is written from the tool output, says it is a calculation on the bookings on the books (not a forecast), sends the pace chart so the evidence panel shows it, and ends with "Open the what-if simulator". A rate change alone only applies to rooms still to sell, so the answer says it changes nothing on its own and shows it combined with half the gap won back. With no lever named, "win back half the gap" is used as a labelled example.
+- **Telling people it exists**: the pace card's button reads "Expand · What-if" and has a what-if callout (open the simulator, or ask Aurora); a one-time pop-up points at the button the first time a pace card appears (remembered in the browser after "Got it"); the simulator lists questions to ask Aurora; and answers about pace or the revenue gap offer "What if we win back half the gap?" as a follow-up.
+
 ## Security (demo level)
 
 - No keys in the frontend. Workers AI runs through the binding; the MCP token is a Worker secret.

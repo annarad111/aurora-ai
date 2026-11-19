@@ -1,11 +1,11 @@
 import { ExpandIcon } from '../../design-system/icons';
 
 /** The small "Expand" button in the corner of an evidence card. Opens the card's Explore view. */
-export function ExpandButton({ chartName, onExpand }: { chartName: string; onExpand: () => void }) {
+export function ExpandButton({ chartName, onExpand, label = 'Expand' }: { chartName: string; onExpand: () => void; label?: string }) {
   return (
-    <button type="button" className="expand-button" aria-label={`Expand ${chartName}`} onClick={onExpand}>
+    <button type="button" className="expand-button" aria-label={`${label} ${chartName}`} onClick={onExpand}>
       <ExpandIcon />
-      Expand
+      {label}
     </button>
   );
 }

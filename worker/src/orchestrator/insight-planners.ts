@@ -16,6 +16,7 @@ import { acceptModelReply, classifyConversation, isAboutTheHotel, type Conversat
 import { focusFromModelArguments, parseDecisionsQuestion, type DecisionsFocus } from './decisions-answer';
 import { isFollowUpQuestion, planFollowUp } from './follow-up';
 import { parsePropertyQuestion, type PropertyFocus } from './property-answer';
+import { parseWhatIfQuestion, whatIfFocusFromModel, type WhatIfFocus } from './what-if-answer';
 import { dataQuestionPlan, groupBlocksPlan, planFromToolNames, planInsightRun, type InsightPlan } from './insight-plan';
 import { buildPlannerRequest, buildPlannerSystemPrompt } from './prompts';
 import { parseDataQuestion, parseMetric, parsePeriod } from './question-parser';
@@ -57,7 +58,24 @@ export interface PropertyPlan {
   plannedBy: 'llm' | 'keywords' | 'context';
 }
 
-export type PlanResult = PlannedRun | ConversationPlan | DecisionsPlan | PropertyPlan;
+/** A what-if for future nights: answered from simulate_scenario, with the simulator one click away. */
+export interface WhatIfPlan {
+  kind: 'what_if';
+  focus: WhatIfFocus;
+  plannedBy: 'llm' | 'keywords';
+}
+
+export type PlanResult = PlannedRun | ConversationPlan | DecisionsPlan | PropertyPlan | WhatIfPlan;
+
+export function isWhatIfPlan(plan: PlanResult): plan is WhatIfPlan {
+  return 'kind' in plan && plan.kind === 'what_if';
+}
+
+/** "What if we win back half the gap?": recognised by fixed rules in both planners, before anything else about the data. */
+function planAsWhatIfQuestion(question: string, context: PlanningContext): WhatIfPlan | null {
+  const focus = parseWhatIfQuestion(question, context.today);
+  return focus ? { kind: 'what_if', focus, plannedBy: 'keywords' } : null;
+}
 
 export function isPropertyPlan(plan: PlanResult): plan is PropertyPlan {
   return 'kind' in plan && plan.kind === 'property';
@@ -106,6 +124,8 @@ export class KeywordInsightPlanner implements InsightPlanner {
   async plan(question: string, _signal: AbortSignal, context: PlanningContext): Promise<PlanResult> {
     const socialMessage = planAsSocialMessage(question, context);
     if (socialMessage) return socialMessage;
+    const whatIf = planAsWhatIfQuestion(question, context);
+    if (whatIf) return whatIf;
     const decisions = planAsDecisionsQuestion(question);
     if (decisions) return decisions;
     const property = planAsPropertyQuestion(question, context);
@@ -226,6 +246,8 @@ export class LanguageModelInsightPlanner implements InsightPlanner {
   async plan(question: string, signal: AbortSignal, context: PlanningContext): Promise<PlanResult> {
     const socialMessage = planAsSocialMessage(question, context);
     if (socialMessage) return socialMessage;
+    const whatIf = planAsWhatIfQuestion(question, context);
+    if (whatIf) return whatIf;
     const decisions = planAsDecisionsQuestion(question);
     if (decisions) return decisions;
     const property = planAsPropertyQuestion(question, context);
@@ -262,6 +284,10 @@ export class LanguageModelInsightPlanner implements InsightPlanner {
       const decisionsCall = response.toolCalls.find((call) => call.name === 'get_decisions');
       if (decisionsCall) {
         return { kind: 'decisions', focus: focusFromModelArguments(normalizeModelArguments(decisionsCall.arguments)), plannedBy: 'llm' };
+      }
+      const scenarioCall = response.toolCalls.find((call) => call.name === 'simulate_scenario');
+      if (scenarioCall) {
+        return { kind: 'what_if', focus: whatIfFocusFromModel(normalizeModelArguments(scenarioCall.arguments), context.today), plannedBy: 'llm' };
       }
       const roomEventsCall = response.toolCalls.find((call) => call.name === 'get_room_events');
       if (roomEventsCall) {
