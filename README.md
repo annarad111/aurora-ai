@@ -1,6 +1,6 @@
 # Aurora
 
-AI-first revenue assistant for hotel revenue managers. Independent concept for the Juyo assessment.
+AI-first revenue assistant for hotel revenue managers.
 
 ## Run it
 
