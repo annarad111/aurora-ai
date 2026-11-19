@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { Sidebar } from '../../app/layout/Sidebar';
 import { ThemeProvider } from '../../design-system/ThemeProvider';
 import { PropertyOverviewPage } from './PropertyOverviewPage';
+import { eventEvidence, inventoryEvidence, kpiEvidence } from './property-evidence';
 import { inventoryReconciles, splitInventory } from './room-inventory';
 
 const hotel = { id: 'sablon-bru', name: 'Hotel Sablon', city: 'Brussels', roomCount: 111, currency: 'EUR' as const, timezone: 'Europe/Brussels' };
@@ -43,6 +44,41 @@ const overview: PropertyOverview = {
     upcomingGroupBlocks: [],
     arrivalsAndDepartures: null,
   },
+  events: [
+    {
+      type: 'maintenance',
+      id: 'maint-305-air-conditioning',
+      roomNumbers: ['305'],
+      roomTypeNames: ['Classic Double'],
+      kind: 'out_of_order',
+      reason: 'Air conditioning repair',
+      description: 'The air conditioning unit failed.',
+      firstNight: '2026-11-15',
+      lastNight: '2026-11-21',
+      backOn: '2026-11-22',
+      status: 'in_progress',
+      impact: {
+        roomNights: 7,
+        nights: [
+          { date: '2026-11-17', basis: 'results', vacantRooms: 24, isFull: false },
+          { date: '2026-11-18', basis: 'on_the_books', vacantRooms: 33, isFull: false },
+        ],
+        nightsFull: 0,
+        fewestVacant: { rooms: 24, date: '2026-11-17' },
+      },
+    },
+    {
+      type: 'group_cancellation',
+      id: 'eu-health-congress-2026',
+      name: 'EU Health Congress',
+      segment: 'mice',
+      firstNight: '2026-11-10',
+      lastNight: '2026-11-12',
+      roomsPerNight: 68,
+      roomNights: 204,
+      cancelledOn: '2026-10-28',
+    },
+  ],
   financial: {
     period: { from: '2026-10-01', to: '2026-10-31' },
     kpis: [{ metric: 'room_revenue', actual: 447727, target: 473983, lastYear: 431844, status: 'off_track' }],
@@ -68,7 +104,17 @@ describe('the room inventory', () => {
 });
 
 function renderPage(state: Parameters<typeof PropertyOverviewPage>[0]['state']) {
-  return renderToStaticMarkup(<PropertyOverviewPage workspace={workspace} state={state} onRetry={() => {}} focus={null} onInvestigate={() => {}} />);
+  return renderToStaticMarkup(
+    <PropertyOverviewPage
+      workspace={workspace}
+      state={state}
+      onRetry={() => {}}
+      focus={null}
+      onInvestigate={() => {}}
+      briefingState={{ status: 'loading' }}
+      renderSaveButton={() => null}
+    />,
+  );
 }
 
 describe('the property overview page', () => {
@@ -83,6 +129,20 @@ describe('the property overview page', () => {
     expect(html).toContain('Nov (so far)');
     // Every section has an id, so a chat answer can open it.
     for (const id of ['property-identity', 'property-inventory', 'property-financials']) expect(html).toContain(`id="${id}"`);
+  });
+
+  it('lists events with their status and measured impact, and the intelligence section', () => {
+    const html = renderPage({ status: 'ready', overview });
+    expect(html).toContain('Events &amp; alerts');
+    expect(html).toContain('Room 305: Air conditioning repair');
+    expect(html).toContain('In progress');
+    expect(html).toContain('7 room nights unsellable · no lost sales: never a full night');
+    expect(html).toContain('204 room nights lost');
+    expect(html).toContain('Property intelligence');
+    // Events open in place: closed by default, and announced as such.
+    expect(html).toContain('aria-expanded="false"');
+    // The evidence drawer takes no space until asked for.
+    expect(html).not.toContain('evidence-drawer');
   });
 
   it('has loading and error states', () => {
@@ -121,5 +181,22 @@ describe('the sidebar property card', () => {
     expect(renderSidebar(false)).not.toContain('property-card--active');
     expect(renderSidebar(true)).toContain('property-card--active');
     expect(renderSidebar(true)).toContain('aria-current="page"');
+  });
+});
+
+describe('the evidence of the property figures', () => {
+  it('shows how the vacant rooms are calculated, from the same numbers as the page', () => {
+    const evidence = inventoryEvidence(overview.status);
+    expect(evidence).toMatchObject({ tool: 'get_property_status', displayValue: '24 vacant and available' });
+    expect(evidence.formula).toBe('vacant & available = physical rooms − occupied − out of order − out of service');
+    expect(evidence.inputs.map((input) => input.value).slice(0, 4)).toEqual(['111', '83', '2', '2']);
+  });
+
+  it('shows each night of a maintenance event, and the period of a KPI', () => {
+    expect(eventEvidence(overview.events[0]!).inputs).toEqual([
+      { label: '2026-11-17', value: '24 vacant' },
+      { label: '2026-11-18 (booked so far)', value: '33 vacant' },
+    ]);
+    expect(kpiEvidence(overview.financial.kpis[0]!, overview.financial.period)).toMatchObject({ title: 'Room revenue, Oct 2026', tool: 'get_hotel_overview' });
   });
 });

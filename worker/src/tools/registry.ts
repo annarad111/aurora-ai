@@ -5,6 +5,7 @@ import { getBookingPace } from './get-booking-pace';
 import { getChannelMix } from './get-channel-mix';
 import { getDecisions } from './get-decisions';
 import { getPropertyStatus } from './get-property-status';
+import { getRoomEvents } from './get-room-events';
 import { getGroupBlocks } from './get-group-blocks';
 import { getHotelOverview } from './get-hotel-overview';
 import { queryPerformance } from './query-performance';
@@ -134,6 +135,19 @@ export const TOOL_REGISTRY: { [Name in ToolName]: ToolDefinition<Name> } = {
     inputSchema: TOOL_SCHEMAS.get_property_status.input,
     outputSchema: TOOL_SCHEMAS.get_property_status.output,
     run: getPropertyStatus,
+  },
+  get_room_events: {
+    name: 'get_room_events',
+    title: 'Maintenance and its impact',
+    description:
+      'Maintenance on rooms (out of order, out of service) in a window of nights (default: the last 14 days to 30 days ' +
+      'ahead), optionally one event or one room, with its status (completed, in progress, scheduled) and its measured ' +
+      'impact: room nights lost, and per night how many rooms were still vacant after every unsellable room. A room ' +
+      'under maintenance only costs a sale on a night with no vacant room. Use it for "did the repair in room 305 cost ' +
+      'us anything?" or "what maintenance is planned?".',
+    inputSchema: TOOL_SCHEMAS.get_room_events.input,
+    outputSchema: TOOL_SCHEMAS.get_room_events.output,
+    run: getRoomEvents,
   },
 };
 

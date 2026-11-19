@@ -144,3 +144,92 @@ describe('GET /api/property', () => {
     expect((await handleRequest(new Request('http://localhost/api/property?hotel=nowhere'), dependencies())).status).toBe(404);
   });
 });
+
+describe('get_room_events', () => {
+  const roomEvents = (input: Record<string, unknown> = {}) => callTool('get_room_events', { hotelId: 'sablon-bru', ...input }, createDemoToolContext());
+
+  it('groups rooms with the same work, gives each event a status, and measures every night', async () => {
+    const { events } = await roomEvents();
+    expect(events.map((event) => [event.id, event.status])).toEqual([
+      ['maint-203-plumbing', 'completed'],
+      ['maint-305-air-conditioning', 'in_progress'],
+      ['maint-412-water-leak', 'in_progress'],
+      ['maint-118-carpet+maint-119-carpet', 'in_progress'],
+      ['maint-610-window', 'scheduled'],
+    ]);
+    const carpet = events.find((event) => event.roomNumbers.length === 2)!;
+    expect(carpet.impact.roomNights).toBe(4);
+  });
+
+  it('says a room under maintenance only costs a sale on a full night, and uses bookings for future nights', async () => {
+    const [airConditioning] = (await roomEvents({ roomNumber: '305' })).events;
+    expect(airConditioning!.impact.nightsFull).toBe(0);
+    expect(airConditioning!.impact.fewestVacant).toEqual({ rooms: 24, date: TODAY });
+    const tonight = airConditioning!.impact.nights.find((night) => night.date === TODAY)!;
+    // The same vacant rooms as the inventory tonight: 111 − 83 sold − 4 unsellable.
+    expect(tonight).toEqual({ date: TODAY, basis: 'results', vacantRooms: 24, isFull: false });
+    expect(airConditioning!.impact.nights.filter((night) => night.basis === 'on_the_books').map((night) => night.date)[0]).toBe('2026-11-18');
+  });
+
+  it('finds one event by id, and nothing for a room without maintenance', async () => {
+    expect((await roomEvents({ eventId: 'maint-119-carpet' })).events.map((event) => event.id)).toEqual(['maint-118-carpet+maint-119-carpet']);
+    expect((await roomEvents({ roomNumber: '101' })).events).toEqual([]);
+  });
+});
+
+describe('asking Aurora about maintenance', () => {
+  it('answers "did the repair in room 305 cost us anything?" from the full nights, with a button to the events', async () => {
+    const { find, text } = await ask('Did the repair in room 305 cost us anything?');
+    expect(find('step')).toMatchObject({ tool: 'get_room_events' });
+    expect(find('insight')?.headline).toBe('Room 305 (air conditioning repair) has not cost a sale.');
+    expect(text).toContain('the fewest was 24, on 17 November');
+    expect(find('trail')?.stages.at(-1)?.action).toEqual({ kind: 'navigate', label: 'See events & alerts', destination: 'property', section: 'events' });
+  });
+
+  it('lists only running and planned work for "what maintenance is planned?"', async () => {
+    const { find, text } = await ask('What maintenance is planned?');
+    expect(find('insight')?.headline).toBe('4 maintenance events, none on a night the hotel was full.');
+    expect(text).not.toContain('Room 203');
+  });
+
+  it('investigates one event from the property overview, with the event as structured context', async () => {
+    const events: StreamEvent[] = [];
+    await runInsight({
+      question: 'Did the carpet replacement in room 118 and 119 cost us sales?',
+      hotelId: 'sablon-bru',
+      investigation: { origin: 'property', intent: 'maintenance_impact', eventId: 'maint-118-carpet+maint-119-carpet', roomNumbers: ['118', '119'] },
+      toolContext: createDemoToolContext(),
+      emit: async (event) => {
+        events.push({ ...event, runId: 'test', sequence: events.length } as StreamEvent);
+      },
+      signal: new AbortController().signal,
+      pacing: { stepDelayMs: 0, textTokenDelayMs: 0 },
+    });
+    const insight = events.find((event): event is StreamEventOfType<'insight'> => event.type === 'insight');
+    expect(insight?.headline).toBe('Rooms 118 and 119 (carpet replacement) have not cost a sale.');
+    expect(events.at(-1)).toMatchObject({ type: 'done', toolsChosenBy: 'context' });
+  });
+});
+
+describe('events & alerts in GET /api/property', () => {
+  it('lists running work first, then what is coming, then cancellations, then finished work', async () => {
+    const response = await handleRequest(new Request('http://localhost/api/property?hotel=sablon-bru'), {
+      toolContext: createDemoToolContext(),
+      config: { today: TODAY, stepDelayMs: 0, textTokenDelayMs: 0, narrativeProvider: 'scripted', aiModel: 'none', aiTimeoutMs: 0 },
+      languageModel: null,
+      mcpToken: null,
+      rateLimiters: { chat: null, mcp: null },
+      waitUntil: () => {},
+    });
+    const { events } = propertyOverviewSchema.parse(await response.json());
+    expect(events.map((event) => [event.type, event.id])).toEqual([
+      ['maintenance', 'maint-305-air-conditioning'],
+      ['maintenance', 'maint-412-water-leak'],
+      ['maintenance', 'maint-118-carpet+maint-119-carpet'],
+      ['maintenance', 'maint-610-window'],
+      ['group_arrival', 'atelier-verdi-launch-2026'],
+      ['group_cancellation', 'eu-health-congress-2026'],
+      ['maintenance', 'maint-203-plumbing'],
+    ]);
+  });
+});

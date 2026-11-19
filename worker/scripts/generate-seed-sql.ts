@@ -12,7 +12,7 @@
 import { writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { generateDemoDataset } from '@aurora/demo-data';
+import { DEMO_GROUP_BLOCKS, DEMO_UPCOMING_GROUP_BLOCKS, generateDemoDataset } from '@aurora/demo-data';
 
 /** Rows per INSERT statement. Keeps each statement well under D1's size limit. */
 const ROWS_PER_INSERT = 200;
@@ -81,7 +81,8 @@ const workspaceStatements = [
   ...buildInsertStatements(
     'group_blocks',
     ['id', 'hotel_id', 'name', 'segment', 'first_night', 'last_night', 'rooms_per_night', 'status', 'cancelled_on'],
-    dataset.groupBlocks.map((block) => [
+    // 0004 is already applied: it keeps the blocks it was written with. Later blocks go into 0010.
+    DEMO_GROUP_BLOCKS.map((block) => [
       block.id,
       block.hotelId,
       block.name,
@@ -143,3 +144,27 @@ const propertyHeader = [
 ].join('\n');
 writeFileSync(resolve(migrationsDirectory, '0009_seed_property.sql'), `${propertyHeader}\n${propertyStatements.join('\n\n')}\n`);
 console.log(`Wrote ${propertyStatements.length} INSERT statements to 0009_seed_property.sql`);
+
+// --- 0010: a confirmed group arriving after today (fictional) --------------------------
+const upcomingGroupStatements = buildInsertStatements(
+  'group_blocks',
+  ['id', 'hotel_id', 'name', 'segment', 'first_night', 'last_night', 'rooms_per_night', 'status', 'cancelled_on'],
+  DEMO_UPCOMING_GROUP_BLOCKS.map((block) => [
+    block.id,
+    block.hotelId,
+    block.name,
+    block.segment,
+    block.firstNight,
+    block.lastNight,
+    block.roomsPerNight,
+    block.status,
+    block.cancelledOn,
+  ]),
+);
+const upcomingGroupHeader = [
+  '-- GENERATED FILE, do not edit by hand.',
+  '-- Source: packages/demo-data/src/property.ts (fictional demo data), via worker/scripts/generate-seed-sql.ts',
+  '',
+].join('\n');
+writeFileSync(resolve(migrationsDirectory, '0010_seed_upcoming_group.sql'), `${upcomingGroupHeader}\n${upcomingGroupStatements.join('\n\n')}\n`);
+console.log(`Wrote ${upcomingGroupStatements.length} INSERT statements to 0010_seed_upcoming_group.sql`);

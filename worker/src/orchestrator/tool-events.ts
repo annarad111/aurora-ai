@@ -83,6 +83,7 @@ export function buildEventsAfterTool(tool: ToolName, analysis: AnalysisContext):
 
     case 'get_decisions':
     case 'get_property_status':
+    case 'get_room_events':
       // Decisions and the property have their own answers (decisions-answer.ts, property-answer.ts).
       return [];
   }

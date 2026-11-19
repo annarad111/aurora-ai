@@ -1,5 +1,5 @@
 import { addDays, calendarMonthOf } from '@aurora/analytics';
-import { propertyOverviewSchema, type IsoDate, type MonthlyRevenue, type PropertyOverview } from '@aurora/shared';
+import { propertyOverviewSchema, type IsoDate, type MonthlyRevenue, type PropertyEvent, type PropertyOverview } from '@aurora/shared';
 import { previousCompletedMonth } from '../orchestrator/analysis-context';
 import type { AppDependencies } from '../app';
 import { errorResponse, jsonResponse } from '../http/json-response';
@@ -47,6 +47,51 @@ async function readMonthlyRevenue(context: ToolContext, hotelId: string): Promis
   return months;
 }
 
+/** Group arrivals in the next 30 days, cancellations made in the last 30. */
+const GROUP_DAYS_AHEAD = 30;
+const CANCELLATION_DAYS_BACK = 30;
+
+/** What the next weeks hold, in order of urgency: running work, then what is coming, then what happened. */
+const EVENT_ORDER = { in_progress: 0, scheduled: 1, cancellation: 2, completed: 3 } as const;
+
+/**
+ * Events & alerts: maintenance (with its measured impact), confirmed group
+ * arrivals and recent group cancellations, all read from the data.
+ */
+export async function readPropertyEvents(context: ToolContext, hotelId: string): Promise<PropertyEvent[]> {
+  const today = context.today;
+  const [roomEvents, blocks] = await Promise.all([
+    callTool('get_room_events', { hotelId }, context),
+    context.repository.listGroupBlocks(hotelId, { from: addDays(today, -CANCELLATION_DAYS_BACK * 2), to: addDays(today, GROUP_DAYS_AHEAD) }),
+  ]);
+  const nightsOf = (from: IsoDate, to: IsoDate) => Math.round((Date.parse(to) - Date.parse(from)) / 86_400_000) + 1;
+
+  const events: Array<{ order: number; date: IsoDate; event: PropertyEvent }> = roomEvents.events.map((event) => ({
+    order: EVENT_ORDER[event.status],
+    date: event.firstNight,
+    event: { ...event, type: 'maintenance' },
+  }));
+  for (const block of blocks) {
+    const roomNights = block.roomsPerNight * nightsOf(block.firstNight, block.lastNight);
+    if (block.status === 'confirmed' && block.lastNight >= today && block.firstNight <= addDays(today, GROUP_DAYS_AHEAD)) {
+      const status = block.firstNight <= today ? 'in_progress' : 'scheduled';
+      events.push({
+        order: EVENT_ORDER[status],
+        date: block.firstNight,
+        event: { type: 'group_arrival', id: block.id, name: block.name, segment: block.segment, firstNight: block.firstNight, lastNight: block.lastNight, roomsPerNight: block.roomsPerNight, roomNights, status },
+      });
+    }
+    if (block.status === 'cancelled' && block.cancelledOn && block.cancelledOn >= addDays(today, -CANCELLATION_DAYS_BACK)) {
+      events.push({
+        order: EVENT_ORDER.cancellation,
+        date: block.firstNight,
+        event: { type: 'group_cancellation', id: block.id, name: block.name, segment: block.segment, firstNight: block.firstNight, lastNight: block.lastNight, roomsPerNight: block.roomsPerNight, roomNights, cancelledOn: block.cancelledOn },
+      });
+    }
+  }
+  return events.sort((first, second) => first.order - second.order || first.date.localeCompare(second.date)).map(({ event }) => event);
+}
+
 /**
  * GET /api/property?hotel=<id>
  * The Property Overview: the rooms tonight (get_property_status) and the
@@ -59,14 +104,16 @@ export async function handlePropertyOverview(url: URL, dependencies: AppDependen
   if (!(await context.repository.findHotel(hotelId))) return errorResponse(404, 'unknown_hotel', `No hotel with id "${hotelId}"`);
 
   const previousMonth = previousCompletedMonth(context.today);
-  const [status, previousMonthOverview, monthlyRevenue] = await Promise.all([
+  const [status, events, previousMonthOverview, monthlyRevenue] = await Promise.all([
     callTool('get_property_status', { hotelId }, context),
+    readPropertyEvents(context, hotelId),
     callTool('get_hotel_overview', { hotelId, period: previousMonth }, context),
     readMonthlyRevenue(context, hotelId),
   ]);
 
   const overview: PropertyOverview = {
     status,
+    events,
     financial: {
       period: previousMonth,
       kpis: FINANCIAL_KPIS.flatMap((metric) => previousMonthOverview.kpis.filter((kpi) => kpi.metric === metric)),

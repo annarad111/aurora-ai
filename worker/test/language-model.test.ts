@@ -184,7 +184,7 @@ describe('a run with the language model', () => {
     const model = new ScriptedFakeModel([ALL_TOOLS, { text: GOOD_EXPLANATION, toolNames: [] }]);
     await runWithModel(model);
     // Every tool except the what-if, which has its own screen.
-    expect(model.requests[0]?.tools?.map((tool) => tool.name)).toHaveLength(8);
+    expect(model.requests[0]?.tools?.map((tool) => tool.name)).toHaveLength(9);
     expect(model.requests[1]?.user).toContain('{revenue_gap} = "€33,917"');
     expect(model.requests[1]?.system).toContain('Never write a digit');
   });

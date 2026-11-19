@@ -136,6 +136,8 @@ export type MonthlyRevenue = z.infer<typeof monthlyRevenueSchema>;
 
 export const propertyOverviewSchema = z.object({
   status: getPropertyStatusOutputSchema,
+  /** Maintenance (last 14 days to 30 days ahead), group arrivals (next 30 days) and recent group cancellations. */
+  events: z.lazy(() => z.array(propertyEventSchema)),
   financial: z.object({
     /** The previous completed calendar month. */
     period: dateRangeSchema,
@@ -148,3 +150,90 @@ export const propertyOverviewSchema = z.object({
   }),
 });
 export type PropertyOverview = z.infer<typeof propertyOverviewSchema>;
+
+// --- get_room_events: maintenance with its measured impact ---------------------------
+
+/** One night of a maintenance event: how many rooms were (or are still) free once every unsellable room is taken out. */
+export const roomEventNightSchema = z.object({
+  date: isoDateSchema,
+  basis: z.enum(['results', 'on_the_books']),
+  vacantRooms: z.number().int(),
+  /** No vacant room left: a room under maintenance may have cost a sale that night. */
+  isFull: z.boolean(),
+});
+
+/**
+ * Maintenance on one or more rooms with the same reason and nights
+ * ("Rooms 118, 119: carpet replacement"), with what it did to sales:
+ * a room out of order only costs a sale on a night the hotel is full.
+ */
+export const roomEventSchema = z.object({
+  id: z.string(),
+  roomNumbers: z.array(z.string()).min(1),
+  roomTypeNames: z.array(z.string()),
+  kind: roomStatusKindSchema,
+  reason: z.string(),
+  description: z.string(),
+  firstNight: isoDateSchema,
+  lastNight: isoDateSchema,
+  backOn: isoDateSchema,
+  status: z.enum(['completed', 'in_progress', 'scheduled']),
+  impact: z.object({
+    /** Rooms × nights that cannot be sold. */
+    roomNights: z.number().int().nonnegative(),
+    nights: z.array(roomEventNightSchema),
+    /** Nights with no vacant room (a possible lost sale). */
+    nightsFull: z.number().int().nonnegative(),
+    /** The tightest night: the fewest vacant rooms, and when. */
+    fewestVacant: z.object({ rooms: z.number().int(), date: isoDateSchema }).nullable(),
+  }),
+});
+export type RoomEvent = z.infer<typeof roomEventSchema>;
+
+export const getRoomEventsInputSchema = z.object({
+  hotelId: z.string().min(1).max(64),
+  /** Nights to look at (default: the last 14 days to 30 days ahead). */
+  from: isoDateSchema.optional(),
+  to: isoDateSchema.optional(),
+  /** One event ("maint-305-air-conditioning"), or every event in the window. */
+  eventId: z.string().max(200).optional(),
+  /** Only events on this room. */
+  roomNumber: z.string().max(10).optional(),
+});
+export type GetRoomEventsInput = z.infer<typeof getRoomEventsInputSchema>;
+
+export const getRoomEventsOutputSchema = z.object({
+  today: isoDateSchema,
+  window: dateRangeSchema,
+  events: z.array(roomEventSchema),
+});
+export type GetRoomEventsOutput = z.infer<typeof getRoomEventsOutputSchema>;
+
+// --- Events & alerts on the Property Overview -------------------------------------------
+
+export const propertyEventSchema = z.discriminatedUnion('type', [
+  roomEventSchema.extend({ type: z.literal('maintenance') }),
+  z.object({
+    type: z.literal('group_arrival'),
+    id: z.string(),
+    name: z.string(),
+    segment: z.string(),
+    firstNight: isoDateSchema,
+    lastNight: isoDateSchema,
+    roomsPerNight: z.number().int().positive(),
+    roomNights: z.number().int().nonnegative(),
+    status: z.enum(['in_progress', 'scheduled']),
+  }),
+  z.object({
+    type: z.literal('group_cancellation'),
+    id: z.string(),
+    name: z.string(),
+    segment: z.string(),
+    firstNight: isoDateSchema,
+    lastNight: isoDateSchema,
+    roomsPerNight: z.number().int().positive(),
+    roomNights: z.number().int().nonnegative(),
+    cancelledOn: isoDateSchema,
+  }),
+]);
+export type PropertyEvent = z.infer<typeof propertyEventSchema>;

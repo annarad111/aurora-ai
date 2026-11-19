@@ -13,7 +13,7 @@ import { metricIdSchema } from './metric-meta';
 // ---------------------------------------------------------------------------
 
 /** Analyses an investigation can open. */
-export const INVESTIGATION_INTENTS = ['revenue_gap', 'channel_cost', 'booking_pace', 'segment_shift', 'group_blocks', 'data_question'] as const;
+export const INVESTIGATION_INTENTS = ['revenue_gap', 'channel_cost', 'booking_pace', 'segment_shift', 'group_blocks', 'data_question', 'maintenance_impact'] as const;
 export const investigationIntentSchema = z.enum(INVESTIGATION_INTENTS);
 
 /** Where the investigation started. */
@@ -40,6 +40,9 @@ export const investigationContextSchema = z.object({
   /** The selected chart point, when there is one. */
   date: isoDateSchema.optional(),
   segment: segmentSchema.optional(),
+  /** A maintenance event on the Property Overview, and the rooms it takes out. */
+  eventId: z.string().min(1).max(200).optional(),
+  roomNumbers: z.array(z.string().max(10)).max(20).optional(),
   channel: channelSchema.optional(),
   /** Data questions: how to split the nights (always compared with last year). */
   breakdown: z.enum(INVESTIGATION_BREAKDOWNS).optional(),

@@ -140,6 +140,8 @@ export function planForInvestigation(investigation: InvestigationContext, today:
   const { intent, dateRange } = investigation;
   if (intent === 'group_blocks') return groupBlocksPlan(dateRange ?? { from: today, to: today });
   if (intent === 'data_question') return dataQuestionPlanFor(investigation, today);
+  // Maintenance impact is answered from get_room_events by its own branch (runInsight), never as an analysis.
+  if (intent === 'maintenance_impact') throw new Error('A maintenance investigation has its own answer, not an analysis plan');
   const plan = analysisPlan(intent);
   if (!dateRange) return plan;
   if (intent === 'booking_pace') return dateRange.from > today ? { ...plan, paceWindowOverride: dateRange } : plan;

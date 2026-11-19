@@ -82,7 +82,7 @@ The headline, chips, KPI cards, charts and provenance are always deterministic; 
 |---|---|
 | `GET /api/workspace?hotel=` | Everything the UI shows before a question: hotels, period, and starter questions written from the data |
 | `GET /api/briefing?hotel=` | The morning briefing: up to three items ranked by fixed rules (priority, figure vs baseline, source, and the investigation each one opens) |
-| `GET /api/property?hotel=` | The Property Overview: rooms tonight (occupied, vacant, out of order, out of service) and the previous completed month against target and last year, with room revenue per month |
+| `GET /api/property?hotel=` | The Property Overview: rooms tonight (occupied, vacant, out of order, out of service), events & alerts with their measured impact, and the previous completed month against target and last year, with room revenue per month |
 | `GET /api/decisions?hotel=` | Saved insights, actions and the outcome of each completed action |
 | `POST /api/decisions/insights` · `DELETE …/insights/:id?hotel=` | Save an insight (saving it again returns the same one) · remove it when it has no actions |
 | `POST /api/decisions/actions` · `PATCH`/`DELETE …/actions/:id?hotel=` | Create, change or delete an action |
@@ -94,7 +94,7 @@ The headline, chips, KPI cards, charts and provenance are always deterministic; 
 | `POST /api/simulate` | `{ hotelId, stayFrom, stayTo, paceRecovery?, rateChange?, otaToDirect? }` → the what-if result (`simulate_scenario`) |
 | `GET /api/hotels/:id/overview?from=&to=` | The overview tool as plain JSON, no AI. Defaults to month to date. |
 | `GET /api/health` | Worker and database status |
-| `/mcp` | All nine tools, including the what-if simulation, the saved decisions and the property status, for external agents (MCP, Streamable HTTP). Bearer token, 60 requests/min. See [docs/mcp-usage.md](docs/mcp-usage.md). |
+| `/mcp` | All ten tools, including the what-if simulation, the saved decisions, the property status and maintenance impact, for external agents (MCP, Streamable HTTP). Bearer token, 60 requests/min. See [docs/mcp-usage.md](docs/mcp-usage.md). |
 
 `POST /api/chat` is limited to 20 answers per minute per client.
 
@@ -131,7 +131,7 @@ worker/
     env.ts                      bindings and the checked config
     routes/                     one file per route
     db/                         HotelDataRepository interface, D1 implementation (the only SQL), in-memory implementation
-    tools/                      the 9 tools + registry.ts (one source for chat and MCP)
+    tools/                      the 10 tools + registry.ts (one source for chat and MCP)
     sse/sse-event-stream.ts     validated, numbered SSE events, heartbeat, stop on disconnect
     orchestrator/
       run-insight.ts            the run: steps → tools → KPI/charts → insight → text → provenance → follow-ups → done

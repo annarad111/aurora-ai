@@ -11,6 +11,7 @@ export const TOOL_NAMES = [
   'simulate_scenario',
   'get_decisions',
   'get_property_status',
+  'get_room_events',
 ] as const;
 export const toolNameSchema = z.enum(TOOL_NAMES);
 export type ToolName = z.infer<typeof toolNameSchema>;

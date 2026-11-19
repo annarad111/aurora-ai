@@ -1,5 +1,5 @@
 import type { GetPropertyStatusOutput, InvestigationContext } from '@aurora/shared';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ArrowRightIcon } from '../../design-system/icons';
 import { joinClassNames } from '../../lib/class-names';
 import { formatWeekdayDate } from '../../lib/dates';
@@ -9,6 +9,8 @@ import { ROOM_STATUS_DEFINITIONS, ROOM_STATUS_LABELS, roomsWithStatus, splitInve
 interface OperationsTonightProps {
   status: GetPropertyStatusOutput;
   onInvestigate: (question: string, context?: InvestigationContext) => void;
+  /** A status to open from elsewhere on the page; `requestId` changes on every request. */
+  requestedStatus?: { status: RoomStatus; requestId: number } | null;
 }
 
 /**
@@ -16,8 +18,11 @@ interface OperationsTonightProps {
  * stacked bar. Selecting a status shows what is behind it (and, for rooms that
  * cannot be sold, which rooms and why), with a way to ask Aurora about it.
  */
-export function OperationsTonight({ status, onInvestigate }: OperationsTonightProps) {
+export function OperationsTonight({ status, onInvestigate, requestedStatus = null }: OperationsTonightProps) {
   const [selected, setSelected] = useState<RoomStatus | null>(null);
+  useEffect(() => {
+    if (requestedStatus) setSelected(requestedStatus.status);
+  }, [requestedStatus]);
   const { inventory } = status;
   const segments = splitInventory(inventory);
   const night = formatWeekdayDate(status.date);

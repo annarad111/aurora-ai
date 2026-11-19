@@ -1,12 +1,19 @@
-import { formatPeriodLabel, type InvestigationContext, type Workspace } from '@aurora/shared';
-import { useEffect, useRef } from 'react';
+import { formatPeriodLabel, type BriefingInsight, type InvestigationContext, type Workspace } from '@aurora/shared';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import type { ProvenanceData } from '../../stream/run-reducer';
+import type { MorningBriefingState } from '../briefing/useMorningBriefing';
+import { EventsAndAlerts } from './EventsAndAlerts';
+import { EvidenceDrawer } from './EvidenceDrawer';
+import { PropertyIntelligence } from './PropertyIntelligence';
+import { briefingEvidence, eventEvidence, inventoryEvidence, kpiEvidence } from './property-evidence';
+import type { RoomStatus } from './room-inventory';
 import { joinClassNames } from '../../lib/class-names';
 import { formatWeekdayDate } from '../../lib/dates';
 import { FinancialSnapshot } from './FinancialSnapshot';
 import { OperationsTonight } from './OperationsTonight';
 import type { PropertyOverviewState } from './usePropertyOverview';
 
-export type PropertySection = 'identity' | 'inventory' | 'financials';
+export type PropertySection = 'identity' | 'inventory' | 'financials' | 'events' | 'intelligence';
 
 interface PropertyOverviewPageProps {
   workspace: Workspace;
@@ -15,33 +22,47 @@ interface PropertyOverviewPageProps {
   /** The section a chat answer pointed to; `requestId` changes each time, so the same section can be shown again. */
   focus: { section: PropertySection; requestId: number } | null;
   onInvestigate: (question: string, context?: InvestigationContext) => void;
+  /** The morning briefing, already loaded for the chat: its findings feed Property intelligence. */
+  briefingState: MorningBriefingState;
+  renderSaveButton: (insight: BriefingInsight) => ReactNode;
 }
 
 const SECTION_IDS: Record<PropertySection, string> = {
   identity: 'property-identity',
   inventory: 'property-inventory',
   financials: 'property-financials',
+  events: 'property-events',
+  intelligence: 'property-intelligence',
 };
+
+/** Brings a section into view, focuses it and makes it glow once. */
+function spotlightSection(section: PropertySection) {
+  const element = document.getElementById(SECTION_IDS[section]);
+  if (!element) return;
+  element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  element.focus({ preventScroll: true });
+  element.classList.remove('property-section--spotlight');
+  // Restart the glow even when the same section is asked for twice.
+  void element.offsetWidth;
+  element.classList.add('property-section--spotlight');
+}
 
 /**
  * The hotel itself: who it is, its rooms tonight, and last month's results.
  * Every figure can start an investigation in the chat; the detail of the
  * analysis stays there, not on this page.
  */
-export function PropertyOverviewPage({ workspace, state, onRetry, focus, onInvestigate }: PropertyOverviewPageProps) {
+export function PropertyOverviewPage({ workspace, state, onRetry, focus, onInvestigate, briefingState, renderSaveButton }: PropertyOverviewPageProps) {
   const pageRef = useRef<HTMLElement>(null);
+  /** The figure whose evidence is open in the drawer. */
+  const [openEvidence, setOpenEvidence] = useState<ProvenanceData | null>(null);
+  const closeEvidence = useCallback(() => setOpenEvidence(null), []);
+  /** "Show in room inventory" from an event: opens that status in Rooms tonight. */
+  const [requestedStatus, setRequestedStatus] = useState<{ status: RoomStatus; requestId: number } | null>(null);
 
   // A chat answer's button opens the exact section: it scrolls into view, takes focus and glows once.
   useEffect(() => {
-    if (!focus || state.status !== 'ready') return;
-    const section = document.getElementById(SECTION_IDS[focus.section]);
-    if (!section) return;
-    section.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    section.focus({ preventScroll: true });
-    section.classList.remove('property-section--spotlight');
-    // Restart the glow even when the same section is asked for twice.
-    void section.offsetWidth;
-    section.classList.add('property-section--spotlight');
+    if (focus && state.status === 'ready') spotlightSection(focus.section);
   }, [focus, state.status]);
 
   const { hotel } = workspace;
@@ -134,7 +155,10 @@ export function PropertyOverviewPage({ workspace, state, onRetry, focus, onInves
               {status.basis === 'results' ? `As of ${formatWeekdayDate(status.asOf)} (the demo’s today)` : `Booked as of ${formatWeekdayDate(status.asOf)}`}
             </span>
           </header>
-          <OperationsTonight status={status} onInvestigate={onInvestigate} />
+          <OperationsTonight status={status} onInvestigate={onInvestigate} requestedStatus={requestedStatus} />
+          <button type="button" className="text-button property-section__evidence" onClick={() => setOpenEvidence(inventoryEvidence(status))}>
+            How is this calculated?
+          </button>
           {status.upcomingRoomEvents.length > 0 && (
             <div className="property-coming-up">
               <h3 className="property-coming-up__title">Maintenance coming up</h3>
@@ -156,9 +180,45 @@ export function PropertyOverviewPage({ workspace, state, onRetry, focus, onInves
             </h2>
             <span className="property-section__as-of">The previous completed month</span>
           </header>
-          <FinancialSnapshot financial={financial} onInvestigate={onInvestigate} />
+          <FinancialSnapshot financial={financial} onInvestigate={onInvestigate} onShowEvidence={(kpi) => setOpenEvidence(kpiEvidence(kpi, financial.period))} />
+        </section>
+
+        <section id={SECTION_IDS.events} tabIndex={-1} className="property-section property-section--events" aria-labelledby="events-title">
+          <header className="property-section__header">
+            <h2 id="events-title" className="property-section__title">
+              Events & alerts
+            </h2>
+            <span className="property-section__as-of">Maintenance, group arrivals and cancellations around today</span>
+          </header>
+          <EventsAndAlerts
+            events={state.overview.events}
+            onInvestigate={onInvestigate}
+            onShowRooms={(roomStatus) => {
+              setRequestedStatus({ status: roomStatus, requestId: Date.now() });
+              spotlightSection('inventory');
+            }}
+            onShowEvidence={(event) => setOpenEvidence(eventEvidence(event))}
+          />
+        </section>
+
+        <section id={SECTION_IDS.intelligence} tabIndex={-1} className="property-section property-section--intelligence" aria-labelledby="intelligence-title">
+          <header className="property-section__header">
+            <h2 id="intelligence-title" className="property-section__title">
+              Property intelligence
+            </h2>
+            <span className="property-section__as-of">Ranked by fixed rules from your data</span>
+          </header>
+          <PropertyIntelligence
+            briefingState={briefingState}
+            status={status}
+            onInvestigate={onInvestigate}
+            onShowEvidence={(insight) => setOpenEvidence(briefingEvidence(insight))}
+            renderSaveButton={renderSaveButton}
+          />
         </section>
       </div>
+
+      {openEvidence && <EvidenceDrawer key={openEvidence.factId} evidence={openEvidence} onClose={closeEvidence} />}
     </article>
   );
 }

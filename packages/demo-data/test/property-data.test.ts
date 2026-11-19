@@ -45,3 +45,16 @@ describe('the demo property', () => {
     }
   });
 });
+
+describe('the upcoming group arrival', () => {
+  it('fits inside the rooms already on the books for its nights', () => {
+    const upcoming = dataset.groupBlocks.filter((block) => block.status === 'confirmed' && block.firstNight > DEMO_TODAY);
+    expect(upcoming.length).toBeGreaterThan(0);
+    for (const block of upcoming) {
+      for (const night of listDatesInRange({ from: block.firstNight, to: block.lastNight })) {
+        const booked = dataset.onTheBooks.filter((row) => row.stayDate === night && row.snapshotDate === DEMO_TODAY).reduce((sum, row) => sum + row.roomsOnTheBooks, 0);
+        expect(booked, `night ${night}`).toBeGreaterThanOrEqual(block.roomsPerNight);
+      }
+    }
+  });
+});

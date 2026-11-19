@@ -1,4 +1,4 @@
-import type { PropertyProfile, Room, RoomStatusEvent, RoomType } from '@aurora/shared';
+import type { GroupBlock, PropertyProfile, Room, RoomStatusEvent, RoomType } from '@aurora/shared';
 import { DEMO_HOTEL } from './story';
 
 // ---------------------------------------------------------------------------
@@ -108,5 +108,24 @@ export const DEMO_ROOM_STATUS_EVENTS: RoomStatusEvent[] = [
     description: 'Planned replacement of the window seals before winter.',
     firstNight: '2026-11-24',
     lastNight: '2026-11-26',
+  },
+];
+
+/**
+ * A confirmed group arriving after the demo's today, for the "events & alerts" of the
+ * Property Overview. Fictional. Its rooms are part of the bookings already on the
+ * books for those nights (checked in the dataset tests), so pace is unchanged.
+ */
+export const DEMO_UPCOMING_GROUP_BLOCKS: GroupBlock[] = [
+  {
+    id: 'atelier-verdi-launch-2026',
+    hotelId: DEMO_HOTEL.id,
+    name: 'Atelier Verdi product launch',
+    segment: 'mice',
+    firstNight: '2026-11-26',
+    lastNight: '2026-11-27',
+    roomsPerNight: 14,
+    status: 'confirmed',
+    cancelledOn: null,
   },
 ];

@@ -9,7 +9,7 @@ import { planForInvestigation, type RunStepPlan } from './insight-plan';
 import { buildSuggestions } from './suggestions';
 import { writeConversationReply } from './conversation';
 import { isConversationPlan, isDecisionsPlan, isPropertyPlan, KeywordInsightPlanner, type InsightPlanner, type PlannedRun } from './insight-planners';
-import { writePropertyAnswer } from './property-answer';
+import { writeMaintenanceImpactAnswer, writePropertyAnswer } from './property-answer';
 import { toolInputFor, writeDecisionsAnswer } from './decisions-answer';
 import type { NarrativeWriter } from './narrative-writer';
 import { pause } from './pause';
@@ -96,7 +96,17 @@ export async function runInsight(options: RunInsightOptions): Promise<void> {
   try {
     const hotel = await requireHotel(toolContext, hotelId);
     const planResult: Awaited<ReturnType<InsightPlanner['plan']>> = investigation
-      ? { ...planForInvestigation(investigation, toolContext.today), plannedBy: 'context' }
+      ? investigation.intent === 'maintenance_impact'
+        ? {
+            kind: 'property',
+            focus: {
+              kind: 'maintenance_impact',
+              ...(investigation.eventId ? { eventId: investigation.eventId } : {}),
+              ...(investigation.roomNumbers?.length === 1 ? { roomNumber: investigation.roomNumbers[0]! } : {}),
+            },
+            plannedBy: 'context',
+          }
+        : { ...planForInvestigation(investigation, toolContext.today), plannedBy: 'context' }
       : await planner.plan(question, signal, { today: toolContext.today, history: options.history ?? [] });
     if (signal.aborted) return;
 
@@ -130,7 +140,7 @@ export async function runInsight(options: RunInsightOptions): Promise<void> {
         factId: string;
         provenance: { title: string; displayValue: string; formula: string; inputs: Array<{ label: string; value: string }>; sourceQuery: string; contextLabel: string };
       }>;
-      plannedBy: 'llm' | 'keywords';
+      plannedBy: 'llm' | 'keywords' | 'context';
     }) {
       await emit({ type: 'step', ...spec.step, status: 'pending' });
       await emit({ type: 'step', ...spec.step, status: 'running' });
@@ -190,6 +200,40 @@ export async function runInsight(options: RunInsightOptions): Promise<void> {
               ],
               sourceQuery: `decision_records WHERE hotel_id = ${hotel.id}`,
               contextLabel: 'Saved decisions',
+            },
+          };
+        },
+        plannedBy: planResult.plannedBy,
+      });
+      return;
+    }
+
+    // --- Maintenance and what it cost: read from get_room_events, answered by fixed rules ---
+    if (isPropertyPlan(planResult) && planResult.focus.kind === 'maintenance_impact') {
+      const { focus } = planResult;
+      await emitWrittenAnswer({
+        step: { stepId: 'room_events', label: 'Checking maintenance and full nights', tool: 'get_room_events' },
+        read: async () => {
+          const output = await callTool(
+            'get_room_events',
+            { hotelId: hotel.id, ...(focus.eventId ? { eventId: focus.eventId } : {}), ...(focus.roomNumber ? { roomNumber: focus.roomNumber } : {}) },
+            toolContext,
+          );
+          const answer = writeMaintenanceImpactAnswer(output, focus);
+          const roomNights = output.events.reduce((sum, event) => sum + event.impact.roomNights, 0);
+          return {
+            answer,
+            factId: 'room_events',
+            provenance: {
+              title: 'Maintenance and full nights',
+              displayValue: `${roomNights} room nights unsellable`,
+              formula: 'per night: vacant = physical rooms − rooms sold (or booked so far) − rooms out of order or out of service; a full night has no vacant room',
+              inputs: output.events.map((event) => ({
+                label: `${event.roomNumbers.join(', ')} · ${event.firstNight} to ${event.lastNight}`,
+                value: `${event.impact.roomNights} room nights, ${event.impact.nightsFull} full nights`,
+              })),
+              sourceQuery: `room_status_events + daily_stats (past nights) + on_the_books (snapshot ${output.today}) for ${output.window.from} to ${output.window.to}`,
+              contextLabel: 'Maintenance and full nights',
             },
           };
         },
@@ -385,6 +429,7 @@ function hasResultFor(tool: ToolName, results: ToolResults): boolean {
     simulate_scenario: undefined,
     get_decisions: undefined,
     get_property_status: undefined,
+    get_room_events: undefined,
   };
   return resultForTool[tool] !== undefined;
 }

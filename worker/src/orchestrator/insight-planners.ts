@@ -53,7 +53,8 @@ export interface DecisionsPlan {
 export interface PropertyPlan {
   kind: 'property';
   focus: PropertyFocus;
-  plannedBy: 'llm' | 'keywords';
+  /** context: opened from the Property Overview, with the event as structured context. */
+  plannedBy: 'llm' | 'keywords' | 'context';
 }
 
 export type PlanResult = PlannedRun | ConversationPlan | DecisionsPlan | PropertyPlan;
@@ -261,6 +262,15 @@ export class LanguageModelInsightPlanner implements InsightPlanner {
       const decisionsCall = response.toolCalls.find((call) => call.name === 'get_decisions');
       if (decisionsCall) {
         return { kind: 'decisions', focus: focusFromModelArguments(normalizeModelArguments(decisionsCall.arguments)), plannedBy: 'llm' };
+      }
+      const roomEventsCall = response.toolCalls.find((call) => call.name === 'get_room_events');
+      if (roomEventsCall) {
+        const roomNumber = normalizeModelArguments(roomEventsCall.arguments).roomNumber;
+        return {
+          kind: 'property',
+          focus: { kind: 'maintenance_impact', ...(typeof roomNumber === 'string' && /^\d{3}$/.test(roomNumber) ? { roomNumber } : {}) },
+          plannedBy: 'llm',
+        };
       }
       const propertyCall = response.toolCalls.find((call) => call.name === 'get_property_status');
       if (propertyCall) {

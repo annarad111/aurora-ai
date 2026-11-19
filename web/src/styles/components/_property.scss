@@ -647,3 +647,273 @@
     transform: translateX(3px);
   }
 }
+
+// --- Events & alerts --------------------------------------------------------------------
+
+.property-empty {
+  margin: 0;
+  font-size: $font-size-13;
+  color: var(--color-ink-tertiary);
+}
+
+.property-section__evidence {
+  align-self: flex-start;
+}
+
+.property-events {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: $space-8;
+}
+
+.property-event {
+  --event-color: var(--color-petrol);
+  border-radius: $radius-button;
+  border: 1px solid var(--color-line);
+  border-left: 3px solid var(--event-color);
+  background: var(--color-surface);
+  transition: border-color $duration-fast;
+}
+
+.property-event--maintenance {
+  --event-color: var(--color-amber);
+}
+
+.property-event--group_cancellation {
+  --event-color: var(--color-coral);
+}
+
+.property-event--group_arrival {
+  --event-color: var(--color-violet);
+}
+
+.property-event--open {
+  border-color: var(--event-color);
+}
+
+.property-event__summary {
+  @include unstyled-button;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: $space-4;
+  padding: $space-10 $space-12;
+  border-radius: $radius-button;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--color-sunken);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--shadow-focus-ring);
+  }
+}
+
+.property-event__tags {
+  display: flex;
+  gap: $space-8;
+  align-items: center;
+}
+
+.property-event__type {
+  @include eyebrow;
+}
+
+.property-event__status {
+  padding: 1px $space-8;
+  border-radius: $radius-pill;
+  font-size: $font-size-11;
+  font-weight: $font-weight-semibold;
+}
+
+.property-event__status--in-progress {
+  background: var(--color-amber-soft);
+  color: var(--color-amber-ink);
+}
+
+.property-event__status--scheduled {
+  background: var(--color-violet-soft);
+  color: var(--color-violet-ink);
+}
+
+.property-event__status--completed {
+  background: var(--color-sage-soft);
+  color: var(--color-sage);
+}
+
+.property-event__status--cancelled {
+  background: var(--color-coral-soft);
+  color: var(--color-coral);
+}
+
+.property-event__title {
+  font-weight: $font-weight-semibold;
+}
+
+.property-event__nights,
+.property-event__impact {
+  font-size: $font-size-12;
+  color: var(--color-ink-secondary);
+}
+
+.property-event__details {
+  @include enters-on-arrival(200ms);
+  display: flex;
+  flex-direction: column;
+  gap: $space-10;
+  padding: 0 $space-12 $space-12;
+}
+
+.property-event__facts {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: $space-6;
+  font-size: $font-size-13;
+
+  dt {
+    font-size: $font-size-11;
+    color: var(--color-ink-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  dd {
+    margin: 0;
+    color: var(--color-ink-secondary);
+  }
+}
+
+.property-event__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: $space-8;
+}
+
+// --- Property intelligence ----------------------------------------------------------------
+
+.property-intelligence {
+  display: flex;
+  flex-direction: column;
+  gap: $space-10;
+}
+
+.intelligence-item {
+  --item-color: var(--color-petrol);
+  display: flex;
+  gap: $space-10;
+  padding: $space-10 $space-12;
+  border-radius: $radius-button;
+  background: var(--color-sunken);
+}
+
+.intelligence-item--critical {
+  --item-color: var(--color-coral);
+}
+
+.intelligence-item--important,
+.intelligence-item--operational {
+  --item-color: var(--color-amber);
+}
+
+.intelligence-item--opportunity {
+  --item-color: var(--color-sage);
+}
+
+.intelligence-item__dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  margin-top: 6px;
+  border-radius: 50%;
+  background: var(--item-color);
+}
+
+.intelligence-item__body {
+  display: flex;
+  flex-direction: column;
+  gap: $space-2;
+  min-width: 0;
+}
+
+.intelligence-item__tag {
+  @include eyebrow;
+}
+
+.intelligence-item__title {
+  font-size: $font-size-14;
+  font-weight: $font-weight-medium;
+}
+
+.intelligence-item__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: $space-2 $space-6;
+  margin-left: -$space-6;
+}
+
+.financial-kpi__evidence {
+  margin-left: -$space-6;
+  font-size: $font-size-12;
+}
+
+// --- The evidence drawer: at the side on a wide screen, a sheet from the bottom on a phone ---
+
+.evidence-drawer {
+  position: fixed;
+  top: $space-16;
+  right: $space-16;
+  bottom: $space-16;
+  z-index: 40;
+  width: min(400px, calc(100vw - 32px));
+  overflow-y: auto;
+  border-radius: $radius-panel;
+  box-shadow: $shadow-overlay;
+  animation: evidence-drawer-in 220ms ease-out;
+
+  .provenance-card {
+    min-height: 100%;
+  }
+}
+
+@keyframes evidence-drawer-in {
+  from {
+    transform: translateX(24px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+@include below-breakpoint($breakpoint-stacked) {
+  .evidence-drawer {
+    top: auto;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: auto;
+    max-height: 75dvh;
+    border-radius: $radius-overlay $radius-overlay 0 0;
+    animation-name: evidence-sheet-in;
+  }
+}
+
+@keyframes evidence-sheet-in {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: none;
+  }
+}

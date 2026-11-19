@@ -16,7 +16,7 @@ import {
   type Segment,
 } from '@aurora/shared';
 import { allocateByLargestRemainder, balanceIntegerMatrix } from './allocate';
-import { DEMO_PROPERTY_PROFILE, DEMO_ROOM_STATUS_EVENTS, generateDemoRooms } from './property';
+import { DEMO_PROPERTY_PROFILE, DEMO_ROOM_STATUS_EVENTS, DEMO_UPCOMING_GROUP_BLOCKS, generateDemoRooms } from './property';
 import { createSeededRandom, type SeededRandom } from './seeded-random';
 import {
   BACKGROUND_BASE_RATE,
@@ -145,7 +145,7 @@ export function generateDemoDataset(): DemoDataset {
     dailyStats,
     dailyTargets,
     onTheBooks: generateOnTheBooks(hotelId),
-    groupBlocks: DEMO_GROUP_BLOCKS,
+    groupBlocks: [...DEMO_GROUP_BLOCKS, ...DEMO_UPCOMING_GROUP_BLOCKS],
     propertyProfiles: [DEMO_PROPERTY_PROFILE],
     rooms: generateDemoRooms(hotelId),
     roomStatusEvents: DEMO_ROOM_STATUS_EVENTS,

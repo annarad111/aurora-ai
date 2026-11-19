@@ -276,6 +276,8 @@ export function App() {
                 onRetry={retryProperty}
                 focus={propertyFocus}
                 onInvestigate={handleInvestigateFromProperty}
+                briefingState={briefingState}
+                renderSaveButton={(item) => <SaveInsightButton insight={insightFromBriefing(item, workspace.hotel.id)} store={decisions} compact />}
               />
             </div>
           </div>

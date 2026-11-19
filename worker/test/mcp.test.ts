@@ -43,7 +43,7 @@ afterEach(async () => {
 });
 
 describe('the MCP endpoint, through a real MCP client', () => {
-  it('lists the nine registry tools, all marked read-only', async () => {
+  it('lists the ten registry tools, all marked read-only', async () => {
     const client = await connectClient(TEST_TOKEN);
     const { tools } = await client.listTools();
     expect(tools.map((tool) => tool.name).sort()).toEqual([
@@ -54,6 +54,7 @@ describe('the MCP endpoint, through a real MCP client', () => {
       'get_group_blocks',
       'get_hotel_overview',
       'get_property_status',
+      'get_room_events',
       'query_performance',
       'simulate_scenario',
     ]);

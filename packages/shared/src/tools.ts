@@ -3,7 +3,7 @@ import { breakdownDimensionSchema, dayTypeSchema } from './breakdown';
 import { channelSchema, dateRangeSchema, groupBlockSchema, hotelSchema, isoDateSchema, segmentSchema } from './domain';
 import { findingSchema } from './findings';
 import { getDecisionsInputSchema, getDecisionsOutputSchema } from './decisions';
-import { getPropertyStatusInputSchema, getPropertyStatusOutputSchema } from './property';
+import { getPropertyStatusInputSchema, getPropertyStatusOutputSchema, getRoomEventsInputSchema, getRoomEventsOutputSchema } from './property';
 import { metricStatusSchema } from './metric-meta';
 
 // ---------------------------------------------------------------------------
@@ -316,4 +316,5 @@ export const TOOL_SCHEMAS = {
   simulate_scenario: { input: simulateScenarioInputSchema, output: simulateScenarioOutputSchema },
   get_decisions: { input: getDecisionsInputSchema, output: getDecisionsOutputSchema },
   get_property_status: { input: getPropertyStatusInputSchema, output: getPropertyStatusOutputSchema },
+  get_room_events: { input: getRoomEventsInputSchema, output: getRoomEventsOutputSchema },
 } as const;

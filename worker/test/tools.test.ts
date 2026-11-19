@@ -129,9 +129,9 @@ describe('get_booking_pace', async () => {
 });
 
 describe('the registry', () => {
-  it('has the nine tools, each with a description for the model', () => {
+  it('has the ten tools, each with a description for the model', () => {
     expect(TOOL_DEFINITIONS.map((tool) => tool.name).sort()).toEqual(
-      ['analyze_revenue_drivers', 'get_booking_pace', 'get_channel_mix', 'get_decisions', 'get_group_blocks', 'get_hotel_overview', 'get_property_status', 'query_performance', 'simulate_scenario'].sort(),
+      ['analyze_revenue_drivers', 'get_booking_pace', 'get_channel_mix', 'get_decisions', 'get_group_blocks', 'get_hotel_overview', 'get_property_status', 'get_room_events', 'query_performance', 'simulate_scenario'].sort(),
     );
     TOOL_DEFINITIONS.forEach((tool) => expect(tool.description.length).toBeGreaterThan(60));
   });

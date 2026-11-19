@@ -159,7 +159,7 @@ export const trailActionSchema = z.discriminatedUnion('kind', [
     kind: z.literal('navigate'),
     label: z.string(),
     destination: z.enum(['decisions', 'property']),
-    section: z.enum(['identity', 'inventory', 'financials']).optional(),
+    section: z.enum(['identity', 'inventory', 'financials', 'events', 'intelligence']).optional(),
   }),
 ]);
 export type TrailAction = z.infer<typeof trailActionSchema>;

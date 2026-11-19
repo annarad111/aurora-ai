@@ -1,4 +1,4 @@
-import { formatEuroCompact, formatPeriodLabel, METRIC_META, type InvestigationContext, type PropertyOverview } from '@aurora/shared';
+import { formatEuroCompact, formatPeriodLabel, METRIC_META, type InvestigationContext, type KpiComparison, type PropertyOverview } from '@aurora/shared';
 import { useState } from 'react';
 import { ArrowRightIcon } from '../../design-system/icons';
 import { joinClassNames } from '../../lib/class-names';
@@ -15,6 +15,7 @@ const KPI_DEFINITIONS: Record<string, string> = {
 interface FinancialSnapshotProps {
   financial: PropertyOverview['financial'];
   onInvestigate: (question: string, context?: InvestigationContext) => void;
+  onShowEvidence: (kpi: KpiComparison) => void;
 }
 
 /**
@@ -22,7 +23,7 @@ interface FinancialSnapshotProps {
  * against target and last year) and room revenue per month. The detail
  * stays in the chat: each question starts an investigation of this month.
  */
-export function FinancialSnapshot({ financial, onInvestigate }: FinancialSnapshotProps) {
+export function FinancialSnapshot({ financial, onInvestigate, onShowEvidence }: FinancialSnapshotProps) {
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
   const monthLabel = formatPeriodLabel(financial.period);
   const tallest = Math.max(
@@ -53,6 +54,9 @@ export function FinancialSnapshot({ financial, onInvestigate }: FinancialSnapsho
                 <span className="financial-kpi__comparison">{formatMetricDelta(kpi.metric, kpi.actual, kpi.lastYear)} vs last year</span>
               )}
               <span className="financial-kpi__definition">{KPI_DEFINITIONS[kpi.metric]}</span>
+              <button type="button" className="text-button financial-kpi__evidence" onClick={() => onShowEvidence(kpi)}>
+                View evidence
+              </button>
             </div>
           );
         })}
