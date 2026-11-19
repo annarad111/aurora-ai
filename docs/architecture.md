@@ -90,6 +90,21 @@ Aurora is a chat: questions and answers stack in one thread, and every conversat
 - **Talking, not only analysing.** `worker/src/orchestrator/conversation.ts` recognises greetings, small talk, thanks and "what can you do?" and answers them in words ("Hello, what would you like to see today about your business?"). A message outside the hotel's business is declined politely; with the model on, the model writes that reply, checked to contain no figures. Such replies run no tools, and `done.answerKind` is `conversation`.
 - **Suggestions from the data.** The starter questions and the ones offered after a greeting are written from today's numbers (`worker/src/orchestrator/suggestions.ts`): revenue below or above target, pace behind last year, a rising OTA share, a cancelled group block. Nothing is seeded or typed in by hand.
 
+## The insight trail
+
+Answers are read by people who run a hotel, not by developers, so the chat never shows tool or function names. Instead, each analysis opens with the **Aurora insight trail**: four steps from the question to a decision.
+
+| Step | Answers | Example |
+|---|---|---|
+| Observation | What happened | Room revenue is €33.9k below target for 1–17 Nov 2026. |
+| Discovery | What caused it | 204 room nights were lost when the EU Health Congress on 10–12 November was cancelled. |
+| Understanding | Why it matters | Fewer nights cost more than the higher rates brought in. |
+| Decision | What to do next, with a button | Bookings for 21–30 November are 16% behind last year → Explore recovery scenarios |
+
+- `worker/src/orchestrator/insight-trail.ts` writes the steps from the tool results by fixed rules (no model), so every number is exact, and sends them as a `trail` event after the tools, before the text.
+- While Aurora works, the four steps are dim and the current one glows, with a plain sentence of what is happening ("Checking bookings for the coming nights…"). Each step that links to a figure lights the same chart bar when hovered.
+- The tool names stay where they belong: in "How was this calculated?" and in the MCP server.
+
 ## What-if simulation
 
 `simulate_scenario` answers "what if we act on the coming nights?" with three levers: win back part of the room nights behind last year's pace, change the rate of the rooms still to sell, and move part of the OTA revenue to direct.

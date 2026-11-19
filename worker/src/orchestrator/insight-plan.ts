@@ -51,10 +51,10 @@ export interface InsightPlan {
 }
 
 const STEP_FOR_TOOL: Record<'get_hotel_overview' | 'analyze_revenue_drivers' | 'get_channel_mix' | 'get_booking_pace', RunStepPlan> = {
-  get_hotel_overview: { stepId: 'overview', label: 'Checking occupancy and rate', tool: 'get_hotel_overview' },
-  analyze_revenue_drivers: { stepId: 'drivers', label: 'Decomposing the revenue gap', tool: 'analyze_revenue_drivers' },
+  get_hotel_overview: { stepId: 'overview', label: 'Looking at occupancy and rates', tool: 'get_hotel_overview' },
+  analyze_revenue_drivers: { stepId: 'drivers', label: 'Finding what is behind the gap', tool: 'analyze_revenue_drivers' },
   get_channel_mix: { stepId: 'channels', label: 'Comparing channels', tool: 'get_channel_mix' },
-  get_booking_pace: { stepId: 'pace', label: 'Checking pace for the rest of the month', tool: 'get_booking_pace' },
+  get_booking_pace: { stepId: 'pace', label: 'Checking bookings for the coming nights', tool: 'get_booking_pace' },
 };
 type AnalysisToolName = keyof typeof STEP_FOR_TOOL;
 
@@ -80,11 +80,11 @@ export function analysisPlan(intent: keyof typeof TOOLS_FOR_INTENT): InsightPlan
   return { intent, steps: TOOLS_FOR_INTENT[intent].map((tool) => STEP_FOR_TOOL[tool]) };
 }
 
-/** "Querying ADR by channel" — what the timeline shows for a data question. */
+/** "Looking up ADR by channel" — what the timeline shows for a data question. */
 export function describeQueryStep(input: Omit<QueryPerformanceInput, 'hotelId'>, primaryMetric: BreakdownMetric): string {
   const metricLabel = BREAKDOWN_METRIC_INFO[primaryMetric].label;
   const split = input.groupBy === 'none' ? '' : ` ${BREAKDOWN_DIMENSION_LABELS[input.groupBy]}`;
-  return `Querying ${metricLabel}${split}${input.compareWithLastYear ? ' vs last year' : ''}`;
+  return `Looking up ${metricLabel}${split}${input.compareWithLastYear ? ' vs last year' : ''}`;
 }
 
 export function dataQuestionPlan(query: Omit<QueryPerformanceInput, 'hotelId'>, dataFocus: DataQuestionFocus): InsightPlan {

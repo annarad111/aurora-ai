@@ -33,6 +33,15 @@ $light-palette: (
   'amber-soft': #f8efe1,
   'coral': #b4463a,
   'coral-soft': #f8e7e4,
+  // The insight trail: a deep night-blue card where each step lights up.
+  'trail-surface': #121a2b,
+  'trail-line': #2a3550,
+  'trail-ink': #eef1f8,
+  'trail-ink-muted': #a3adc2,
+  'trail-observation': #8fa1f7,
+  'trail-discovery': #b78cf0,
+  'trail-understanding': #f19bc9,
+  'trail-decision': #6dd3bd,
 );
 
 $dark-palette: (
@@ -55,4 +64,12 @@ $dark-palette: (
   'amber-soft': #3a2f1e,
   'coral': #f29384,
   'coral-soft': #3f2529,
+  'trail-surface': #0b1220,
+  'trail-line': #26324b,
+  'trail-ink': #eef1f8,
+  'trail-ink-muted': #a3adc2,
+  'trail-observation': #8fa1f7,
+  'trail-discovery': #b78cf0,
+  'trail-understanding': #f19bc9,
+  'trail-decision': #6dd3bd,
 );

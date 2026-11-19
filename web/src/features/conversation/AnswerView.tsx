@@ -6,7 +6,7 @@ import { KpiGrid } from '../insights/KpiCard';
 import { MainFinding } from '../insights/MainFinding';
 import { FollowUps } from './FollowUps';
 import { RunBanner } from './RunBanner';
-import { RunTimeline } from './RunTimeline';
+import { InsightTrail } from './InsightTrail';
 import { StreamedExplanation } from './StreamedExplanation';
 
 interface AnswerViewProps {
@@ -62,7 +62,15 @@ export function AnswerView({
           <img src="/aurora-mark.png" alt="" />
         </span>
         <div className="assistant-message__content">
-      {!isConversationReply && <RunTimeline steps={run.steps} phase={run.phase} completion={run.completion} />}
+      {!isConversationReply && (
+        <InsightTrail
+          run={run}
+          interaction={interaction}
+          canOpenView={(view) => isViewAvailable(view, readExploreData(run))}
+          onAskQuestion={onAskQuestion}
+          onOpenExplore={onOpenExplore}
+        />
+      )}
 
       {run.insight && (
         <MainFinding

@@ -11,8 +11,8 @@ interface FollowUpsProps {
 }
 
 const PROVIDER_LABELS: Record<RunCompletion['provider'], string> = {
-  llm: 'Workers AI',
-  scripted: 'Scripted narrative',
+  llm: 'written with Workers AI',
+  scripted: 'written from templates',
 };
 
 /** Suggested next questions, plus a line saying how the answer was produced. */
@@ -30,7 +30,7 @@ export function FollowUps({ questions, basedOnLabel, completion, label, onAskQue
       {completion && (
         <span className="follow-ups__meta" title={completion.fallbackReason}>
           Answered in {(completion.durationMs / 1000).toFixed(1)} s · {PROVIDER_LABELS[completion.provider]}
-          {completion.fallbackReason && ' (model unavailable)'} · {completion.verifiedFigureCount} figures matched to tool output
+          {completion.fallbackReason && ' (model unavailable)'} · {completion.verifiedFigureCount} figures checked against your data
         </span>
       )}
     </div>

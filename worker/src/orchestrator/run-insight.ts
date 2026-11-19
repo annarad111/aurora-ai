@@ -4,6 +4,7 @@ import { callTool } from '../tools/registry';
 import { requireHotel, ToolInputError, type ToolContext } from '../tools/tool-context';
 import { monthToDate, paceWindowFor, type AnalysisContext, type ToolResults } from './analysis-context';
 import { describeAnsweredContext } from './follow-up';
+import { buildInsightTrail } from './insight-trail';
 import type { RunStepPlan } from './insight-plan';
 import { buildSuggestions } from './suggestions';
 import { writeConversationReply } from './conversation';
@@ -145,6 +146,11 @@ export async function runInsight(options: RunInsightOptions): Promise<void> {
       await emit({ type: 'insight', ...narrativeWriter.writeInsight(plan.intent, analysis) });
     }
 
+    // --- The insight trail: the reasoning in four plain steps, before the text ---
+    const followupQuestions = narrativeWriter.suggestFollowups(plan.intent, analysis);
+    const trailStages = buildInsightTrail(plan.intent, analysis, followupQuestions);
+    if (trailStages.length > 0) await emit({ type: 'trail', stages: trailStages });
+
     // --- Explanation, word by word --------------------------------------------
     // The whole explanation is checked before any of it is shown, so a rejected
     // model answer never flashes on screen.
@@ -176,7 +182,7 @@ export async function runInsight(options: RunInsightOptions): Promise<void> {
       await emit({ type: 'provenance', ...provenance });
     }
 
-    await emit({ type: 'followups', questions: narrativeWriter.suggestFollowups(plan.intent, analysis) });
+    await emit({ type: 'followups', questions: followupQuestions });
     await emit({
       type: 'done',
       durationMs: Date.now() - startedAt,

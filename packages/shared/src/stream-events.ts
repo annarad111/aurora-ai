@@ -41,7 +41,7 @@ export const STEP_STATUSES = ['pending', 'running', 'done', 'failed'] as const;
 export const stepStatusSchema = z.enum(STEP_STATUSES);
 export type StepStatus = z.infer<typeof stepStatusSchema>;
 
-/** One line of the run timeline: "Checking occupancy and rate · get_hotel_overview". */
+/** One step of the run ("Looking at occupancy and rates"). The tool name is kept for provenance, not shown in the chat. */
 export const stepEventSchema = z.object({
   ...eventEnvelope,
   type: z.literal('step'),
@@ -141,6 +141,39 @@ export const followupsEventSchema = z.object({
   questions: z.array(z.string()).min(1).max(4),
 });
 
+// --- The insight trail: the answer's reasoning in four steps, in plain words ---
+
+export const TRAIL_STAGES = ['observation', 'discovery', 'understanding', 'decision'] as const;
+export const trailStageNameSchema = z.enum(TRAIL_STAGES);
+export type TrailStageName = z.infer<typeof trailStageNameSchema>;
+
+/** What the Decision step's button does: ask the next question, or open an Explore view (pace has the what-if). */
+export const trailActionSchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('ask'), label: z.string(), question: z.string() }),
+  z.object({ kind: z.literal('explore'), label: z.string(), view: z.enum(['occupancy', 'bridge', 'channel', 'pace']) }),
+]);
+export type TrailAction = z.infer<typeof trailActionSchema>;
+
+export const trailStageSchema = z.object({
+  stage: trailStageNameSchema,
+  /** One short sentence a hotel manager understands without the numbers behind it. */
+  text: z.string(),
+  /** The figure the sentence is about, so it lights up the same chart bar as in the text. */
+  factId: z.string().optional(),
+  action: trailActionSchema.optional(),
+});
+export type TrailStage = z.infer<typeof trailStageSchema>;
+
+/**
+ * "From question to clarity": what Aurora saw, found, understood and suggests,
+ * written from the tool results (no model). Sent after the tools and before the text.
+ */
+export const trailEventSchema = z.object({
+  ...eventEnvelope,
+  type: z.literal('trail'),
+  stages: z.array(trailStageSchema).min(1).max(4),
+});
+
 export const INSIGHT_INTENTS = ['revenue_gap', 'channel_cost', 'booking_pace', 'segment_shift', 'data_question', 'group_blocks'] as const;
 export const insightIntentSchema = z.enum(INSIGHT_INTENTS);
 export type InsightIntent = z.infer<typeof insightIntentSchema>;
@@ -210,6 +243,7 @@ export const streamEventSchema = z.discriminatedUnion('type', [
   chartEventSchema,
   provenanceEventSchema,
   followupsEventSchema,
+  trailEventSchema,
   doneEventSchema,
   errorEventSchema,
 ]);

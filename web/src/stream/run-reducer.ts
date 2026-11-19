@@ -1,4 +1,4 @@
-import type { ChartKind, ChartPayload, StepStatus, StreamEvent, StreamEventOfType } from '@aurora/shared';
+import type { ChartKind, ChartPayload, StepStatus, StreamEvent, StreamEventOfType, TrailStage } from '@aurora/shared';
 
 // ---------------------------------------------------------------------------
 // The state of one answer, built only from stream events and user actions.
@@ -67,6 +67,8 @@ export interface RunState {
   charts: Partial<Record<ChartKind, ChartPayload>>;
   provenanceByFactId: Record<string, ProvenanceData>;
   followups: string[];
+  /** The reasoning in four plain steps; null until the tools are done (and for replies in words). */
+  trail: TrailStage[] | null;
   completion: RunCompletion | null;
   error: RunError | null;
 }
@@ -90,6 +92,7 @@ export const initialRunState: RunState = {
   charts: {},
   provenanceByFactId: {},
   followups: [],
+  trail: null,
   completion: null,
   error: null,
 };
@@ -165,6 +168,9 @@ function applyStreamEvent(state: RunState, event: StreamEvent): RunState {
 
     case 'followups':
       return { ...nextState, followups: event.questions };
+
+    case 'trail':
+      return { ...nextState, trail: event.stages };
 
     case 'done':
       return {
