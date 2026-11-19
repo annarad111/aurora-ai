@@ -1,24 +1,29 @@
 @use '../abstracts' as *;
 
 // Three columns at full viewport height: sidebar | conversation | evidence panel.
-// The row wraps on narrow screens (see the breakpoint at the bottom).
+// On a wide screen the page itself never scrolls: only the chat, the sidebar
+// list and the evidence panel scroll inside their own column. Below the
+// breakpoint the columns stack and the page scrolls normally.
 .workspace {
   display: flex;
-  flex-wrap: wrap;
-  min-height: 100vh;
+  // dvh follows the visible height on phones and tablets (the browser bar comes and goes).
+  height: 100vh;
+  height: 100dvh;
+  // The containing block of anything positioned inside, so nothing can stretch the page.
+  position: relative;
+  overflow: hidden;
 }
 
 .workspace__sidebar {
   flex: 0 0 $sidebar-width;
-  height: 100vh;
-  position: sticky;
-  top: 0;
+  height: 100%;
+  overflow-y: auto;
 }
 
 .workspace__conversation {
   flex: 1 1 $conversation-min-width;
   min-width: 0;
-  height: 100vh;
+  height: 100%;
   display: flex;
   flex-direction: column;
 }
@@ -27,14 +32,17 @@
   flex: 1 1 $evidence-panel-min-width;
   max-width: $evidence-panel-max-width;
   min-width: 0;
-  height: 100vh;
+  height: 100%;
   overflow: auto;
+  // Screen-reader-only labels inside are positioned against the panel, so they scroll with it.
+  position: relative;
 }
 
 @include below-breakpoint($breakpoint-stacked) {
   .workspace {
     flex-direction: column;
-    flex-wrap: nowrap;
+    height: auto;
+    overflow: visible;
   }
 
   .workspace__sidebar,
@@ -44,10 +52,11 @@
     width: 100%;
     max-width: none;
     height: auto;
-    position: static;
+    overflow: visible;
   }
 
   .workspace__conversation {
     min-height: 100vh;
+    min-height: 100dvh;
   }
 }

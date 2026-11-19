@@ -5,6 +5,9 @@
   flex: 1;
   min-height: 0;
   overflow: auto;
+  // Screen-reader-only labels inside the answers are positioned against the chat, so they
+  // scroll with it instead of stretching the page.
+  position: relative;
 }
 
 // Centered column that holds the idle state or the answer.
