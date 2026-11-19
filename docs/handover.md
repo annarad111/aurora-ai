@@ -1,7 +1,7 @@
 # Aurora: technical handover
 
-> Written on 19 Nov 2026 from the code on `main` (commit `de310ac`). Anything marked
-> `[TO BE COMPLETED MANUALLY]` cannot be worked out from the code and has to be filled in by the project owner.
+> Written on 19 Nov 2026 from the code on `main`. Everything below describes the project as it is,
+> and what is planned next is listed in §8.
 
 ## 0. In short
 
@@ -12,7 +12,7 @@
 | **Name** | Aurora |
 | **What it does** | An AI assistant for hotel revenue managers. The user asks a question ("Why are we below target this month?"). Aurora picks the analysis tools it needs, computes the figures deterministically from the database and streams the answer (SSE) with KPIs, charts, where every figure comes from (provenance) and next steps. The app also has a Morning Briefing, a Property Overview page (rooms, events, financials), a Decisions workspace (saved insights → actions → outcome) and a what-if simulator. The same 10 tools are offered to external AI agents over MCP. |
 | **Stage** | Working MVP, live on Cloudflare: https://aurora.radulescuana111.workers.dev. It runs on **deterministic demo data** (one hotel, `sablon-bru`, 111 rooms, "today" fixed at 17 Nov 2026). It is not connected to a real PMS. |
-| **Users** | B2B: hotel revenue managers (UI) and external AI agents (MCP). The project is an independent concept for the "Juyo assessment" (see `package.json`). `[TO BE COMPLETED MANUALLY]`: the real users targeted after the demo, if any. |
+| **Users** | B2B: hotel revenue managers (UI) and external AI agents (MCP). The project is an independent concept for the "Juyo assessment" (see `package.json`). It is built for the revenue manager first; other roles, such as the hotel's CEO or general manager, were considered and are planned with their own views (see §8). |
 
 </div>
 
@@ -40,7 +40,7 @@ Related documents already in the repo:
 | Rate limiting | Cloudflare `ratelimits` bindings: chat 20/min, MCP 60/min, per IP |
 | Tests | Vitest 3 in every package (about 400 tests). UI tests use `renderToStaticMarkup`, no DOM. |
 | Hosting | Cloudflare Workers: one origin serves the static assets, the API and `/mcp` |
-| CI/CD | **None.** Deploys are manual (`npm run deploy`). There is no `.github/` folder. `[TO BE COMPLETED MANUALLY]` if a pipeline is wanted. |
+| CI/CD | **None.** Deploys are manual (`npm run deploy`). There is no `.github/` folder. A pipeline is one of the next steps (§8). |
 
 </div>
 
@@ -188,7 +188,7 @@ Build and dev variables (shell, not the Worker):
 
 Bindings (not variables, but required): `DB` (D1), `ASSETS`, `AI` (only `ai`), `CHAT_RATE_LIMITER`, `MCP_RATE_LIMITER`.
 
-The production MCP token is kept locally in `.secrets/production.env` (ignored by git) on the machine that set it. `[TO BE COMPLETED MANUALLY]`: hand it over through a secure channel (never through the repo or a chat).
+The production MCP token is kept locally in `.secrets/production.env` (ignored by git) on the machine that set it. It is handed over privately, never through the repo or a chat. A new owner can also set a new token at any time (see "Rotating the MCP token" in §7).
 
 ---
 
@@ -275,7 +275,7 @@ The chat answers "how many rooms are available?" through `get_property_status` a
 - In the UI, the simulator is in `ExploreOverlay`: it opens from the pace card ("Expand · What-if"), with a callout and a one-time pop-up (`localStorage` key `aurora.hint.what-if-seen`).
 - In the chat, "What if…" questions go through `what-if-answer.ts`.
 
-**Authentication/authorization:** there is none for the UI and `/api/*` (see §8). Only `/mcp` needs a token.
+**Authentication/authorization:** not built yet, on purpose: the UI and `/api/*` are open, and only `/mcp` needs a token. Why, and the plan for roles, are in §8.
 
 ---
 
@@ -312,13 +312,13 @@ The exact contracts (the source of truth) are the Zod schemas in `packages/share
 - `get_channel_mix`, `get_booking_pace`, `get_group_blocks`
 - `simulate_scenario`, `get_decisions`, `get_property_status`, `get_room_events`
 
-**External integrations:** Cloudflare only (D1, Workers AI, Rate Limiting). There is no PMS, channel manager, email or payments. `[TO BE COMPLETED MANUALLY]`: the real data source (PMS/RMS) if the project goes beyond the demo.
+**External integrations:** Cloudflare only (D1, Workers AI, Rate Limiting). There is no PMS, channel manager, email or payments. The app runs on demo data; connecting a real PMS/RMS feed is one of the next steps (§8).
 
 ---
 
 ## 7. Deployment & maintenance
 
-- **Environments.** There is one deployed environment: env `ai`, Worker `aurora` (https://aurora.radulescuana111.workers.dev). The default environment (no AI) is only for local development. **There is no staging**: `[TO BE COMPLETED MANUALLY]` if one is needed (a new env in `wrangler.jsonc` with its own D1 database).
+- **Environments.** There is one deployed environment: env `ai`, Worker `aurora` (https://aurora.radulescuana111.workers.dev). The default environment (no AI) is only for local development. **There is no staging** yet; adding one (a new env in `wrangler.jsonc` with its own D1 database) is one of the next steps (§8).
 - **Branches.** Work happens directly on `main`: each step is tested, committed and pushed to GitHub, then deployed. There is no branch protection and no required PRs.
 - **Release:**
   ```bash
@@ -326,7 +326,7 @@ The exact contracts (the source of truth) are the Zod schemas in `packages/share
   npm run db:migrate:remote      # only when there are new migrations
   npm run deploy                 # web build (tsc + vite) + wrangler deploy --env ai
   ```
-- **One-time setup** (already done): `wrangler login`, `wrangler d1 create aurora-db` (the id goes into `wrangler.jsonc` in **both** places), `wrangler secret put MCP_TOKEN --env ai`. The Cloudflare account belongs to the owner; `[TO BE COMPLETED MANUALLY]`: transfer it or invite the new developer to it.
+- **One-time setup** (already done): `wrangler login`, `wrangler d1 create aurora-db` (the id goes into `wrangler.jsonc` in **both** places), `wrangler secret put MCP_TOKEN --env ai`. The Cloudflare account belongs to the project owner, who gives the next developer access as a member of the account (Cloudflare dashboard → Manage account → Members).
 - **Rotating the MCP token:** put the new value in `.secrets/production.env`, then run `npx wrangler secret put MCP_TOKEN --env ai`.
 - **Logs:**
   - `npx wrangler tail --env ai` shows live logs (500 errors appear as `[Aurora] request failed`).
@@ -343,12 +343,38 @@ The exact contracts (the source of truth) are the Zod schemas in `packages/share
 ## 8. Known issues, tech debt & next steps
 
 ### Known limitations (accepted for the demo)
-- **No authentication and no multi-tenancy.** Anyone with the URL can read, create and delete conversations and decisions for any `hotel=`. Real users need auth (for example Cloudflare Access or OAuth) and a check that the user belongs to the hotel on every route.
+- **No authentication, authorization or multi-tenancy yet** (a deliberate choice, see "Authentication and roles" below). Anyone with the URL can read, create and delete conversations and decisions for any `hotel=`.
 - **Demo data, one hotel.** "Today" is fixed at 17 Nov 2026 (`DEMO_TODAY`), and the header shows "Demo data · today is 17 Nov 2026". Arrivals and departures are not in the data, and the UI says so.
 - **No Performance page.** Those buttons open the chat (a product decision: "Not now").
 - **MCP uses a shared token.** The next step is OAuth (see `docs/mcp-usage.md`).
 - **Rate limit per `cf-connecting-ip`.** Without that header (locally) the key becomes `local`, so all local clients share one limit.
 - **LLM quality.** Llama 3.3 sometimes picks the wrong tools or writes text that gets rejected. The fallback covers these cases, but the text then reads more like a template.
+
+### Authentication and roles (planned, deliberately not built yet)
+
+There was not enough time to build authentication and authorization within the project's timeframe. We chose
+to spend that time on what Aurora is about: how the AI works with the features (the chat that answers from the
+data, the investigations from the briefing, the charts and the property page, Decisions, the what-if). That is
+why the demo is open and shows one hotel to everyone.
+
+Roles were part of the design from the start: not everyone at a hotel needs to see the same thing. The planned
+split:
+
+<div align="center">
+
+| Role | What they see and do |
+|:---:|:---:|
+| **Revenue manager** | Everything that exists today: the chat and every analysis, the investigations, the what-if simulator, the Property Overview, and creating and updating decisions and actions. |
+| **CEO / general manager** | A summary view: the morning briefing, the financial snapshot against target and last year, the decisions taken and their outcomes, and the chat for questions. Read-only on decisions: they follow the actions instead of editing them. |
+
+</div>
+
+How to build it:
+1. **Sign-in.** Cloudflare Access or an OAuth/OIDC provider in front of the Worker; the Worker reads the user from the verified token.
+2. **Users and roles in D1.** A `users` table and a `hotel_memberships` table (user, hotel, role) in a new migration.
+3. **Checks on the server.** Every `/api/*` route checks that the user belongs to the requested hotel and that the role allows the action (for example, only a revenue manager can create or change a decision). The UI hides what the role cannot do, but the server is what enforces it.
+4. **Views per role in the UI.** The CEO view starts from the briefing and the financial snapshot; the revenue manager keeps today's workspace.
+5. **MCP per user.** Replace the shared `MCP_TOKEN` with OAuth, so each agent acts as a user, with that user's hotels and role.
 
 ### Tech debt
 - **Duplicated configuration.** `wrangler.jsonc` repeats D1, rate limits and vars for env `ai` (Wrangler does not inherit them). Every change has to be made in both places.
@@ -363,5 +389,5 @@ The exact contracts (the source of truth) are the Zod schemas in `packages/share
 1. Run `npm install`, `npm run db:migrate:local`, `npm test` and `npm run dev`. Then go through the starter questions in the UI with `docs/architecture.md` open.
 2. Read in this order: `packages/shared/src/tools.ts`, `worker/src/tools/registry.ts`, `worker/src/orchestrator/run-insight.ts`, `web/src/stream/run-reducer.ts`.
 3. Add CI (see Tech debt).
-4. Before any real user: authentication and per-hotel authorization, a staging environment with its own D1, observability turned on.
+4. Before any real user: authentication and role-based authorization (see "Authentication and roles"), a staging environment with its own D1, observability turned on.
 5. Conventions to keep: code and names in English, descriptive; Sass, not Tailwind; no figure written by the LLM; every new contract in `packages/shared` with Zod; tests for every new tool and rule.

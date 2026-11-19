@@ -155,7 +155,7 @@ Answers are read by people who run a hotel, not by developers, so the chat never
 - The decision workspace (sidebar → Decisions) lists saved insights with their actions, filtered by status and priority, and reopens the original conversation as it was, or investigates again on today's data.
 - **Outcome**: for a completed action, the server measures the same figure on the nights after completion (rates and ratios via `query_performance`, OTA share via `get_channel_mix`, pace with a new bookings count). It is shown as *observed*, before and after, with "not verified as caused by this action". Totals over periods of different length are not compared. Without data after completion it says "Outcome not yet measurable" (always the case in the demo, whose data stops on 17 November).
 - **Storage**: D1 table `decision_records` (migration 0006). One row per insight or action, the record as JSON with a `record_version`. Every record is validated on read; one of another version or damaged is skipped and counted (`unreadableRecordCount`), never fatal. A unique index on `(hotel_id, kind, source_key)` makes saving twice a no-op. Rules (no duplicates, no removing an insight that has actions, `completedAt` on completion) live in `worker/src/decisions/decision-service.ts`.
-- **Limitation**: the demo has no sign-in, so decisions are per hotel and shared by everyone who opens the demo.
+- **Limitation**: the demo has no sign-in yet (planned with roles, see "Scaling path"), so decisions are per hotel and shared by everyone who opens the demo.
 - **Asking about decisions**: the read-only tool `get_decisions` returns the saved insights and actions (open first, high priority first, then the earliest due date), with an overdue flag and the outcome of completed actions. Questions like "what decisions are saved?", "which actions are high priority?" or "what is overdue?" are recognised by fixed rules in both planners (`decisions-answer.ts`); the model planner may also choose the tool for other wordings. The answer is written from the records by fixed rules, so titles, owners, dates and statuses are exactly what was saved, and the trail ends with "Open Decisions". MCP agents get the same tool.
 
 ## Property overview
@@ -230,9 +230,11 @@ One set of text roles for the whole app (`web/src/styles/abstracts/_mixins.scss`
   (the registry already isolates it).
 - Replace the shared MCP token with OAuth, so each user sees only their own hotels.
 - Move from demo data to a PMS/RMS feed writing into the same results, plans and property tables.
-- Add sign-in and per-hotel authorization on `/api/*` before real users (today anyone with the URL can
-  read and change conversations and decisions).
+- Add authentication and role-based authorization before real users. It was left out on purpose, for lack
+  of time, to focus on how the AI works with the features; roles were considered from the start: the revenue
+  manager keeps today's full workspace, the CEO / general manager gets a summary view (briefing, financial
+  snapshot, decisions and their outcomes, read-only on decisions). The plan is in the handover, §8.
 - Add CI (typecheck + tests on every push) and a staging environment with its own D1 database.
+- Add GOP/GOPPAR once operating cost data is available; Net RevPAR is the first step towards profit.
 
 For running, deploying and taking over the project, see [handover.md](handover.md).
-- Add GOP/GOPPAR once operating cost data is available; Net RevPAR is the first step towards profit.
