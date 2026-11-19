@@ -139,13 +139,6 @@ export function Sidebar({
       </section>
 
       <div className="sidebar__footer">
-        {workspace && (
-          <div className="mcp-status">
-            <span className="mcp-status__dot" aria-hidden="true" />
-            <span className="mcp-status__endpoint">{workspace.mcp.endpoint}</span>
-            <span>· {workspace.mcp.toolCount} read-only tools</span>
-          </div>
-        )}
         <ThemeSwitch />
       </div>
     </aside>

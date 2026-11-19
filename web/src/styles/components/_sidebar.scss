@@ -236,7 +236,7 @@
   color: var(--color-coral);
 }
 
-// --- Footer (MCP status + theme switch) ------------------------------------
+// --- Footer (theme switch) -------------------------------------------------
 
 .sidebar__footer {
   display: flex;
@@ -244,30 +244,8 @@
   gap: $space-12;
 }
 
-.mcp-status {
-  display: flex;
-  align-items: center;
-  gap: $space-8;
-  padding: $space-8 $space-10;
-  border-radius: 8px;
-  border: 1px dashed var(--color-line);
-  font-size: $font-size-12;
-  color: var(--color-ink-secondary);
-}
-
-.mcp-status__dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--color-sage);
-}
-
-.mcp-status__endpoint {
-  font-family: var(--font-family-mono);
-}
-
 // --- Narrow screens: the sidebar becomes a compact top bar ------------------
-// Property, recent questions and the MCP status are secondary on a phone, so
+// Property and recent questions are secondary on a phone, so
 // only the brand, "New analysis" and the theme switch stay visible.
 @include below-breakpoint($breakpoint-stacked) {
   .sidebar {
@@ -284,8 +262,7 @@
     padding: 0;
   }
 
-  .sidebar__section,
-  .mcp-status {
+  .sidebar__section {
     display: none;
   }
 
