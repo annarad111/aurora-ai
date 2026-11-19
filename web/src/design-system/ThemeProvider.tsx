@@ -1,36 +1,33 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 
-/** What the user picked in the theme switch. */
-export type ThemePreference = 'light' | 'dark' | 'system';
+/** The two colour themes the user can pick in the theme switch. */
+export type ThemePreference = 'light' | 'dark';
 
-/** What is actually applied to the page ("system" resolved to light or dark). */
-export type ResolvedTheme = 'light' | 'dark';
-
-export const THEME_PREFERENCES: ThemePreference[] = ['light', 'dark', 'system'];
+export const THEME_PREFERENCES: ThemePreference[] = ['light', 'dark'];
 
 const THEME_STORAGE_KEY = 'aurora.theme-preference';
 const DARK_COLOR_SCHEME_QUERY = '(prefers-color-scheme: dark)';
 
 interface ThemeContextValue {
   themePreference: ThemePreference;
-  resolvedTheme: ResolvedTheme;
   setThemePreference: (preference: ThemePreference) => void;
 }
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
-function isThemePreference(value: unknown): value is ThemePreference {
-  return value === 'light' || value === 'dark' || value === 'system';
-}
-
-/** localStorage can throw (private mode, blocked storage), so failures fall back to "light". */
-function readStoredThemePreference(): ThemePreference {
+/**
+ * The stored choice, or the operating system's setting on a first visit.
+ * An older stored "system" choice is read the same way, once.
+ * localStorage can throw (private mode, blocked storage), so failures fall back to the system setting.
+ */
+function readInitialThemePreference(): ThemePreference {
   try {
     const storedValue = window.localStorage.getItem(THEME_STORAGE_KEY);
-    return isThemePreference(storedValue) ? storedValue : 'light';
+    if (storedValue === 'light' || storedValue === 'dark') return storedValue;
   } catch {
-    return 'light';
+    // Fall through to the system setting.
   }
+  return window.matchMedia(DARK_COLOR_SCHEME_QUERY).matches ? 'dark' : 'light';
 }
 
 function storeThemePreference(preference: ThemePreference): void {
@@ -41,46 +38,19 @@ function storeThemePreference(preference: ThemePreference): void {
   }
 }
 
-/** Follows the operating system's dark-mode setting live, including changes while the page is open. */
-function useSystemPrefersDark(): boolean {
-  const [systemPrefersDark, setSystemPrefersDark] = useState(
-    () => window.matchMedia(DARK_COLOR_SCHEME_QUERY).matches,
-  );
-
-  useEffect(() => {
-    const mediaQuery = window.matchMedia(DARK_COLOR_SCHEME_QUERY);
-    const handleChange = (event: MediaQueryListEvent) => setSystemPrefersDark(event.matches);
-    mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
-  }, []);
-
-  return systemPrefersDark;
-}
-
 /**
  * Owns the theme for the whole app. It writes `data-theme="light" | "dark"` on <html>,
  * and the Sass themes (styles/themes/_theme-variables.scss) switch colours based on that attribute.
  */
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [themePreference, setThemePreference] = useState<ThemePreference>(readStoredThemePreference);
-  const systemPrefersDark = useSystemPrefersDark();
-
-  const resolvedTheme: ResolvedTheme =
-    themePreference === 'system' ? (systemPrefersDark ? 'dark' : 'light') : themePreference;
+  const [themePreference, setThemePreference] = useState<ThemePreference>(readInitialThemePreference);
 
   useEffect(() => {
-    document.documentElement.dataset.theme = resolvedTheme;
-  }, [resolvedTheme]);
-
-  useEffect(() => {
+    document.documentElement.dataset.theme = themePreference;
     storeThemePreference(themePreference);
   }, [themePreference]);
 
-  return (
-    <ThemeContext.Provider value={{ themePreference, resolvedTheme, setThemePreference }}>
-      {children}
-    </ThemeContext.Provider>
-  );
+  return <ThemeContext.Provider value={{ themePreference, setThemePreference }}>{children}</ThemeContext.Provider>;
 }
 
 export function useTheme(): ThemeContextValue {

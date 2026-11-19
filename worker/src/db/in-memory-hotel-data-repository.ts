@@ -16,7 +16,7 @@ import type { DecisionRecord, HotelDataRepository, NewConversationTurn } from '.
 
 /** Serves a dataset held in memory. Same behaviour as the D1 version, without a database. */
 export class InMemoryHotelDataRepository implements HotelDataRepository {
-  private readonly conversations = new Map<string, Conversation & { hasAnalysis: boolean }>();
+  private readonly conversations = new Map<string, Conversation & { hasAnalysis: boolean; titleIsCustom?: boolean }>();
   /** Saved insights and actions, in insertion order. */
   readonly decisionRecords: DecisionRecord[] = [];
 
@@ -59,13 +59,13 @@ export class InMemoryHotelDataRepository implements HotelDataRepository {
       .filter((conversation) => conversation.hotelId === hotelId && conversation.turns.length > 0)
       .sort((first, second) => second.updatedAt.localeCompare(first.updatedAt))
       .slice(0, limit)
-      .map(({ turns, hasAnalysis: _hasAnalysis, ...summary }) => ({ ...summary, turnCount: turns.length }));
+      .map(({ turns, hasAnalysis: _hasAnalysis, titleIsCustom: _titleIsCustom, ...summary }) => ({ ...summary, turnCount: turns.length }));
   }
 
   async findConversation(conversationId: string): Promise<Conversation | null> {
     const conversation = this.conversations.get(conversationId);
     if (!conversation) return null;
-    const { hasAnalysis: _hasAnalysis, ...rest } = conversation;
+    const { hasAnalysis: _hasAnalysis, titleIsCustom: _titleIsCustom, ...rest } = conversation;
     return { ...rest, turns: [...rest.turns], turnCount: rest.turns.length };
   }
 
@@ -81,11 +81,25 @@ export class InMemoryHotelDataRepository implements HotelDataRepository {
       hasAnalysis: false,
     };
     // A greeting makes a poor title, so the first question about the data replaces it.
-    if (turn.isAnalysis && !conversation.hasAnalysis) conversation.title = turn.titleCandidate;
+    if (turn.isAnalysis && !conversation.hasAnalysis && !conversation.titleIsCustom) conversation.title = turn.titleCandidate;
     conversation.hasAnalysis ||= turn.isAnalysis;
     conversation.updatedAt = turn.createdAt;
     conversation.turns.push({ question: turn.question, events: turn.events, createdAt: turn.createdAt });
     this.conversations.set(conversation.id, conversation);
+  }
+
+  async renameConversation(hotelId: string, conversationId: string, title: string): Promise<boolean> {
+    const conversation = this.conversations.get(conversationId);
+    if (!conversation || conversation.hotelId !== hotelId) return false;
+    conversation.title = title;
+    conversation.titleIsCustom = true;
+    return true;
+  }
+
+  async deleteConversation(hotelId: string, conversationId: string): Promise<boolean> {
+    const conversation = this.conversations.get(conversationId);
+    if (!conversation || conversation.hotelId !== hotelId) return false;
+    return this.conversations.delete(conversationId);
   }
 
   async listDecisionRecords(hotelId: string): Promise<DecisionRecord[]> {

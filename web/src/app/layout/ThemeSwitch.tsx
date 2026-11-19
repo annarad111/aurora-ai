@@ -3,7 +3,6 @@ import { THEME_PREFERENCES, useTheme, type ThemePreference } from '../../design-
 const THEME_PREFERENCE_LABELS: Record<ThemePreference, string> = {
   light: 'Light',
   dark: 'Dark',
-  system: 'System',
 };
 
 export function ThemeSwitch() {

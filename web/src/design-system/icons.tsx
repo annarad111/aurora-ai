@@ -52,3 +52,19 @@ export function ArrowRightIcon({ size = 14 }: IconProps) {
     </svg>
   );
 }
+
+export function PencilIcon({ size = 13 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" aria-hidden="true">
+      <path d="M10.5 2.5l3 3L5.5 13.5H2.5v-3z" />
+    </svg>
+  );
+}
+
+export function TrashIcon({ size = 13 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" aria-hidden="true">
+      <path d="M2.5 4h11M6 4V2.5h4V4M4 4l.7 9.5h6.6L12 4" />
+    </svg>
+  );
+}

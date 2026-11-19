@@ -112,18 +112,15 @@
   color: var(--color-ink-secondary);
 }
 
+// One conversation: opens on click; rename and delete appear on hover or focus.
 .recent-question {
-  @include unstyled-button;
-  @include focus-visible-ring;
+  position: relative;
   display: flex;
-  flex-direction: column;
   align-items: flex-start;
-  gap: 1px;
-  padding: $space-8 $space-10;
   border-radius: 8px;
-  text-align: left;
 
-  &:hover {
+  &:hover,
+  &:focus-within {
     background: var(--color-sunken);
   }
 }
@@ -133,14 +130,110 @@
   background: var(--color-sunken);
 }
 
+.recent-question__open {
+  @include unstyled-button;
+  @include focus-visible-ring;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  padding: $space-8 $space-10;
+  border-radius: 8px;
+  text-align: left;
+}
+
 .recent-question__text {
   font-size: $font-size-13;
   line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
 .recent-question__date {
   font-size: $font-size-11;
   color: var(--color-ink-tertiary);
+}
+
+// Hidden until the row is hovered or focused; always there on touch screens.
+.recent-question__tools {
+  display: flex;
+  gap: $space-2;
+  padding: $space-6 $space-4 0 0;
+  opacity: 0;
+  transition: opacity $duration-fast;
+}
+
+.recent-question:hover .recent-question__tools,
+.recent-question:focus-within .recent-question__tools {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .recent-question__tools {
+    opacity: 1;
+  }
+}
+
+.recent-question__tool {
+  @include unstyled-button;
+  @include focus-visible-ring;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: $radius-badge;
+  color: var(--color-ink-tertiary);
+
+  &:hover {
+    background: var(--color-surface);
+    color: var(--color-ink);
+  }
+}
+
+.recent-question__tool--danger:hover {
+  color: var(--color-coral);
+}
+
+// Renaming, or asking before a delete.
+.recent-question--editing,
+.recent-question--confirming {
+  flex-direction: column;
+  align-items: stretch;
+  gap: $space-6;
+  padding: $space-8 $space-10;
+  background: var(--color-sunken);
+}
+
+.recent-question__input {
+  font: inherit;
+  font-size: $font-size-13;
+  color: var(--color-ink);
+  padding: $space-6 $space-8;
+  border-radius: $radius-button-small;
+  border: 1px solid var(--color-petrol);
+  background: var(--color-surface);
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--shadow-focus-ring);
+  }
+}
+
+.recent-question__confirm-text {
+  font-size: $font-size-12;
+  color: var(--color-coral);
+}
+
+.recent-question__edit-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: $space-4;
+}
+
+.recent-question__error {
+  font-size: $font-size-12;
+  color: var(--color-coral);
 }
 
 // --- Footer (MCP status + theme switch) ------------------------------------

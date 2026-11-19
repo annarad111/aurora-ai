@@ -13,8 +13,9 @@
         try {
           var savedPreference = localStorage.getItem('aurora.theme-preference');
           var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          // A saved Light or Dark choice wins; on a first visit, the system setting decides.
           var resolvedTheme =
-            savedPreference === 'dark' || (savedPreference === 'system' && prefersDark) ? 'dark' : 'light';
+            savedPreference === 'light' || savedPreference === 'dark' ? savedPreference : prefersDark ? 'dark' : 'light';
           document.documentElement.dataset.theme = resolvedTheme;
         } catch (error) {
           // Storage blocked: keep the default light theme.

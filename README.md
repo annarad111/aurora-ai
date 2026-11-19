@@ -88,6 +88,8 @@ The headline, chips, KPI cards, charts and provenance are always deterministic; 
 | `POST /api/chat` | `{ question, hotelId, conversationId }` → Server-Sent Events: `run_started`, `step`, `kpi`, `chart`, `insight`, `text_delta`, `provenance`, `followups`, `done` (or `error`). The finished answer is stored with the conversation; follow-ups use the earlier answers. |
 | `GET /api/conversations?hotel=…` | The hotel's saved conversations, newest first (the "Recent" list) |
 | `GET /api/conversations/:id` | One conversation with the stored events of every answer, to show it again as it was |
+| `PATCH /api/conversations/:id?hotel=…` | `{ title }`: the user's own title, kept when later answers are stored |
+| `DELETE /api/conversations/:id?hotel=…` | Deletes the conversation and every stored answer |
 | `POST /api/simulate` | `{ hotelId, stayFrom, stayTo, paceRecovery?, rateChange?, otaToDirect? }` → the what-if result (`simulate_scenario`) |
 | `GET /api/hotels/:id/overview?from=&to=` | The overview tool as plain JSON, no AI. Defaults to month to date. |
 | `GET /api/health` | Worker and database status |

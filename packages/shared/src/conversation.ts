@@ -31,5 +31,11 @@ export type ConversationSummary = z.infer<typeof conversationSummarySchema>;
 export const conversationSchema = conversationSummarySchema.extend({ turns: z.array(storedTurnSchema) });
 export type Conversation = z.infer<typeof conversationSchema>;
 
+/** PATCH /api/conversations/:id?hotel=… : the user's own title. */
+export const MAXIMUM_CONVERSATION_TITLE_LENGTH = 70;
+export const renameConversationSchema = z.object({
+  title: z.string().trim().min(1, 'The title cannot be empty').max(MAXIMUM_CONVERSATION_TITLE_LENGTH),
+});
+
 /** GET /api/conversations?hotel=… */
 export const conversationListSchema = z.object({ conversations: z.array(conversationSummarySchema) });

@@ -37,7 +37,12 @@ export function App() {
   const workspace = workspaceState.status === 'ready' ? workspaceState.workspace : null;
   const hotelId = workspace?.hotel.id ?? null;
 
-  const { conversations, reload: reloadConversations } = useConversationList(hotelId);
+  const {
+    conversations,
+    reload: reloadConversations,
+    rename: renameConversation,
+    remove: removeConversation,
+  } = useConversationList(hotelId);
   // Loaded once per hotel, not per chat: a new chat shows the same briefing without asking again.
   const { state: briefingState, retry: retryBriefing } = useMorningBriefing(hotelId);
   // Saved insights and actions, shared by the save buttons and the decision workspace.
@@ -203,6 +208,13 @@ export function App() {
         activeConversationId={conversation.state.conversationId}
         onNewChat={handleNewChat}
         onOpenConversation={handleOpenConversation}
+        onRenameConversation={renameConversation}
+        onDeleteConversation={async (conversationId) => {
+          const problem = await removeConversation(conversationId);
+          // The open chat was deleted: start a new one instead of showing what no longer exists.
+          if (!problem && conversationId === conversation.state.conversationId) handleNewChat();
+          return problem;
+        }}
         onSelectHotel={handleSelectHotel}
         isDecisionsOpen={mainView === 'decisions'}
         openActionCount={decisions.openActionCount}

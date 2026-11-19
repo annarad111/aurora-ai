@@ -188,7 +188,7 @@ export class D1HotelDataRepository implements HotelDataRepository {
       this.database
         .prepare(
           `UPDATE conversations SET title = ?
-           WHERE id = ? AND ? = 1
+           WHERE id = ? AND ? = 1 AND title_is_custom = 0
              AND NOT EXISTS (SELECT 1 FROM conversation_turns WHERE conversation_id = ? AND is_analysis = 1)`,
         )
         .bind(turn.titleCandidate, turn.conversationId, turn.isAnalysis ? 1 : 0, turn.conversationId),
@@ -199,6 +199,25 @@ export class D1HotelDataRepository implements HotelDataRepository {
         )
         .bind(turn.conversationId, turn.conversationId, turn.question, JSON.stringify(turn.events), turn.createdAt, turn.isAnalysis ? 1 : 0),
     ]);
+  }
+
+  async renameConversation(hotelId: string, conversationId: string, title: string): Promise<boolean> {
+    const result = await this.database
+      .prepare('UPDATE conversations SET title = ?, title_is_custom = 1 WHERE hotel_id = ? AND id = ?')
+      .bind(title, hotelId, conversationId)
+      .run();
+    return result.meta.changes > 0;
+  }
+
+  async deleteConversation(hotelId: string, conversationId: string): Promise<boolean> {
+    // The answers go first, in the same batch, so no answer is ever left without its conversation.
+    const [, deleted] = await this.database.batch([
+      this.database
+        .prepare('DELETE FROM conversation_turns WHERE conversation_id IN (SELECT id FROM conversations WHERE hotel_id = ? AND id = ?)')
+        .bind(hotelId, conversationId),
+      this.database.prepare('DELETE FROM conversations WHERE hotel_id = ? AND id = ?').bind(hotelId, conversationId),
+    ]);
+    return (deleted?.meta.changes ?? 0) > 0;
   }
 
   async listDecisionRecords(hotelId: string): Promise<DecisionRecord[]> {

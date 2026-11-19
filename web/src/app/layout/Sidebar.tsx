@@ -1,7 +1,8 @@
 import type { ConversationSummary, Workspace } from '@aurora/shared';
 import { PlusIcon } from '../../design-system/icons';
 import { joinClassNames } from '../../lib/class-names';
-import { describeWhenAsked } from '../../lib/relative-time';
+import type { ConversationChangeError } from '../useConversationList';
+import { RecentConversation } from './RecentConversation';
 import { ThemeSwitch } from './ThemeSwitch';
 
 interface SidebarProps {
@@ -12,6 +13,8 @@ interface SidebarProps {
   activeConversationId: string;
   onNewChat: () => void;
   onOpenConversation: (conversationId: string) => void;
+  onRenameConversation: (conversationId: string, title: string) => Promise<ConversationChangeError>;
+  onDeleteConversation: (conversationId: string) => Promise<ConversationChangeError>;
   onSelectHotel: (hotelId: string) => void;
   /** True while the decision workspace is open. */
   isDecisionsOpen: boolean;
@@ -25,6 +28,8 @@ export function Sidebar({
   activeConversationId,
   onNewChat,
   onOpenConversation,
+  onRenameConversation,
+  onDeleteConversation,
   onSelectHotel,
   isDecisionsOpen,
   openActionCount,
@@ -100,19 +105,14 @@ export function Sidebar({
         </h2>
         {workspace && conversations.length === 0 && <p className="sidebar__empty-note">Your conversations appear here.</p>}
         {conversations.map((summary) => (
-          <button
+          <RecentConversation
             key={summary.id}
-            type="button"
-            className={joinClassNames('recent-question', !isDecisionsOpen && summary.id === activeConversationId && 'recent-question--active')}
-            aria-current={summary.id === activeConversationId ? 'true' : undefined}
-            onClick={() => onOpenConversation(summary.id)}
-          >
-            <span className="recent-question__text">{summary.title}</span>
-            <span className="recent-question__date">
-              {describeWhenAsked(summary.updatedAt)}
-              {summary.turnCount > 1 && ` · ${summary.turnCount} messages`}
-            </span>
-          </button>
+            summary={summary}
+            isActive={!isDecisionsOpen && summary.id === activeConversationId}
+            onOpen={() => onOpenConversation(summary.id)}
+            onRename={(title) => onRenameConversation(summary.id, title)}
+            onDelete={() => onDeleteConversation(summary.id)}
+          />
         ))}
       </section>
 

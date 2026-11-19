@@ -36,6 +36,10 @@ export interface HotelDataRepository {
   findConversation(conversationId: string): Promise<Conversation | null>;
   /** Stores a finished answer, creating the conversation with its first one. */
   saveConversationTurn(turn: NewConversationTurn): Promise<void>;
+  /** Sets the user's own title; answers stored later keep it. False when the hotel has no such conversation. */
+  renameConversation(hotelId: string, conversationId: string, title: string): Promise<boolean>;
+  /** Deletes the conversation and every stored answer. False when the hotel has no such conversation. */
+  deleteConversation(hotelId: string, conversationId: string): Promise<boolean>;
 
   // --- Insight to action. The rules live in worker/src/decisions; these only store records. ---
   /** Every saved insight and action of the hotel, oldest first. */

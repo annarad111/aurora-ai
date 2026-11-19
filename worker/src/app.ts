@@ -3,7 +3,7 @@ import type { LanguageModel } from './llm/language-model';
 import { errorResponse } from './http/json-response';
 import type { RequestRateLimiter } from './http/rate-limit';
 import { handleChat } from './routes/chat';
-import { handleGetConversation, handleListConversations } from './routes/conversations';
+import { handleDeleteConversation, handleGetConversation, handleListConversations, handleRenameConversation } from './routes/conversations';
 import { handleHealth } from './routes/health';
 import { handleHotelOverview } from './routes/hotels';
 import { handleMcp } from './routes/mcp';
@@ -66,7 +66,11 @@ export async function handleRequest(request: Request, dependencies: AppDependenc
 
     const conversationMatch = /^\/api\/conversations\/([^/]+)$/.exec(pathname);
     if (conversationMatch) {
-      return request.method === 'GET' ? await handleGetConversation(decodeURIComponent(conversationMatch[1]!), dependencies) : methodNotAllowed();
+      const conversationId = decodeURIComponent(conversationMatch[1]!);
+      if (request.method === 'GET') return await handleGetConversation(conversationId, dependencies);
+      if (request.method === 'PATCH') return await handleRenameConversation(request, url, conversationId, dependencies);
+      if (request.method === 'DELETE') return await handleDeleteConversation(url, conversationId, dependencies);
+      return methodNotAllowed();
     }
 
     if (pathname === '/api/simulate') {

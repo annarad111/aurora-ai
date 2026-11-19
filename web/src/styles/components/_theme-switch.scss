@@ -3,7 +3,7 @@
 // Segmented control: Light | Dark | System.
 .theme-switch {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: $space-2;
   padding: 3px;
   border-radius: $radius-button;
