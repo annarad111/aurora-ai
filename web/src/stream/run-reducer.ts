@@ -1,3 +1,4 @@
+import type { InvestigationContext } from '@aurora/shared';
 import type { ChartKind, ChartPayload, StepStatus, StreamEvent, StreamEventOfType, TrailStage } from '@aurora/shared';
 
 // ---------------------------------------------------------------------------
@@ -39,7 +40,7 @@ export interface RunCompletion {
   durationMs: number;
   provider: 'llm' | 'scripted';
   verifiedFigureCount: number;
-  toolsChosenBy?: 'llm' | 'keywords';
+  toolsChosenBy?: 'llm' | 'keywords' | 'context';
   /** Why the templates wrote the text although the model was asked. */
   fallbackReason?: string;
   /** The earlier question this one was read as a follow-up to. */
@@ -57,6 +58,8 @@ export interface RunError {
 export interface RunState {
   phase: RunPhase;
   question: string;
+  /** What the question investigates, when it was opened from the briefing instead of typed. */
+  investigation: InvestigationContext | null;
   /** Set by run_started. Events from any other run are ignored. */
   runId: string | null;
   lastSequence: number;
@@ -74,7 +77,7 @@ export interface RunState {
 }
 
 export type RunAction =
-  | { type: 'run_requested'; question: string }
+  | { type: 'run_requested'; question: string; investigation?: InvestigationContext }
   | { type: 'event_received'; event: StreamEvent }
   | { type: 'run_cancelled' }
   | { type: 'connection_failed'; message: string }
@@ -83,6 +86,7 @@ export type RunAction =
 export const initialRunState: RunState = {
   phase: 'idle',
   question: '',
+  investigation: null,
   runId: null,
   lastSequence: -1,
   steps: [],
@@ -105,7 +109,7 @@ function stopUnfinishedSteps(steps: RunStep[]): RunStep[] {
 export function runReducer(state: RunState, action: RunAction): RunState {
   switch (action.type) {
     case 'run_requested':
-      return { ...initialRunState, phase: 'streaming', question: action.question };
+      return { ...initialRunState, phase: 'streaming', question: action.question, investigation: action.investigation ?? null };
 
     case 'run_cancelled':
       if (state.phase !== 'streaming') return state;
@@ -134,7 +138,7 @@ function applyStreamEvent(state: RunState, event: StreamEvent): RunState {
 
   if (event.type === 'run_started') {
     if (state.runId !== null) return state;
-    return { ...state, runId: event.runId, lastSequence: event.sequence };
+    return { ...state, runId: event.runId, lastSequence: event.sequence, investigation: event.investigation ?? state.investigation };
   }
   // Ignore events from another run, and duplicates or out-of-order repeats.
   if (event.runId !== state.runId || event.sequence <= state.lastSequence) return state;

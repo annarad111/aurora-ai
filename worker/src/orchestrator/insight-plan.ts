@@ -3,6 +3,7 @@ import {
   BREAKDOWN_METRIC_INFO,
   type BreakdownMetric,
   type DateRange,
+  type InvestigationContext,
   type IsoDate,
   type QueryPerformanceInput,
   type ToolName,
@@ -126,6 +127,20 @@ export function planInsightRun(question: string, today: IsoDate): InsightPlan {
   if (dataQuestion) return dataQuestionPlan(dataQuestion.query, { primaryMetric: dataQuestion.primaryMetric, rankBy: dataQuestion.rankBy });
 
   return analysisPlan(detectIntent(question));
+}
+
+/**
+ * The plan for an investigation opened from the briefing: exactly the analysis
+ * it names, on its dates. Dates that do not fit (a pace window in the past, an
+ * analysis period in the future) are ignored and the defaults are used.
+ */
+export function planForInvestigation(investigation: InvestigationContext, today: IsoDate): InsightPlan {
+  const { intent, dateRange } = investigation;
+  if (intent === 'group_blocks') return groupBlocksPlan(dateRange ?? { from: today, to: today });
+  const plan = analysisPlan(intent);
+  if (!dateRange) return plan;
+  if (intent === 'booking_pace') return dateRange.from > today ? { ...plan, paceWindowOverride: dateRange } : plan;
+  return dateRange.to <= today ? { ...plan, periodOverride: dateRange } : plan;
 }
 
 /** The tools the templates of an analysis cannot do without. */

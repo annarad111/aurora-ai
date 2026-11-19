@@ -9,6 +9,7 @@ import { handleHotelOverview } from './routes/hotels';
 import { handleMcp } from './routes/mcp';
 import { handleSimulate } from './routes/simulate';
 import { handleWorkspace } from './routes/workspace';
+import { handleBriefing } from './routes/briefing';
 import type { ToolContext } from './tools/tool-context';
 
 /**
@@ -43,6 +44,10 @@ export async function handleRequest(request: Request, dependencies: AppDependenc
 
     if (pathname === '/api/workspace') {
       return request.method === 'GET' ? await handleWorkspace(url, dependencies) : methodNotAllowed();
+    }
+
+    if (pathname === '/api/briefing') {
+      return request.method === 'GET' ? await handleBriefing(url, dependencies) : methodNotAllowed();
     }
 
     if (pathname === '/api/chat') {

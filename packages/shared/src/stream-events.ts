@@ -1,3 +1,4 @@
+import { investigationContextSchema } from './briefing';
 import { z } from 'zod';
 import { breakdownMetricSchema } from './breakdown';
 import { dateRangeSchema } from './domain';
@@ -35,6 +36,8 @@ export const runStartedEventSchema = z.object({
   type: z.literal('run_started'),
   question: z.string(),
   hotelId: z.string(),
+  /** Set when the question was opened from the briefing (or a chart), not typed. */
+  investigation: investigationContextSchema.optional(),
 });
 
 export const STEP_STATUSES = ['pending', 'running', 'done', 'failed'] as const;
@@ -212,7 +215,8 @@ export const doneEventSchema = z.object({
   /** Who wrote the narrative: the language model, or the deterministic template fallback. */
   provider: z.enum(['llm', 'scripted']),
   /** Who chose the tools: the model (function calling) or the keyword rules. */
-  toolsChosenBy: z.enum(['llm', 'keywords']).optional(),
+  /** context: the analysis came with the question (a briefing item), nothing had to be chosen. */
+  toolsChosenBy: z.enum(['llm', 'keywords', 'context']).optional(),
   /** Set when the model was asked but the templates wrote the text, and why (shown to the user). */
   fallbackReason: z.string().optional(),
   /** How many figures in the text were matched to tool output. */
@@ -263,5 +267,7 @@ export const chatRequestSchema = z.object({
    * the earlier ones back for follow-ups.
    */
   conversationId: conversationIdSchema,
+  /** What is being investigated, when the question came from the briefing: runs exactly that analysis. */
+  investigation: investigationContextSchema.optional(),
 });
 export type ChatRequest = z.infer<typeof chatRequestSchema>;

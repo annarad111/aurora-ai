@@ -47,7 +47,7 @@ export async function handleChat(request: Request, dependencies: AppDependencies
   if (!parsedRequest.success) {
     return errorResponse(400, 'invalid_request', parsedRequest.error.issues.map((issue) => `${issue.path.join('.')}: ${issue.message}`).join('; '));
   }
-  const { question, hotelId, conversationId } = parsedRequest.data;
+  const { question, hotelId, conversationId, investigation } = parsedRequest.data;
   const { repository } = dependencies.toolContext;
 
   const hotel = await repository.findHotel(hotelId);
@@ -67,6 +67,7 @@ export async function handleChat(request: Request, dependencies: AppDependencies
   const run = runInsight({
     question,
     hotelId,
+    ...(investigation ? { investigation } : {}),
     history: historyFromTurns(conversation?.turns ?? []),
     toolContext: dependencies.toolContext,
     emit: stream.emit,

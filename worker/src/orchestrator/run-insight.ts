@@ -1,11 +1,11 @@
-import { queryPerformanceInputSchema, type ConversationTurn, type IsoDate, type ToolName } from '@aurora/shared';
+import { queryPerformanceInputSchema, type ConversationTurn, type InvestigationContext, type IsoDate, type ToolName } from '@aurora/shared';
 import type { EmitStreamEvent } from '../sse/sse-event-stream';
 import { callTool } from '../tools/registry';
 import { requireHotel, ToolInputError, type ToolContext } from '../tools/tool-context';
 import { monthToDate, paceWindowFor, type AnalysisContext, type ToolResults } from './analysis-context';
 import { describeAnsweredContext } from './follow-up';
 import { buildInsightTrail } from './insight-trail';
-import type { RunStepPlan } from './insight-plan';
+import { planForInvestigation, type RunStepPlan } from './insight-plan';
 import { buildSuggestions } from './suggestions';
 import { writeConversationReply } from './conversation';
 import { isConversationPlan, KeywordInsightPlanner, type InsightPlanner, type PlannedRun } from './insight-planners';
@@ -47,6 +47,8 @@ export interface RunInsightOptions {
   narrativeWriter?: NarrativeWriter;
   /** Earlier questions of the conversation and what their answers covered, oldest first. */
   history?: ConversationTurn[];
+  /** Set when the question was opened from the briefing: runs exactly that analysis, no planning. */
+  investigation?: InvestigationContext;
 }
 
 /**
@@ -71,11 +73,14 @@ export async function runInsight(options: RunInsightOptions): Promise<void> {
   const planner = options.planner ?? new KeywordInsightPlanner();
   const startedAt = Date.now();
 
-  await emit({ type: 'run_started', question, hotelId });
+  const { investigation } = options;
+  await emit({ type: 'run_started', question, hotelId, ...(investigation ? { investigation } : {}) });
 
   try {
     const hotel = await requireHotel(toolContext, hotelId);
-    const planResult = await planner.plan(question, signal, { today: toolContext.today, history: options.history ?? [] });
+    const planResult: Awaited<ReturnType<InsightPlanner['plan']>> = investigation
+      ? { ...planForInvestigation(investigation, toolContext.today), plannedBy: 'context' }
+      : await planner.plan(question, signal, { today: toolContext.today, history: options.history ?? [] });
     if (signal.aborted) return;
 
     // --- A reply in words: a greeting, thanks, or a message outside the hotel's business ---

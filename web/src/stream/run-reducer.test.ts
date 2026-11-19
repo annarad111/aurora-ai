@@ -35,6 +35,19 @@ describe('runReducer', () => {
     expect(state.steps).toEqual([]);
   });
 
+  it('keeps the investigation a briefing item opened, and restores it from run_started', () => {
+    const investigation = { origin: 'briefing', intent: 'booking_pace', insightId: 'pace:2026-11-21:2026-11-30' } as const;
+    expect(runReducer(initialRunState, { type: 'run_requested', question: 'Pace?', investigation }).investigation).toEqual(investigation);
+
+    // A stored answer is rebuilt without run_requested context: run_started carries it.
+    nextSequence = 0;
+    const restored = applyActions([
+      { type: 'run_requested', question: 'Pace?' },
+      streamEvent({ type: 'run_started', question: 'Pace?', hotelId: 'sablon-bru', investigation }),
+    ]);
+    expect(restored.investigation).toEqual(investigation);
+  });
+
   it('adds steps once and then updates their status', () => {
     const state = startedRun();
     expect(state.steps.map((step) => `${step.stepId}:${step.status}`)).toEqual(['overview:running', 'drivers:pending']);

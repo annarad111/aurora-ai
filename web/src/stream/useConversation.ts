@@ -1,4 +1,4 @@
-import { conversationSchema, type StoredTurn } from '@aurora/shared';
+import { conversationSchema, type InvestigationContext, type StoredTurn } from '@aurora/shared';
 import { useCallback, useEffect, useReducer, useRef } from 'react';
 import { readStreamEvents } from './parse-sse';
 import { initialRunState, runReducer, type RunAction, type RunState } from './run-reducer';
@@ -28,7 +28,7 @@ type ConversationAction =
   | { type: 'opening'; conversationId: string }
   | { type: 'opened'; conversationId: string; turns: ConversationTurnState[] }
   | { type: 'open_failed'; message: string }
-  | { type: 'turn_added'; key: string; question: string }
+  | { type: 'turn_added'; key: string; question: string; investigation?: InvestigationContext }
   | { type: 'turn_removed'; key: string }
   | { type: 'turn_changed'; key: string; action: RunAction };
 
@@ -49,7 +49,18 @@ function conversationReducer(state: ConversationState, action: ConversationActio
     case 'turn_added':
       return {
         ...state,
-        turns: [...state.turns, { key: action.key, run: runReducer(initialRunState, { type: 'run_requested', question: action.question }), isRestored: false }],
+        turns: [
+          ...state.turns,
+          {
+            key: action.key,
+            run: runReducer(initialRunState, {
+              type: 'run_requested',
+              question: action.question,
+              ...(action.investigation ? { investigation: action.investigation } : {}),
+            }),
+            isRestored: false,
+          },
+        ],
       };
     case 'turn_removed':
       return { ...state, turns: state.turns.filter((turn) => turn.key !== action.key) };
@@ -85,7 +96,8 @@ export interface Conversation {
   state: ConversationState;
   /** True while an answer streams; a new question waits until it is stored. */
   isBusy: boolean;
-  ask: (question: string) => void;
+  /** Asks a question; with an investigation (from the briefing), the server runs exactly that analysis. */
+  ask: (question: string, investigation?: InvestigationContext) => void;
   stop: () => void;
   /** Asks the last question again (after an error or Stop). */
   retry: () => void;
@@ -115,7 +127,7 @@ export function useConversation(hotelId: string | null, onAnswerStored: () => vo
   conversationIdRef.current = state.conversationId;
 
   const ask = useCallback(
-    (question: string) => {
+    (question: string, investigation?: InvestigationContext) => {
       const trimmedQuestion = question.trim();
       if (!trimmedQuestion || !hotelId) return;
       activeRequest.current?.abort();
@@ -123,7 +135,7 @@ export function useConversation(hotelId: string | null, onAnswerStored: () => vo
       activeRequest.current = abortController;
       const key = `turn-${nextTurnNumber.current++}`;
       activeTurnKey.current = key;
-      dispatch({ type: 'turn_added', key, question: trimmedQuestion });
+      dispatch({ type: 'turn_added', key, question: trimmedQuestion, ...(investigation ? { investigation } : {}) });
       const changeTurn = (action: RunAction) => dispatch({ type: 'turn_changed', key, action });
       setBusyCount(1);
 
@@ -132,7 +144,7 @@ export function useConversation(hotelId: string | null, onAnswerStored: () => vo
           const response = await fetch(CHAT_ENDPOINT, {
             method: 'POST',
             headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({ question: trimmedQuestion, hotelId, conversationId: conversationIdRef.current }),
+            body: JSON.stringify({ question: trimmedQuestion, hotelId, conversationId: conversationIdRef.current, ...(investigation ? { investigation } : {}) }),
             signal: abortController.signal,
           });
           if (!response.ok || !response.body) {
@@ -174,7 +186,7 @@ export function useConversation(hotelId: string | null, onAnswerStored: () => vo
     const lastTurn = state.turns.at(-1);
     if (!lastTurn) return;
     dispatch({ type: 'turn_removed', key: lastTurn.key });
-    ask(lastTurn.run.question);
+    ask(lastTurn.run.question, lastTurn.run.investigation ?? undefined);
   }, [ask, state.turns]);
 
   const newChat = useCallback(() => {

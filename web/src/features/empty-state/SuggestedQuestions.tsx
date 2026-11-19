@@ -5,12 +5,14 @@ interface SuggestedQuestionsProps {
   onAskQuestion: (question: string) => void;
 }
 
-/** A new chat: a greeting and starter questions written from today's data. */
+/** Under the briefing: starter questions written from today's data, for anything else. */
 export function SuggestedQuestions({ workspace, onAskQuestion }: SuggestedQuestionsProps) {
   return (
-    <div className="idle-state">
+    <section className="idle-state" aria-labelledby="suggested-questions-title">
       <div className="idle-state__intro">
-        <h1 className="idle-state__title">What would you like to see today about your business?</h1>
+        <h2 className="idle-state__title" id="suggested-questions-title">
+          What would you like to see today about your business?
+        </h2>
         <p className="idle-state__description">
           Ask Aurora anything about {workspace.hotel.name}, the way you would ask a colleague. Every figure links to the
           tool and formula that produced it.
@@ -30,6 +32,6 @@ export function SuggestedQuestions({ workspace, onAskQuestion }: SuggestedQuesti
           </button>
         ))}
       </div>
-    </div>
+    </section>
   );
 }

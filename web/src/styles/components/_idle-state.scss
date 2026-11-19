@@ -3,8 +3,15 @@
 .idle-state {
   display: flex;
   flex-direction: column;
-  gap: $space-24;
-  padding-top: 8vh;
+  gap: $space-14;
+}
+
+// A new chat: the morning briefing, then the starter questions.
+.new-chat {
+  display: flex;
+  flex-direction: column;
+  gap: $space-32;
+  padding-bottom: $space-24;
 }
 
 .idle-state__intro {
@@ -15,7 +22,7 @@
 
 .idle-state__title {
   margin: 0;
-  font-size: $font-size-30;
+  font-size: $font-size-18;
   font-weight: $font-weight-semibold;
   letter-spacing: -0.02em;
   line-height: 1.2;

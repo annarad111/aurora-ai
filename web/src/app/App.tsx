@@ -1,6 +1,9 @@
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { AnswerView } from '../features/conversation/AnswerView';
 import { Composer } from '../features/conversation/Composer';
+import type { BriefingInsight } from '@aurora/shared';
+import { MorningBriefing } from '../features/briefing/MorningBriefing';
+import { useMorningBriefing } from '../features/briefing/useMorningBriefing';
 import { SuggestedQuestions } from '../features/empty-state/SuggestedQuestions';
 import { ExploreOverlay } from '../features/explore/ExploreOverlay';
 import type { InsightView } from '../features/explore/explore-views';
@@ -30,6 +33,8 @@ export function App() {
   const hotelId = workspace?.hotel.id ?? null;
 
   const { conversations, reload: reloadConversations } = useConversationList(hotelId);
+  // Loaded once per hotel, not per chat: a new chat shows the same briefing without asking again.
+  const { state: briefingState, retry: retryBriefing } = useMorningBriefing(hotelId);
   const conversation = useConversation(hotelId, reloadConversations);
   const { turns } = conversation.state;
   const lastTurn = turns.at(-1);
@@ -119,6 +124,15 @@ export function App() {
     [clearSelection, conversation],
   );
 
+  /** A briefing item opens its investigation: its question, plus the exact analysis and dates as context. */
+  const handleInvestigate = useCallback(
+    (insight: BriefingInsight) => {
+      clearSelection();
+      conversation.ask(insight.action.question, insight.action.context);
+    },
+    [clearSelection, conversation],
+  );
+
   const handleNewChat = useCallback(() => {
     clearSelection();
     conversation.newChat();
@@ -179,7 +193,10 @@ export function App() {
             )}
             {turns.length === 0 && !conversation.state.isOpening && workspaceState.status !== 'failed' &&
               (workspace ? (
-                <SuggestedQuestions workspace={workspace} onAskQuestion={handleAskQuestion} />
+                <div className="new-chat">
+                  <MorningBriefing state={briefingState} onRetry={retryBriefing} onInvestigate={handleInvestigate} />
+                  <SuggestedQuestions workspace={workspace} onAskQuestion={handleAskQuestion} />
+                </div>
               ) : (
                 <p className="idle-state__loading" aria-busy="true">
                   Loading the workspace…

@@ -105,6 +105,15 @@ Answers are read by people who run a hotel, not by developers, so the chat never
 - While Aurora works, the four steps are dim and the current one glows, with a plain sentence of what is happening ("Checking bookings for the coming nights…"). Each step that links to a figure lights the same chart bar when hovered.
 - The tool names stay where they belong: in "How was this calculated?" and in the MCP server.
 
+## Morning briefing
+
+- A new chat opens with the briefing (`GET /api/briefing`): the three things that deserve attention today, built in `worker/src/orchestrator/morning-briefing.ts`.
+- Each candidate is a rule over one tool result (pace vs last year, revenue vs target, booking-site share vs last year, a segment short of plan, a cancelled block, ADR above target). A rule sets the priority (critical, important, opportunity) and a severity: how far the figure is from its baseline, as a fraction.
+- Items are ranked by priority, then severity, then by what can still be changed (pace first). An item is left out when a chosen one already explains it (the revenue item names the cancelled congress, so the block is not repeated).
+- No model writes the briefing, and nothing is estimated: every figure is a tool output, with its source and period on the card.
+- The five tools are read independently. One that fails is listed in `unavailableSources`, and the briefing is built from the rest (the UI says which data is missing).
+- An item's action sends its question **and** an `investigation` context (`intent`, `dateRange`, `metric`, `segment`, `channel`, `insightId`) with the chat request. The server then runs exactly that analysis on those dates (`planForInvestigation`), with no planner and no model choosing tools (`toolsChosenBy: "context"`). `run_started` carries the context, so a reopened conversation still shows where the question came from.
+
 ## What-if simulation
 
 `simulate_scenario` answers "what if we act on the coming nights?" with three levers: win back part of the room nights behind last year's pace, change the rate of the rooms still to sell, and move part of the OTA revenue to direct.

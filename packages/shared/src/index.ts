@@ -8,3 +8,4 @@ export * from './rules';
 export * from './workspace';
 export * from './breakdown';
 export * from './conversation';
+export * from './briefing';

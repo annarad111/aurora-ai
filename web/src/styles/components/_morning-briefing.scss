@@ -1,0 +1,305 @@
+@use '../abstracts' as *;
+
+// The morning briefing: a greeting, then the few things worth attention
+// today, most urgent first. Calm by default: the priority shows as a thin
+// coloured edge and a labelled dot, never by colour alone.
+
+.morning-briefing {
+  display: flex;
+  flex-direction: column;
+  gap: $space-16;
+  padding-top: 4vh;
+}
+
+.morning-briefing__header {
+  display: flex;
+  flex-direction: column;
+  gap: $space-6;
+}
+
+.morning-briefing__eyebrow {
+  @include eyebrow(var(--color-violet-ink));
+  margin: 0;
+}
+
+.morning-briefing__title {
+  margin: 0;
+  font-size: $font-size-24;
+  font-weight: $font-weight-semibold;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  text-wrap: pretty;
+}
+
+.morning-briefing__subtitle {
+  color: var(--color-ink-secondary);
+  font-weight: $font-weight-medium;
+}
+
+.morning-briefing__freshness {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: $space-4 $space-12;
+  font-size: $font-size-12;
+  color: var(--color-ink-tertiary);
+}
+
+// Says plainly that these are data, not AI text.
+.morning-briefing__verified {
+  display: inline-flex;
+  align-items: center;
+  gap: $space-4;
+
+  &::before {
+    content: '✓';
+    color: var(--color-sage);
+    font-weight: $font-weight-semibold;
+  }
+}
+
+.morning-briefing__notice {
+  margin: 0;
+  padding: $space-8 $space-12;
+  border-radius: $radius-button;
+  background: var(--color-amber-soft);
+  color: var(--color-amber-ink);
+  font-size: $font-size-13;
+}
+
+.morning-briefing__empty {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: $space-10;
+  padding: $space-16;
+  border-radius: $radius-card;
+  border: 1px dashed var(--color-line);
+  color: var(--color-ink-secondary);
+  font-size: $font-size-14;
+
+  p {
+    margin: 0;
+  }
+}
+
+.morning-briefing__items {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: $space-10;
+}
+
+.morning-briefing__item {
+  @include enters-on-arrival;
+  animation-fill-mode: backwards;
+}
+
+// --- One item ------------------------------------------------------------------
+
+.priority-insight {
+  --priority-color: var(--color-petrol);
+  --priority-soft: var(--color-petrol-soft);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: $space-8;
+  padding: $space-14 $space-16 $space-14 $space-20;
+  border-radius: $radius-card;
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
+  overflow: hidden;
+
+  // The priority edge.
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 3px;
+    background: var(--priority-color);
+  }
+}
+
+.priority-insight--critical {
+  --priority-color: var(--color-coral);
+  --priority-soft: var(--color-coral-soft);
+}
+
+.priority-insight--important {
+  --priority-color: var(--color-amber);
+  --priority-soft: var(--color-amber-soft);
+}
+
+.priority-insight--opportunity {
+  --priority-color: var(--color-sage);
+  --priority-soft: var(--color-sage-soft);
+}
+
+.priority-insight__tags {
+  display: flex;
+  align-items: center;
+  gap: $space-8;
+}
+
+.priority-insight__priority {
+  display: inline-flex;
+  align-items: center;
+  gap: $space-6;
+  padding: 2px $space-8;
+  border-radius: $radius-pill;
+  background: var(--priority-soft);
+  color: var(--priority-color);
+  font-size: $font-size-11;
+  font-weight: $font-weight-semibold;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.priority-insight__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.priority-insight__topic {
+  @include eyebrow;
+}
+
+.priority-insight__title {
+  margin: 0;
+  font-size: $font-size-16;
+  font-weight: $font-weight-semibold;
+  line-height: 1.35;
+  text-wrap: pretty;
+}
+
+.priority-insight__measure {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: $space-12;
+}
+
+.priority-insight__value {
+  @include tabular-numbers;
+  font-size: $font-size-22;
+  font-weight: $font-weight-semibold;
+  letter-spacing: -0.01em;
+}
+
+.priority-insight__comparison {
+  font-size: $font-size-12;
+  line-height: 1.4;
+  color: var(--color-ink-tertiary);
+}
+
+.priority-insight__delta {
+  @include tabular-numbers;
+  color: var(--color-ink-secondary);
+  font-weight: $font-weight-medium;
+}
+
+.priority-insight__explanation {
+  margin: 0;
+  max-width: 62ch;
+  font-size: $font-size-13;
+  line-height: 1.5;
+  color: var(--color-ink-secondary);
+  text-wrap: pretty;
+}
+
+.priority-insight__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $space-8 $space-12;
+  flex-wrap: wrap;
+  margin-top: $space-2;
+}
+
+.priority-insight__source {
+  font-size: $font-size-12;
+  color: var(--color-ink-tertiary);
+}
+
+.priority-insight__action {
+  @include unstyled-button;
+  @include focus-visible-ring;
+  display: inline-flex;
+  align-items: center;
+  gap: $space-6;
+  min-height: 32px;
+  padding: 0 $space-14;
+  border-radius: $radius-pill;
+  background: var(--color-ink);
+  color: var(--color-background);
+  font-size: $font-size-13;
+  font-weight: $font-weight-semibold;
+  transition: transform $duration-fast ease;
+
+  &:hover {
+    transform: translateX(2px);
+  }
+}
+
+@include below-breakpoint(560px) {
+  .priority-insight__footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .priority-insight__action {
+    justify-content: center;
+    min-height: 40px;
+  }
+}
+
+// --- Loading -------------------------------------------------------------------
+
+.priority-insight--skeleton {
+  gap: $space-10;
+
+  &::before {
+    background: var(--color-line);
+  }
+}
+
+.skeleton {
+  display: block;
+  border-radius: $radius-bar;
+  background: linear-gradient(90deg, var(--color-sunken), var(--color-line), var(--color-sunken));
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+.skeleton--line {
+  height: 12px;
+  width: 80%;
+}
+
+.skeleton--short {
+  width: 30%;
+}
+
+.skeleton--title {
+  height: 26px;
+  width: 70%;
+}
+
+.skeleton--block {
+  height: 28px;
+  width: 40%;
+}
+
+@keyframes skeleton-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}

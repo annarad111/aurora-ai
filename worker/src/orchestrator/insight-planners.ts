@@ -19,7 +19,7 @@ import { buildPlannerRequest, buildPlannerSystemPrompt } from './prompts';
 import { parseDataQuestion, parseMetric, parsePeriod } from './question-parser';
 
 export interface PlannedRun extends InsightPlan {
-  plannedBy: 'llm' | 'keywords';
+  plannedBy: 'llm' | 'keywords' | 'context';
   /** The earlier question this one was read as a follow-up to. */
   followUpOf?: string;
 }

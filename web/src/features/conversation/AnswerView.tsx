@@ -49,6 +49,7 @@ export function AnswerView({
   return (
     <>
       <div className="user-question">
+        {run.investigation?.origin === 'briefing' && <p className="user-question__context">From your morning briefing</p>}
         {run.completion?.followUpOf && (
           <p className="user-question__context">
             Follow-up to “{run.completion.followUpOf}”
