@@ -11,18 +11,10 @@
 // content keeps the attention. Loaded last, so it can be tuned in one place.
 // ---------------------------------------------------------------------------
 
-// --- Selection and the question box ------------------------------------------------
+// --- Selection ------------------------------------------------------------------------
 
 ::selection {
   background: var(--color-violet-glow);
-}
-
-// Typing to Aurora: the box takes Aurora's colour.
-.composer:focus-within {
-  border-color: var(--color-violet);
-  box-shadow:
-    $shadow-composer,
-    0 0 0 4px var(--color-violet-faint);
 }
 
 // --- Aurora's suggestions ------------------------------------------------------------
