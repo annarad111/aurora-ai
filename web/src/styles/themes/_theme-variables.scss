@@ -40,4 +40,10 @@
   --font-family-mono: 'Geist Mono', ui-monospace, 'SFMono-Regular', Consolas, monospace;
 
   --shadow-focus-ring: 0 0 0 2px var(--color-violet);
+
+  // The logo's two colours: petrol (action, data) into violet (Aurora). Used sparingly, for brand moments.
+  --gradient-brand: linear-gradient(120deg, var(--color-petrol), var(--color-violet));
+  // Violet at the strength of the scrollbar: a hint of brand, never louder than the content.
+  --color-violet-faint: color-mix(in srgb, var(--color-violet) 22%, transparent);
+  --color-violet-glow: color-mix(in srgb, var(--color-violet) 28%, transparent);
 }

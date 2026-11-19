@@ -62,3 +62,6 @@
 
 // The property overview
 @use 'components/property';
+
+// Brand accents (violet next to petrol), last so they can be tuned in one place
+@use 'components/brand-accents';

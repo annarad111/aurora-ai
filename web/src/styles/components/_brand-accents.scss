@@ -1,0 +1,116 @@
+@use '../abstracts' as *;
+
+// ---------------------------------------------------------------------------
+// Brand accents: a little of the logo's violet next to the petrol.
+//
+// The split follows the palette's meaning:
+//   petrol  action and data   (primary buttons, figures, charts)
+//   violet  Aurora itself     (where the AI speaks or suggests, focus, selection)
+// and the logo's petrol → violet gradient marks "you are here" and section
+// starts. Everything stays faint (the strength of the scrollbar) so the
+// content keeps the attention. Loaded last, so it can be tuned in one place.
+// ---------------------------------------------------------------------------
+
+// --- Selection and the question box ------------------------------------------------
+
+::selection {
+  background: var(--color-violet-glow);
+}
+
+// Typing to Aurora: the box takes Aurora's colour.
+.composer:focus-within {
+  border-color: var(--color-violet);
+  box-shadow:
+    $shadow-composer,
+    0 0 0 4px var(--color-violet-faint);
+}
+
+// --- Aurora's suggestions ------------------------------------------------------------
+
+.suggestion-card__tag {
+  color: var(--color-violet-ink);
+}
+
+.suggestion-card:hover,
+.follow-up:hover {
+  border-color: var(--color-violet);
+  color: var(--color-violet-ink);
+}
+
+.suggestion-card:hover {
+  box-shadow: 0 4px 14px var(--color-violet-faint);
+}
+
+// --- "You are here": a slim gradient edge on the active entry --------------------------
+
+.recent-question--active,
+.sidebar__decisions--active,
+.property-card--active {
+  position: relative;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 8px;
+    bottom: 8px;
+    width: 3px;
+    border-radius: 0 3px 3px 0;
+    background: var(--gradient-brand);
+  }
+}
+
+// The open entry's icon tile and the overview button share the gradient.
+.sidebar__decisions--active .sidebar__decisions-icon {
+  background: var(--gradient-brand);
+  // The page colour on the gradient: white in Light, dark navy on the lighter Dark gradient.
+  color: var(--color-surface);
+}
+
+.sidebar__new-analysis:hover {
+  border-color: var(--color-violet);
+}
+
+// --- Primary actions keep petrol, with a soft violet glow on hover ----------------------
+
+.primary-button:hover,
+.property-card__overview:not([aria-current='page']):hover,
+.priority-insight__action:hover {
+  box-shadow: 0 4px 14px var(--color-violet-glow);
+}
+
+// --- Section starts: a short gradient stroke above the title -----------------------------
+
+.property-section__header,
+.decision-workspace__header,
+.morning-briefing__header {
+  position: relative;
+
+  &::before {
+    content: '';
+    display: block;
+    width: 28px;
+    height: 3px;
+    margin-bottom: $space-8;
+    border-radius: $radius-pill;
+    background: var(--gradient-brand);
+  }
+}
+
+// The property's monogram in the logo's colours.
+.property-header__mark {
+  background: var(--gradient-brand);
+}
+
+// --- Quiet links that lead further ("View evidence", "How is this calculated?") ----------
+
+.text-button:hover {
+  color: var(--color-violet-ink);
+}
+
+// --- Loading: the shimmer carries a breath of violet -----------------------------------
+
+.skeleton {
+  background: linear-gradient(90deg, var(--color-sunken), var(--color-violet-faint), var(--color-sunken));
+  background-size: 200% 100%;
+}
