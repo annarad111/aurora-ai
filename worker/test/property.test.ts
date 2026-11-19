@@ -81,7 +81,7 @@ describe('asking Aurora about the rooms', () => {
     expect(find('step')).toMatchObject({ tool: 'get_property_status' });
     expect(find('insight')?.headline).toBe('24 rooms are vacant and available tonight (17 November).');
     expect(text).toContain("Of the hotel's 111 rooms, 83 are occupied (74.8%), 2 out of order and 2 out of service, which leaves 24 vacant and available.");
-    expect(text).toContain('room 305 (air conditioning repair, back on 22 November)');
+    expect(text).toContain('room 305 on floor 3 (air conditioning repair, back on 22 November)');
     expect(find('trail')?.stages.at(-1)?.action).toEqual({ kind: 'navigate', label: 'See the room inventory', destination: 'property', section: 'inventory' });
     expect(find('provenance')).toMatchObject({ factId: 'property_rooms', tool: 'get_property_status' });
   });
@@ -231,5 +231,24 @@ describe('events & alerts in GET /api/property', () => {
       ['group_cancellation', 'eu-health-congress-2026'],
       ['maintenance', 'maint-203-plumbing'],
     ]);
+  });
+});
+
+describe('the KPIs on screen follow their definitions', () => {
+  it('October: occupancy, ADR and RevPAR agree with each other and with the rooms and revenue', async () => {
+    const overview = await callTool('get_hotel_overview', { hotelId: 'sablon-bru', period: { from: '2026-10-01', to: '2026-10-31' } }, createDemoToolContext());
+    const kpi = (metric: string) => overview.kpis.find((candidate) => candidate.metric === metric)!.actual;
+    const roomsAvailable = 111 * 31;
+    expect(overview.roomsAvailable).toBe(roomsAvailable);
+    expect(kpi('occupancy')).toBeCloseTo(overview.roomsSold / roomsAvailable, 10);
+    expect(kpi('adr')).toBeCloseTo(overview.roomRevenue / overview.roomsSold, 10);
+    expect(kpi('revpar')).toBeCloseTo(overview.roomRevenue / roomsAvailable, 10);
+    expect(kpi('revpar')).toBeCloseTo(kpi('adr') * kpi('occupancy'), 10);
+    expect(kpi('room_revenue')).toBe(overview.roomRevenue);
+  });
+
+  it('counts tonight’s occupied rooms as the rooms sold that night in the results', async () => {
+    const stats = await createDemoToolContext().repository.listDailyStats('sablon-bru', { from: TODAY, to: TODAY });
+    expect((await status()).inventory.occupied).toBe(stats.reduce((sum, row) => sum + row.roomsSold, 0));
   });
 });

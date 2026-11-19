@@ -54,9 +54,7 @@ export function OperationsTonight({ status, onInvestigate, requestedStatus = nul
         </div>
         <div className="property-stat property-stat--unavailable">
           <dt>Arrivals / departures</dt>
-          <dd>
-            <span className="property-stat__note">Not in the data: Aurora has rooms sold per night, not reservations.</span>
-          </dd>
+          <dd>Not in the data</dd>
         </div>
       </dl>
 
@@ -94,6 +92,7 @@ export function OperationsTonight({ status, onInvestigate, requestedStatus = nul
           {inventory.occupied} occupied + {inventory.vacantAvailable} vacant + {inventory.outOfOrder} out of order + {inventory.outOfService} out of service ={' '}
           {inventory.physicalRooms} rooms
         </p>
+        <p className="room-inventory__sum">Arrivals and departures need reservations, which this demo data does not have.</p>
       </div>
 
       {selected && <StatusDetail status={status} selected={selected} onClose={() => setSelected(null)} onInvestigate={onInvestigate} />}
@@ -208,7 +207,10 @@ function StatusDetail({
               {rooms.map((room) => (
                 <li key={room.id} className="unavailable-room">
                   <span className="unavailable-room__number">Room {room.roomNumber}</span>
-                  <span className="unavailable-room__type">{room.roomTypeName}</span>
+                  <span className="unavailable-room__type">
+                    {room.floor !== null && `Floor ${room.floor} · `}
+                    {room.roomTypeName}
+                  </span>
                   <span className="unavailable-room__reason">{room.reason}</span>
                   <span className="unavailable-room__dates">
                     {formatWeekdayDate(room.firstNight)} – {formatWeekdayDate(room.lastNight)} · back on {formatWeekdayDate(room.backOn)}

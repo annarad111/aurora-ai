@@ -76,8 +76,18 @@ export const getPropertyStatusInputSchema = z.object({
 });
 export type GetPropertyStatusInput = z.infer<typeof getPropertyStatusInputSchema>;
 
+/** Rooms are numbered by floor: the first digit is the floor, the last two the room on it (305 = floor 3, room 5). */
+export const floorSchema = z.object({
+  floor: z.number().int(),
+  rooms: z.number().int().nonnegative(),
+  firstRoom: z.string(),
+  lastRoom: z.string(),
+});
+export type Floor = z.infer<typeof floorSchema>;
+
 export const unavailableRoomSchema = roomStatusEventSchema.extend({
   roomTypeName: z.string(),
+  floor: z.number().int().nullable(),
   /** The first night the room can be sold again. */
   backOn: isoDateSchema,
 });
@@ -102,6 +112,8 @@ export type RoomInventory = z.infer<typeof roomInventorySchema>;
 export const getPropertyStatusOutputSchema = z.object({
   hotel: hotelSchema,
   profile: propertyProfileSchema.nullable(),
+  /** The floors and their room numbers; they add up to the physical rooms. */
+  floors: z.array(floorSchema),
   /** The night described. */
   date: isoDateSchema,
   /** results: rooms sold that night. on_the_books: rooms booked so far for a future night. */

@@ -155,6 +155,16 @@ Answers are read by people who run a hotel, not by developers, so the chat never
 - **Evidence drawer**: the page's figures (rooms tonight, each KPI, each event, each finding) open the same "How was this calculated?" card as an answer, in a drawer at the side (a bottom sheet on a phone) that takes no space until asked for and closes with Escape.
 - A fictional confirmed group (Atelier Verdi product launch, 26–27 Nov, 14 rooms a night) was added in migration 0010; its rooms fit inside the bookings already on the books for those nights (tested).
 
+## Demo data you can trust
+
+- `packages/demo-data/test/data-validity.test.ts` checks, on every change, that nothing in the demo is impossible: never more rooms sold, budgeted or on the books than the hotel has (111), no negative values, an average rate between €100 and €300 a night, bookings only for future nights and never shrinking as a night gets closer, groups that fit the hotel and show up in the results, and room numbers that follow the floor.
+- `worker/test/property.test.ts` checks that the KPIs on screen follow their definitions (occupancy = rooms sold / rooms available, ADR = revenue / rooms sold, RevPAR = revenue / rooms available = ADR × occupancy) and that tonight's occupied rooms are the rooms sold that night.
+- Room numbers follow the usual hotel rule: the first digit is the floor, the last two the room on it (305 = floor 3, room 5). Six floors, 101–119 up to 601–618, 111 rooms. The Property Overview says so, and the chat names the floor ("room 305 on floor 3").
+
+## Typography
+
+One set of text roles for the whole app (`web/src/styles/abstracts/_mixins.scss`), from most to least important: page title, key figure, section title, item title, body, label, meta. Sizes follow a ~1.2 ratio so each step is visibly different; weight and colour separate roles that share a size. The figure a card exists for is always the largest thing on it; periods, sources and definitions are always the quietest.
+
 ## What-if simulation
 
 `simulate_scenario` answers "what if we act on the coming nights?" with three levers: win back part of the room nights behind last year's pace, change the rate of the rooms still to sell, and move part of the OTA revenue to direct.

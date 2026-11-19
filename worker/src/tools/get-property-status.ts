@@ -49,7 +49,18 @@ export async function getPropertyStatus(input: GetPropertyStatusInput, context: 
     const room = rooms.find((candidate) => candidate.roomNumber === roomNumber);
     return room ? (roomTypeNameByCode.get(room.roomTypeCode) ?? room.roomTypeCode) : 'Unknown room type';
   };
-  const describe = (event: RoomStatusEvent): UnavailableRoom => ({ ...event, roomTypeName: roomTypeOf(event.roomNumber), backOn: addDays(event.lastNight, 1) });
+  const describe = (event: RoomStatusEvent): UnavailableRoom => ({
+    ...event,
+    roomTypeName: roomTypeOf(event.roomNumber),
+    floor: rooms.find((room) => room.roomNumber === event.roomNumber)?.floor ?? null,
+    backOn: addDays(event.lastNight, 1),
+  });
+  const floors = [...new Set(rooms.map((room) => room.floor))]
+    .sort((first, second) => first - second)
+    .map((floor) => {
+      const onFloor = rooms.filter((room) => room.floor === floor).map((room) => room.roomNumber).sort();
+      return { floor, rooms: onFloor.length, firstRoom: onFloor[0]!, lastRoom: onFloor.at(-1)! };
+    });
 
   // One status per room: a room in two events the same night counts once, as out of order.
   const statusByRoom = new Map<string, RoomStatusEvent['kind']>();
@@ -68,6 +79,7 @@ export async function getPropertyStatus(input: GetPropertyStatusInput, context: 
   return {
     hotel,
     profile,
+    floors,
     date,
     basis,
     asOf: basis === 'results' ? date : context.today,

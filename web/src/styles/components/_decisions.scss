@@ -124,10 +124,7 @@
 }
 
 .decision-workspace__title {
-  margin: 0;
-  font-size: $font-size-24;
-  font-weight: $font-weight-semibold;
-  letter-spacing: -0.02em;
+  @include text-page-title;
 }
 
 .decision-workspace__description {
@@ -244,10 +241,9 @@
 }
 
 .saved-insight__title {
+  @include text-item-title;
   margin: 0;
   font-size: $font-size-16;
-  font-weight: $font-weight-semibold;
-  line-height: 1.35;
 }
 
 .saved-insight__measure {

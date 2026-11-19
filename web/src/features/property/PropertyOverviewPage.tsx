@@ -110,6 +110,12 @@ export function PropertyOverviewPage({ workspace, state, onRetry, focus, onInves
             <dt>Rooms</dt>
             <dd>{hotel.roomCount}</dd>
           </div>
+          {status.floors.length > 0 && (
+            <div>
+              <dt>Floors</dt>
+              <dd>{status.floors.length}</dd>
+            </div>
+          )}
           <div>
             <dt>Currency</dt>
             <dd>{hotel.currency}</dd>
@@ -142,80 +148,92 @@ export function PropertyOverviewPage({ workspace, state, onRetry, focus, onInves
             </ul>
           </div>
         )}
+        {status.floors.length > 0 && (
+          <p className="property-numbering">
+            <strong>Room numbers follow the floor:</strong> the first digit is the floor, the last two the room on it, so room 305 is the
+            5th room on floor 3. {status.floors.map((floor) => `Floor ${floor.floor}: ${floor.firstRoom}–${floor.lastRoom}`).join(' · ')} ={' '}
+            {status.floors.reduce((sum, floor) => sum + floor.rooms, 0)} rooms.
+          </p>
+        )}
         {profile?.isDemoData && <p className="property-demo-note">Address, room types, room numbers and maintenance are fictional demo data.</p>}
       </section>
 
-      <div className="property-page__grid">
-        <section id={SECTION_IDS.inventory} tabIndex={-1} className={joinClassNames('property-section', 'property-section--inventory')} aria-labelledby="inventory-title">
-          <header className="property-section__header">
-            <h2 id="inventory-title" className="property-section__title">
-              Rooms tonight
-            </h2>
-            <span className="property-section__as-of">
-              {status.basis === 'results' ? `As of ${formatWeekdayDate(status.asOf)} (the demo’s today)` : `Booked as of ${formatWeekdayDate(status.asOf)}`}
-            </span>
-          </header>
-          <OperationsTonight status={status} onInvestigate={onInvestigate} requestedStatus={requestedStatus} />
-          <button type="button" className="text-button property-section__evidence" onClick={() => setOpenEvidence(inventoryEvidence(status))}>
-            How is this calculated?
-          </button>
-          {status.upcomingRoomEvents.length > 0 && (
-            <div className="property-coming-up">
-              <h3 className="property-coming-up__title">Maintenance coming up</h3>
-              <ul>
-                {status.upcomingRoomEvents.map((room) => (
-                  <li key={room.id}>
-                    <strong>Room {room.roomNumber}</strong> · {room.reason} · {formatPeriodLabel({ from: room.firstNight, to: room.lastNight })}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </section>
+      <div className="property-page__columns">
+        <div className="property-page__column">
+          <section id={SECTION_IDS.inventory} tabIndex={-1} className={joinClassNames('property-section', 'property-section--inventory')} aria-labelledby="inventory-title">
+            <header className="property-section__header">
+              <h2 id="inventory-title" className="property-section__title">
+                Rooms tonight
+              </h2>
+              <span className="property-section__as-of">
+                {status.basis === 'results' ? `As of ${formatWeekdayDate(status.asOf)} (the demo’s today)` : `Booked as of ${formatWeekdayDate(status.asOf)}`}
+              </span>
+            </header>
+            <OperationsTonight status={status} onInvestigate={onInvestigate} requestedStatus={requestedStatus} />
+            <button type="button" className="text-button property-section__evidence" onClick={() => setOpenEvidence(inventoryEvidence(status))}>
+              How is this calculated?
+            </button>
+            {status.upcomingRoomEvents.length > 0 && (
+              <div className="property-coming-up">
+                <h3 className="property-coming-up__title">Maintenance coming up</h3>
+                <ul>
+                  {status.upcomingRoomEvents.map((room) => (
+                    <li key={room.id}>
+                      <strong>Room {room.roomNumber}</strong>
+                        {room.floor !== null && ` (floor ${room.floor})`} · {room.reason} · {formatPeriodLabel({ from: room.firstNight, to: room.lastNight })}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </section>
 
-        <section id={SECTION_IDS.financials} tabIndex={-1} className="property-section property-section--financials" aria-labelledby="financials-title">
-          <header className="property-section__header">
-            <h2 id="financials-title" className="property-section__title">
-              Last month: {formatPeriodLabel(financial.period)}
-            </h2>
-            <span className="property-section__as-of">The previous completed month</span>
-          </header>
-          <FinancialSnapshot financial={financial} onInvestigate={onInvestigate} onShowEvidence={(kpi) => setOpenEvidence(kpiEvidence(kpi, financial.period))} />
-        </section>
+          <section id={SECTION_IDS.events} tabIndex={-1} className="property-section property-section--events" aria-labelledby="events-title">
+            <header className="property-section__header">
+              <h2 id="events-title" className="property-section__title">
+                Events & alerts
+              </h2>
+              <span className="property-section__as-of">Maintenance, group arrivals and cancellations around today</span>
+            </header>
+            <EventsAndAlerts
+              events={state.overview.events}
+              onInvestigate={onInvestigate}
+              onShowRooms={(roomStatus) => {
+                setRequestedStatus({ status: roomStatus, requestId: Date.now() });
+                spotlightSection('inventory');
+              }}
+              onShowEvidence={(event) => setOpenEvidence(eventEvidence(event))}
+            />
+          </section>
+        </div>
 
-        <section id={SECTION_IDS.events} tabIndex={-1} className="property-section property-section--events" aria-labelledby="events-title">
-          <header className="property-section__header">
-            <h2 id="events-title" className="property-section__title">
-              Events & alerts
-            </h2>
-            <span className="property-section__as-of">Maintenance, group arrivals and cancellations around today</span>
-          </header>
-          <EventsAndAlerts
-            events={state.overview.events}
-            onInvestigate={onInvestigate}
-            onShowRooms={(roomStatus) => {
-              setRequestedStatus({ status: roomStatus, requestId: Date.now() });
-              spotlightSection('inventory');
-            }}
-            onShowEvidence={(event) => setOpenEvidence(eventEvidence(event))}
-          />
-        </section>
+        <div className="property-page__column">
+          <section id={SECTION_IDS.financials} tabIndex={-1} className="property-section property-section--financials" aria-labelledby="financials-title">
+            <header className="property-section__header">
+              <h2 id="financials-title" className="property-section__title">
+                Last month: {formatPeriodLabel(financial.period)}
+              </h2>
+              <span className="property-section__as-of">The previous completed month</span>
+            </header>
+            <FinancialSnapshot financial={financial} onInvestigate={onInvestigate} onShowEvidence={(kpi) => setOpenEvidence(kpiEvidence(kpi, financial.period))} />
+          </section>
 
-        <section id={SECTION_IDS.intelligence} tabIndex={-1} className="property-section property-section--intelligence" aria-labelledby="intelligence-title">
-          <header className="property-section__header">
-            <h2 id="intelligence-title" className="property-section__title">
-              Property intelligence
-            </h2>
-            <span className="property-section__as-of">Ranked by fixed rules from your data</span>
-          </header>
-          <PropertyIntelligence
-            briefingState={briefingState}
-            status={status}
-            onInvestigate={onInvestigate}
-            onShowEvidence={(insight) => setOpenEvidence(briefingEvidence(insight))}
-            renderSaveButton={renderSaveButton}
-          />
-        </section>
+          <section id={SECTION_IDS.intelligence} tabIndex={-1} className="property-section property-section--intelligence" aria-labelledby="intelligence-title">
+            <header className="property-section__header">
+              <h2 id="intelligence-title" className="property-section__title">
+                Property intelligence
+              </h2>
+              <span className="property-section__as-of">Ranked by fixed rules from your data</span>
+            </header>
+            <PropertyIntelligence
+              briefingState={briefingState}
+              status={status}
+              onInvestigate={onInvestigate}
+              onShowEvidence={(insight) => setOpenEvidence(briefingEvidence(insight))}
+              renderSaveButton={renderSaveButton}
+            />
+          </section>
+        </div>
       </div>
 
       {openEvidence && <EvidenceDrawer key={openEvidence.factId} evidence={openEvidence} onClose={closeEvidence} />}

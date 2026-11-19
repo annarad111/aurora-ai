@@ -86,6 +86,12 @@ export function FinancialSnapshot({ financial, onInvestigate, onShowEvidence }: 
               onClick={() => setSelectedMonth((current) => (current === month.label ? null : month.label))}
             >
               <span className="revenue-months__plot">
+                <span
+                  className="revenue-months__value"
+                  style={{ bottom: `${(Math.max(month.roomRevenue, month.roomRevenueTarget ?? 0, month.roomRevenueLastYear ?? 0) / tallest) * 100}%` }}
+                >
+                  {formatEuroCompact(month.roomRevenue)}
+                </span>
                 <span className="revenue-months__bar" style={{ height: `${(month.roomRevenue / tallest) * 100}%` }} />
                 {month.roomRevenueTarget !== null && (
                   <span className="revenue-months__tick revenue-months__tick--target" style={{ bottom: `${(month.roomRevenueTarget / tallest) * 100}%` }} />

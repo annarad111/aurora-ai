@@ -1,4 +1,4 @@
-@use '../abstracts' as *;
+@use "../abstracts" as *;
 
 // The property overview: who the hotel is, its rooms tonight, last month's
 // results. Calm cards on the page background; colour only where it carries
@@ -26,17 +26,55 @@
   align-items: start;
 }
 
+// Two independent columns (rooms → events, last month → intelligence): a short card
+// never leaves a gap waiting for the taller card next to it.
+.property-page__columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: $space-16;
+  align-items: start;
+}
+
+.property-page__column {
+  display: flex;
+  flex-direction: column;
+  gap: $space-16;
+  min-width: 0;
+}
+
 @include below-breakpoint(1100px) {
-  .property-page__grid {
+  .property-page__grid,
+  .property-page__columns {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  // One column, in order of importance: tonight, last month, events, then the findings.
+  .property-page__column {
+    display: contents;
+  }
+
+  .property-section--inventory {
+    order: 1;
+  }
+
+  .property-section--financials {
+    order: 2;
+  }
+
+  .property-section--events {
+    order: 3;
+  }
+
+  .property-section--intelligence {
+    order: 4;
   }
 }
 
 .property-section {
   display: flex;
   flex-direction: column;
-  gap: $space-14;
-  padding: $space-20;
+  gap: $space-16;
+  padding: 22px $space-24;
   border-radius: $radius-panel;
   border: 1px solid var(--color-line);
   background: var(--color-surface);
@@ -56,7 +94,8 @@
 @keyframes property-spotlight {
   0%,
   35% {
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-petrol) 55%, transparent);
+    box-shadow: 0 0 0 3px
+      color-mix(in srgb, var(--color-petrol) 55%, transparent);
   }
   100% {
     box-shadow: 0 0 0 3px transparent;
@@ -70,21 +109,16 @@
 
 .property-section__header {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: $space-4 $space-12;
+  flex-direction: column;
+  gap: $space-2;
 }
 
 .property-section__title {
-  margin: 0;
-  font-size: $font-size-16;
-  font-weight: $font-weight-semibold;
+  @include text-section-title;
 }
 
 .property-section__as-of {
-  font-size: $font-size-12;
-  color: var(--color-ink-tertiary);
+  @include text-meta;
 }
 
 // --- Identity ---------------------------------------------------------------------
@@ -103,7 +137,11 @@
   width: 52px;
   height: 52px;
   border-radius: $radius-card;
-  background: linear-gradient(135deg, var(--color-trail-observation), var(--color-trail-discovery));
+  background: linear-gradient(
+    135deg,
+    var(--color-trail-observation),
+    var(--color-trail-discovery)
+  );
   color: #fff;
   font-size: $font-size-18;
   font-weight: $font-weight-semibold;
@@ -111,15 +149,12 @@
 }
 
 .property-header__name {
-  margin: 0;
-  font-size: $font-size-24;
-  font-weight: $font-weight-semibold;
-  letter-spacing: -0.02em;
+  @include text-page-title;
 }
 
 .property-header__subtitle {
-  margin: $space-2 0 0;
-  color: var(--color-ink-secondary);
+  @include text-body;
+  margin: $space-4 0 0;
 }
 
 .property-facts {
@@ -135,13 +170,28 @@
   }
 
   dt {
-    font-size: $font-size-12;
-    color: var(--color-ink-tertiary);
+    @include text-meta;
   }
 
   dd {
     margin: 0;
+    font-size: $font-size-15;
     font-weight: $font-weight-medium;
+    color: var(--color-ink);
+  }
+}
+
+// How rooms are numbered, so "room 305" reads as floor 3, room 5.
+.property-numbering {
+  @include text-meta;
+  margin: 0;
+  padding: $space-10 $space-12;
+  border-radius: $radius-button;
+  background: var(--color-sunken);
+
+  strong {
+    color: var(--color-ink-secondary);
+    font-weight: $font-weight-semibold;
   }
 }
 
@@ -220,7 +270,7 @@
 .operations-tonight__stats {
   margin: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: $space-10;
 }
 
@@ -233,15 +283,12 @@
   background: var(--color-sunken);
 
   dt {
-    font-size: $font-size-12;
-    color: var(--color-ink-tertiary);
+    @include text-label;
   }
 
   dd {
-    @include tabular-numbers;
-    margin: 0;
-    font-size: $font-size-21;
-    font-weight: $font-weight-semibold;
+    @include text-key-figure;
+    margin: $space-2 0 0;
   }
 }
 
@@ -253,18 +300,21 @@
   }
 }
 
+// A figure the data cannot give: muted, and it says why.
 .property-stat--unavailable {
-  grid-column: span 2;
+  background: transparent;
+  border: 1px dashed var(--color-line);
 
   dd {
-    font-size: $font-size-12;
-    font-weight: $font-weight-regular;
+    @include text-meta;
+    letter-spacing: 0;
   }
 }
 
 .property-stat__note {
-  font-size: $font-size-12;
+  font-size: $font-size-13;
   font-weight: $font-weight-medium;
+  letter-spacing: 0;
   color: var(--color-ink-tertiary);
 }
 
@@ -276,8 +326,8 @@
 
 .room-inventory__bar {
   display: flex;
-  height: 34px;
-  gap: 2px;
+  height: 38px;
+  gap: 3px;
 }
 
 .room-inventory__segment {
@@ -287,8 +337,9 @@
   display: grid;
   place-items: center;
   border-radius: $radius-badge;
-  color: #fff;
-  font-size: $font-size-12;
+  // The page colour on the bar colour: readable in both themes (the dark theme's bars are light).
+  color: var(--color-surface);
+  font-size: $font-size-13;
   font-weight: $font-weight-semibold;
   cursor: pointer;
   transition:
@@ -369,9 +420,8 @@
 
 .room-inventory__sum {
   @include tabular-numbers;
+  @include text-meta;
   margin: 0;
-  font-size: $font-size-12;
-  color: var(--color-ink-tertiary);
 }
 
 .room-status-detail {
@@ -402,7 +452,7 @@
 }
 
 .unavailable-room__type {
-  color: var(--color-ink-tertiary);
+  @include text-meta;
 }
 
 .unavailable-room__reason {
@@ -417,9 +467,10 @@
 }
 
 .property-coming-up {
+  @include text-label;
+  font-weight: $font-weight-regular;
   padding-top: $space-12;
   border-top: 1px solid var(--color-line);
-  font-size: $font-size-13;
 
   ul {
     margin: $space-6 0 0;
@@ -451,31 +502,31 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: $space-4;
-  padding: $space-12;
+  gap: $space-6;
+  padding: $space-14;
   border-radius: $radius-button;
   border: 1px solid var(--color-line);
 }
 
 .financial-kpi__label {
-  font-size: $font-size-12;
-  color: var(--color-ink-tertiary);
+  @include text-label;
 }
 
 .financial-kpi__value {
+  @include text-key-figure;
+}
+
+.financial-kpi__comparison {
+  @include text-meta;
   @include tabular-numbers;
-  font-size: $font-size-21;
-  font-weight: $font-weight-semibold;
-}
-
-.financial-kpi__comparison,
-.financial-kpi__definition {
-  font-size: $font-size-12;
-  color: var(--color-ink-tertiary);
 }
 
 .financial-kpi__definition {
+  @include text-meta;
   font-size: $font-size-11;
+  padding-top: $space-6;
+  border-top: 1px solid var(--color-line);
+  width: 100%;
 }
 
 .revenue-months {
@@ -493,7 +544,9 @@
 }
 
 .revenue-months__title {
+  @include text-label;
   font-weight: $font-weight-semibold;
+  color: var(--color-ink);
 }
 
 .revenue-months__legend {
@@ -528,9 +581,21 @@
 .revenue-months__chart {
   display: flex;
   gap: $space-12;
-  height: 150px;
-  padding-bottom: $space-4;
+  height: 180px;
+  padding: 22px 0 $space-4;
   border-bottom: 1px solid var(--color-line);
+}
+
+// The amount above each month, so the chart can be read without hovering.
+.revenue-months__value {
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, -6px);
+  font-size: $font-size-11;
+  font-weight: $font-weight-semibold;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-ink-secondary);
+  white-space: nowrap;
 }
 
 .revenue-months__month {
@@ -574,7 +639,11 @@
 
 // The current month is not finished: striped, so it is not read as a full month.
 .revenue-months__month--partial .revenue-months__bar {
-  background: repeating-linear-gradient(135deg, var(--color-petrol) 0 6px, color-mix(in srgb, var(--color-petrol) 55%, transparent) 6px 12px);
+  background: repeating-linear-gradient(
+    135deg,
+    var(--color-petrol) 0 6px,
+    color-mix(in srgb, var(--color-petrol) 55%, transparent) 6px 12px
+  );
 }
 
 .revenue-months__tick {
@@ -600,9 +669,8 @@
 }
 
 .revenue-months__detail {
+  @include text-meta;
   margin: 0;
-  font-size: $font-size-13;
-  color: var(--color-ink-secondary);
 }
 
 .financial-snapshot__actions {
@@ -612,12 +680,13 @@
 }
 
 @include below-breakpoint(560px) {
-  .financial-snapshot__kpis {
-    grid-template-columns: minmax(0, 1fr);
+  .financial-snapshot__kpis,
+  .operations-tonight__stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .property-stat--unavailable {
-    grid-column: auto;
+  .property-section {
+    padding: $space-16;
   }
 }
 
@@ -632,11 +701,12 @@
   @include focus-visible-ring;
   align-self: flex-start;
   margin-top: $space-6;
-  padding: $space-2 0;
+  padding: $space-12 0;
   border-radius: $radius-badge;
   color: var(--color-petrol);
   font-size: $font-size-12;
   font-weight: $font-weight-semibold;
+  background: var(--color-surface);
 
   span {
     display: inline-block;
@@ -754,13 +824,16 @@
 }
 
 .property-event__title {
-  font-weight: $font-weight-semibold;
+  @include text-item-title;
 }
 
-.property-event__nights,
+.property-event__nights {
+  @include text-label;
+  font-weight: $font-weight-regular;
+}
+
 .property-event__impact {
-  font-size: $font-size-12;
-  color: var(--color-ink-secondary);
+  @include text-meta;
 }
 
 .property-event__details {
@@ -849,7 +922,7 @@
 }
 
 .intelligence-item__title {
-  font-size: $font-size-14;
+  @include text-item-title;
   font-weight: $font-weight-medium;
 }
 
@@ -861,8 +934,9 @@
   margin-left: -$space-6;
 }
 
+// Always at the bottom of the card, so the four links line up.
 .financial-kpi__evidence {
-  margin-left: -$space-6;
+  margin: auto 0 0 (-$space-6);
   font-size: $font-size-12;
 }
 

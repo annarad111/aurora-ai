@@ -72,7 +72,9 @@ function parseNight(question: string, today: IsoDate): IsoDate | undefined {
 // --- Writing the answer ---------------------------------------------------------------
 
 function roomList(rooms: UnavailableRoom[]): string {
-  return rooms.map((room) => `room ${room.roomNumber} (${room.reason.toLowerCase()}, back on ${describeDate(room.backOn)})`).join(', ');
+  return rooms
+    .map((room) => `room ${room.roomNumber}${room.floor === null ? '' : ` on floor ${room.floor}`} (${room.reason.toLowerCase()}, back on ${describeDate(room.backOn)})`)
+    .join(', ');
 }
 
 function nightWords(status: GetPropertyStatusOutput, today: IsoDate): string {

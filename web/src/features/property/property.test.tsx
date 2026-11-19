@@ -35,6 +35,7 @@ const overview: PropertyOverview = {
       ],
       isDemoData: true,
     },
+    floors: [1, 2, 3, 4, 5, 6].map((floor) => ({ floor, rooms: floor <= 3 ? 19 : 18, firstRoom: `${floor}01`, lastRoom: `${floor}${floor <= 3 ? 19 : 18}` })),
     date: '2026-11-17',
     basis: 'results',
     asOf: '2026-11-17',
@@ -125,6 +126,7 @@ describe('the property overview page', () => {
     expect(html).toContain('fictional demo data');
     expect(html).toContain('83 occupied + 24 vacant + 2 out of order + 2 out of service = 111 rooms');
     expect(html).toContain('Not in the data');
+    expect(html).toContain('Arrivals and departures need reservations');
     expect(html).toContain('Last month: Oct 2026');
     expect(html).toContain('Nov (so far)');
     // Every section has an id, so a chat answer can open it.
