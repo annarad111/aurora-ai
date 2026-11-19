@@ -8,8 +8,7 @@
 }
 
 // The ThemeProvider (src/design-system/ThemeProvider.tsx) sets
-// `data-theme="light" | "dark"` on <html>. "System" is resolved in TypeScript
-// before it reaches the DOM, so CSS only has to know two themes.
+// `data-theme="light" | "dark"` on <html>, so CSS only has to know two themes.
 :root,
 [data-theme='light'] {
   @include emit-color-variables($light-palette);

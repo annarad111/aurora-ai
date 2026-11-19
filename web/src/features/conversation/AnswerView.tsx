@@ -91,6 +91,7 @@ export function AnswerView({
       {!isConversationReply && (
         <InsightTrail
           run={run}
+          isRestored={isRestored}
           interaction={interaction}
           canOpenView={(view) => isViewAvailable(view, readExploreData(run))}
           onAskQuestion={onAskQuestion}

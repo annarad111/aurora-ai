@@ -102,7 +102,8 @@ Answers are read by people who run a hotel, not by developers, so the chat never
 | Decision | What to do next, with a button | Bookings for 21–30 November are 16% behind last year → Explore recovery scenarios |
 
 - `worker/src/orchestrator/insight-trail.ts` writes the steps from the tool results by fixed rules (no model), so every number is exact, and sends them as a `trail` event after the tools, before the text.
-- While Aurora works, the four steps are dim and the current one glows, with a plain sentence of what is happening ("Checking bookings for the coming nights…"). Each step that links to a figure lights the same chart bar when hovered.
+- While Aurora works, the four steps wait as dim placeholders and the first one breathes, with a plain sentence of what is happening ("Checking bookings for the coming nights…"). When the trail arrives, the steps light up one after another (0.7 s apart): the light comes on, the line grows to the next step and the words fade in, like streamed text. An answer opened from history, or a reader with reduced motion, sees every step at once. Each step that links to a figure lights the same chart bar when hovered.
+- The card follows the theme: a soft light card with deeper step colours in Light, the night-blue card in Dark (`trail-*` colours in `_palette.scss`).
 - The tool names stay where they belong: in "How was this calculated?" and in the MCP server.
 
 ## Morning briefing

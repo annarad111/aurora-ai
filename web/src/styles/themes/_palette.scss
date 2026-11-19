@@ -33,15 +33,18 @@ $light-palette: (
   'amber-soft': #f8efe1,
   'coral': #b4463a,
   'coral-soft': #f8e7e4,
-  // The insight trail: a deep night-blue card where each step lights up.
-  'trail-surface': #121a2b,
-  'trail-line': #2a3550,
-  'trail-ink': #eef1f8,
-  'trail-ink-muted': #a3adc2,
-  'trail-observation': #8fa1f7,
-  'trail-discovery': #b78cf0,
-  'trail-understanding': #f19bc9,
-  'trail-decision': #6dd3bd,
+  // The insight trail: a soft card where each step lights up (night blue in the dark theme).
+  // Step colours are deeper here, so they read on a light background (contrast ≥ 4.5:1 for text).
+  'trail-surface': #f6f5fd,
+  'trail-border': #e3e0f5,
+  'trail-line': #dcdff0,
+  'trail-ink': #172334,
+  'trail-ink-muted': #46526a,
+  'trail-observation': #4357c9,
+  'trail-discovery': #7a3fc4,
+  'trail-understanding': #b23a73,
+  'trail-decision': #19776a,
+  'trail-glow-strength': 45%,
 );
 
 $dark-palette: (
@@ -65,6 +68,7 @@ $dark-palette: (
   'coral': #f29384,
   'coral-soft': #3f2529,
   'trail-surface': #0b1220,
+  'trail-border': #1d2840,
   'trail-line': #26324b,
   'trail-ink': #eef1f8,
   'trail-ink-muted': #a3adc2,
@@ -72,4 +76,5 @@ $dark-palette: (
   'trail-discovery': #b78cf0,
   'trail-understanding': #f19bc9,
   'trail-decision': #6dd3bd,
+  'trail-glow-strength': 100%,
 );

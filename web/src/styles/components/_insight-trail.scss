@@ -1,8 +1,9 @@
 @use '../abstracts' as *;
 
 // The Aurora insight trail: four steps from the question to a decision, on a
-// deep night-blue card. A thin line joins the steps; each step's light comes
-// on in turn, which is the point: understanding arrives step by step.
+// soft card in the light theme and a night-blue one in the dark theme. A thin
+// line joins the steps; each step's light comes on in turn and the line grows
+// to the next one, which is the point: understanding arrives step by step.
 
 $trail-light-size: 12px;
 $trail-light-column: 22px;
@@ -13,6 +14,7 @@ $trail-light-column: 22px;
   gap: $space-14;
   padding: $space-16 $space-20 $space-14;
   border-radius: $radius-panel;
+  border: 1px solid var(--color-trail-border);
   background: var(--color-trail-surface);
   color: var(--color-trail-ink);
 }
@@ -57,9 +59,6 @@ $trail-light-column: 22px;
   grid-template-columns: $trail-light-column minmax(0, 1fr);
   gap: $space-10;
   padding-bottom: $space-14;
-  @include enters-on-arrival;
-  // Each step waits for its turn (the delay is set per step), hidden until then.
-  animation-fill-mode: backwards;
 
   // The line to the next step, through the centre of the lights.
   &:not(:last-child)::before {
@@ -103,15 +102,21 @@ $trail-light-column: 22px;
   border: 2px solid var(--color-trail-line);
   background: var(--color-trail-surface);
   transition:
-    background-color 300ms ease,
-    border-color 300ms ease,
-    box-shadow 300ms ease;
+    background-color 350ms ease,
+    border-color 350ms ease,
+    box-shadow 350ms ease,
+    transform 350ms ease;
+}
+
+// The glow is full in the dark theme and softer on the light card.
+.insight-trail__stage {
+  --stage-glow: color-mix(in srgb, var(--stage-color) var(--color-trail-glow-strength), transparent);
 }
 
 .insight-trail__stage--lit .insight-trail__light {
   border-color: var(--stage-color);
   background: var(--stage-color);
-  box-shadow: 0 0 10px 1px var(--stage-color);
+  box-shadow: 0 0 10px 1px var(--stage-glow);
 }
 
 // The step Aurora is working on: its light breathes.
@@ -126,7 +131,76 @@ $trail-light-column: 22px;
     box-shadow: 0 0 0 0 transparent;
   }
   50% {
-    box-shadow: 0 0 12px 2px var(--stage-color);
+    box-shadow: 0 0 12px 2px var(--stage-glow);
+  }
+}
+
+// --- The progressive reveal (live answers only) -----------------------------------
+
+// The light pops a little as it comes on.
+.insight-trail--animated .insight-trail__stage--lit .insight-trail__light {
+  animation: insight-trail-light-on 450ms ease-out;
+}
+
+// The line to the next step grows downwards, from the light that just came on.
+.insight-trail--animated .insight-trail__stage--lit:not(:last-child)::before {
+  transform-origin: top;
+  animation: insight-trail-line-grow 600ms 150ms ease-out backwards;
+}
+
+// Each word fades in, like streamed text. Inline, so the dotted underline of a linked step still runs under the whole sentence.
+.insight-trail__word {
+  animation: insight-trail-word-fade 320ms ease-out backwards;
+}
+
+@keyframes insight-trail-word-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+// The step's button comes after its words.
+.insight-trail--animated .insight-trail__action {
+  animation: insight-trail-word-in 350ms 380ms ease-out backwards;
+}
+
+// Placeholders fade into the text instead of jumping.
+.insight-trail__text--placeholder {
+  transition: opacity 300ms ease;
+}
+
+@keyframes insight-trail-light-on {
+  0% {
+    transform: scale(0.6);
+  }
+  60% {
+    transform: scale(1.25);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes insight-trail-line-grow {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes insight-trail-word-in {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
   }
 }
 
