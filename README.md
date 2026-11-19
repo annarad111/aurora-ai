@@ -82,8 +82,10 @@ The headline, chips, KPI cards, charts and provenance are always deterministic; 
 
 ## API
 
+<div align="center">
+
 | Route | What it does |
-|---|---|
+|:---:|:---:|
 | `GET /api/workspace?hotel=` | Everything the UI shows before a question: hotels, period, and starter questions written from the data |
 | `GET /api/briefing?hotel=` | The morning briefing: up to three items ranked by fixed rules (priority, figure vs baseline, source, and the investigation each one opens) |
 | `GET /api/property?hotel=` | The Property Overview: rooms tonight (occupied, vacant, out of order, out of service), events & alerts with their measured impact, and the previous completed month against target and last year, with room revenue per month |
@@ -99,6 +101,8 @@ The headline, chips, KPI cards, charts and provenance are always deterministic; 
 | `GET /api/hotels/:id/overview?from=&to=` | The overview tool as plain JSON, no AI. Defaults to month to date. |
 | `GET /api/health` | Worker and database status |
 | `/mcp` | All ten tools, including the what-if simulation, the saved decisions, the property status and maintenance impact, for external agents (MCP, Streamable HTTP). Bearer token, 60 requests/min. See [docs/mcp-usage.md](docs/mcp-usage.md). |
+
+</div>
 
 `POST /api/chat` is limited to 20 answers per minute per client.
 
@@ -218,8 +222,10 @@ web/
 
 Plain Sass (SCSS), with BEM class names (`.block__element--modifier`).
 
+<div align="center">
+
 | Folder | What it holds |
-|---|---|
+|:---:|:---:|
 | `styles/themes/_palette.scss` | Light and dark colour maps. **Change a colour here.** |
 | `styles/themes/_theme-variables.scss` | Turns the maps into CSS variables (`--color-petrol`, ...) and defines semantic aliases (`--color-ai`, `--color-status-off-track`, ...). |
 | `styles/abstracts/_variables.scss` | Spacing, type scale, radii, shadows, motion, layout widths. |
@@ -229,6 +235,8 @@ Plain Sass (SCSS), with BEM class names (`.block__element--modifier`).
 | `styles/base/` | Reset, body typography, shared keyframes. |
 | `styles/layout/_workspace.scss` | The three-column layout and how it stacks on narrow screens. |
 | `styles/components/` | One partial per component, named like the component. |
+
+</div>
 
 Colours are CSS variables, so the theme switches at runtime without reloading.
 Everything else is a Sass variable and is resolved at build time.

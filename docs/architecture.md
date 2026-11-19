@@ -24,13 +24,17 @@
 
 ## Packages
 
+<div align="center">
+
 | Package | Role | Knows about |
-|---|---|---|
+|:---:|:---:|:---:|
 | `packages/shared` | Contracts: domain types, tool and stream-event schemas (Zod 4), formatting, shared rules | nothing else |
 | `packages/analytics` | KPIs, exact gap decomposition, channel mix, pace, status, findings | `shared` |
 | `packages/demo-data` | Deterministic dataset with the planted story (fixed seed, fixed "today") | `shared`, `analytics` |
 | `worker` | Routes, D1 repository, tools, orchestrator, SSE, Workers AI adapter, MCP server | all of the above |
 | `web` | React + TypeScript + Sass UI | `shared` |
+
+</div>
 
 Rule: `analytics` knows nothing about HTTP, the model or React, so it is tested in milliseconds.
 
@@ -38,11 +42,15 @@ Rule: `analytics` knows nothing about HTTP, the model or React, so it is tested 
 
 Twelve D1 tables (migrations 0001–0010 in `worker/migrations/`):
 
+<div align="center">
+
 | Group | Tables |
-|---|---|
+|:---:|:---:|
 | Results and plans, daily per segment and channel (no individual reservations) | `hotels`, `channels` (commission rate), `daily_stats` (rooms, revenue, cancellations), `targets` (daily budget per segment), `on_the_books` (snapshots of future bookings), `group_blocks` (confirmed and cancelled groups) |
 | The property | `property_profiles` (address, type, room types), `rooms` (111 numbered rooms with floor and type), `room_status_events` (out of order / out of service) |
 | What users create | `conversations` and `conversation_turns` (every finished answer with its streamed events), `decision_records` (saved insights and actions, as versioned JSON) |
+
+</div>
 
 The seed migrations (0002, 0004, 0009, 0010) are generated from `packages/demo-data` with
 `npm run db:seed:generate` and committed, so the database content is reviewable and identical everywhere.
@@ -73,12 +81,16 @@ and keeps partial answers on Stop or error.
 
 ## The language model
 
+<div align="center">
+
 | Responsibility | Deterministic | Model (optional) |
-|---|---|---|
+|:---:|:---:|:---:|
 | Which tools to call | keyword rules (fallback) | function calling over all 10 tools |
 | Numbers, KPI statuses, charts, provenance | always | never |
 | Headline, chips, follow-ups | always (templates) | — |
 | Explanation text | templates (fallback) | writes sentences with `{placeholders}` |
+
+</div>
 
 The number guard rejects any model text with a digit outside a placeholder, an unknown placeholder, fewer
 than three figures or the wrong length; the model gets one retry with the reasons, then the templates take
@@ -101,12 +113,16 @@ Aurora is a chat: questions and answers stack in one thread, and every conversat
 
 Answers are read by people who run a hotel, not by developers, so the chat never shows tool or function names. Instead, each analysis opens with the **Aurora insight trail**: four steps from the question to a decision.
 
+<div align="center">
+
 | Step | Answers | Example |
-|---|---|---|
+|:---:|:---:|:---:|
 | Observation | What happened | Room revenue is €33.9k below target for 1–17 Nov 2026. |
 | Discovery | What caused it | 204 room nights were lost when the EU Health Congress on 10–12 November was cancelled. |
 | Understanding | Why it matters | Fewer nights cost more than the higher rates brought in. |
 | Decision | What to do next, with a button | Bookings for 21–30 November are 16% behind last year → Explore recovery scenarios |
+
+</div>
 
 - `worker/src/orchestrator/insight-trail.ts` writes the steps from the tool results by fixed rules (no model), so every number is exact, and sends them as a `trail` event after the tools, before the text.
 - While Aurora works, the four steps wait as dim placeholders and the first one breathes, with a plain sentence of what is happening ("Checking bookings for the coming nights…"). When the trail arrives, the steps light up one after another (0.7 s apart): the light comes on, the line grows to the next step and the words fade in, like streamed text. An answer opened from history, or a reader with reduced motion, sees every step at once. Each step that links to a figure lights the same chart bar when hovered.
@@ -195,14 +211,18 @@ One set of text roles for the whole app (`web/src/styles/abstracts/_mixins.scss`
 
 ## Decisions that differ from the original plan
 
+<div align="center">
+
 | Plan | Built | Why |
-|---|---|---|
+|:---:|:---:|:---:|
 | Tailwind + shadcn/ui | Plain Sass with BEM and CSS-variable themes | Full control over the design system, no utility classes in markup |
 | pnpm workspaces | npm workspaces | Same layout, nothing extra to install |
 | Monthly targets | Daily targets | Exact month-to-date, block budgeted on its dates |
 | LLM writes the narrative from facts | LLM writes around placeholders | Numbers cannot be changed by the model at all |
 | MCP SDK v1 + `createMcpHandler` | MCP SDK v2 + stateless `createMcpHandler` (`agents/mcp/server`) | The v1 path is deprecated in the current Agents SDK |
 | Zod 3 | Zod 4 | Required by the Agents SDK; also cleared all npm audit findings |
+
+</div>
 
 ## Scaling path
 

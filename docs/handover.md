@@ -5,12 +5,16 @@
 
 ## 0. In short
 
-| | |
-|---|---|
+<div align="center">
+
+| Field | Details |
+|:---:|:---:|
 | **Name** | Aurora |
 | **What it does** | An AI assistant for hotel revenue managers. The user asks a question ("Why are we below target this month?"). Aurora picks the analysis tools it needs, computes the figures deterministically from the database and streams the answer (SSE) with KPIs, charts, where every figure comes from (provenance) and next steps. The app also has a Morning Briefing, a Property Overview page (rooms, events, financials), a Decisions workspace (saved insights → actions → outcome) and a what-if simulator. The same 10 tools are offered to external AI agents over MCP. |
 | **Stage** | Working MVP, live on Cloudflare: https://aurora.radulescuana111.workers.dev. It runs on **deterministic demo data** (one hotel, `sablon-bru`, 111 rooms, "today" fixed at 17 Nov 2026). It is not connected to a real PMS. |
 | **Users** | B2B: hotel revenue managers (UI) and external AI agents (MCP). The project is an independent concept for the "Juyo assessment" (see `package.json`). `[TO BE COMPLETED MANUALLY]`: the real users targeted after the demo, if any. |
+
+</div>
 
 Related documents already in the repo:
 - [README.md](../README.md): commands and the list of routes
@@ -23,8 +27,10 @@ Related documents already in the repo:
 
 ## 1. Architecture & tech stack
 
+<div align="center">
+
 | Layer | Technology |
-|---|---|
+|:---:|:---:|
 | Frontend | React 19, TypeScript 5.8, Vite 6, **Sass** (no Tailwind, no UI kit), no router: one page with local state |
 | Backend | One **Cloudflare Worker** (TypeScript, `compatibility_date` 2025-09-01, `nodejs_compat`). Hand-written routing in `worker/src/app.ts`, no framework. |
 | Contracts | **Zod 4** in `packages/shared`: the same schemas validate on the server and in the browser (every SSE event included). |
@@ -35,6 +41,8 @@ Related documents already in the repo:
 | Tests | Vitest 3 in every package (about 400 tests). UI tests use `renderToStaticMarkup`, no DOM. |
 | Hosting | Cloudflare Workers: one origin serves the static assets, the API and `/mcp` |
 | CI/CD | **None.** Deploys are manual (`npm run deploy`). There is no `.github/` folder. `[TO BE COMPLETED MANUALLY]` if a pipeline is wanted. |
+
+</div>
 
 ### Main data flow
 
@@ -145,14 +153,20 @@ Useful:
 
 Secrets (the `.dev.vars` file locally, `wrangler secret put` in production):
 
+<div align="center">
+
 | Variable | Purpose | Example format |
-|---|---|---|
+|:---:|:---:|:---:|
 | `MCP_TOKEN` | Bearer token for `/mcp`. Missing → `/mcp` is disabled. | `9fK2…` (≥ 24 random characters, base64url) |
+
+</div>
 
 Public variables (`vars` in `wrangler.jsonc`, set separately for the default and the `ai` environment):
 
+<div align="center">
+
 | Variable | Purpose | Example / default |
-|---|---|---|
+|:---:|:---:|:---:|
 | `NARRATIVE_PROVIDER` | `scripted` = templates only; `llm` = Workers AI with template fallback | `scripted` (default), `llm` (env `ai`) |
 | `AI_MODEL` | The Workers AI model | `@cf/meta/llama-3.3-70b-instruct-fp8-fast` |
 | `AI_TIMEOUT_MS` | How long one model call may take before the templates take over | `15000` |
@@ -160,11 +174,17 @@ Public variables (`vars` in `wrangler.jsonc`, set separately for the default and
 | `STREAM_STEP_DELAY_MS` | Pause between the stream's steps (cosmetic); `0` turns it off | `450` |
 | `TEXT_TOKEN_DELAY_MS` | Pause between streamed words; `0` turns it off | `30` |
 
+</div>
+
 Build and dev variables (shell, not the Worker):
 
+<div align="center">
+
 | Variable | Purpose | Example |
-|---|---|---|
+|:---:|:---:|:---:|
 | `AURORA_API_ORIGIN` | Where the Vite proxy sends `/api` and `/mcp` | `http://127.0.0.1:8787` |
+
+</div>
 
 Bindings (not variables, but required): `DB` (D1), `ASSETS`, `AI` (only `ai`), `CHAT_RATE_LIMITER`, `MCP_RATE_LIMITER`.
 
@@ -176,8 +196,10 @@ The production MCP token is kept locally in `.secrets/production.env` (ignored b
 
 D1 (SQLite). The granularity is **daily, per segment and channel**; there are no individual reservations.
 
+<div align="center">
+
 | Table | Key | Contents |
-|---|---|---|
+|:---:|:---:|:---:|
 | `hotels` | `id` | name, city, `room_count`, currency (EUR only), timezone |
 | `channels` | `code` (direct/ota/gds/wholesale) | `commission_rate` |
 | `daily_stats` | (hotel, date, segment, channel) | `rooms_sold`, `room_revenue`, `cancellations` (actuals) |
@@ -190,6 +212,8 @@ D1 (SQLite). The granularity is **daily, per segment and channel**; there are no
 | `property_profiles` | `hotel_id` | address, property type, `room_types_json`, `is_demo_data` |
 | `rooms` | (hotel, room_number) | floor, room type (101–119 … 601–618 = 111 rooms) |
 | `room_status_events` | `id` → FK (hotel, room) | `out_of_order` / `out_of_service`, reason, nights |
+
+</div>
 
 Relationships: everything hangs off `hotels.id`. A conversation has many turns. An insight has many actions (through `parent_id`, no foreign key). A room has many status events.
 
@@ -259,8 +283,10 @@ The chat answers "how many rooms are available?" through `get_property_status` a
 
 Everything is on the same origin. Errors look like `{ error: { code, message } }` (`http/json-response.ts`).
 
+<div align="center">
+
 | Method | Endpoint | Purpose | Payload / parameters |
-|---|---|---|---|
+|:---:|:---:|:---:|:---:|
 | GET | `/api/health` | Worker and database status | — |
 | GET | `/api/workspace?hotel=` | hotels, period, starter questions written from the data, `today` | — |
 | GET | `/api/briefing?hotel=` | morning briefing (≤ 3 items) | — |
@@ -278,6 +304,8 @@ Everything is on the same origin. Errors look like `{ error: { code, message } }
 | POST | `/api/simulate` | what-if | `{ hotelId, stayFrom, stayTo, paceRecovery?, rateChange?, otaToDirect? }` |
 | GET | `/api/hotels/:id/overview?from=&to=` | the overview tool as plain JSON | — |
 | POST/GET | `/mcp` | MCP server (Streamable HTTP), the 10 tools | `Authorization: Bearer <MCP_TOKEN>`, 60/min |
+
+</div>
 
 The exact contracts (the source of truth) are the Zod schemas in `packages/shared/src/`, and the tools are in `tools/registry.ts`. The 10 tools are:
 - `get_hotel_overview`, `query_performance`, `analyze_revenue_drivers`
