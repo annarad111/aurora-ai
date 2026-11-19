@@ -1,5 +1,5 @@
 import type { ConversationSummary, Workspace } from '@aurora/shared';
-import { PlusIcon } from '../../design-system/icons';
+import { ArrowRightIcon, PlusIcon } from '../../design-system/icons';
 import { joinClassNames } from '../../lib/class-names';
 import type { ConversationChangeError } from '../useConversationList';
 import { RecentConversation } from './RecentConversation';
@@ -104,7 +104,8 @@ export function Sidebar({
               aria-current={isPropertyOpen ? 'page' : undefined}
               onClick={onOpenProperty}
             >
-              See overview <span aria-hidden="true">→</span>
+              <span>{isPropertyOpen ? 'Viewing overview' : 'See overview'}</span>
+              <ArrowRightIcon size={14} />
             </button>
           </div>
         ) : (

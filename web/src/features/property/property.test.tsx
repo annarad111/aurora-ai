@@ -180,6 +180,7 @@ describe('the sidebar property card', () => {
 
   it('offers "See overview", and marks the card while the overview is open', () => {
     expect(renderSidebar(false)).toContain('See overview');
+    expect(renderSidebar(true)).toContain('Viewing overview');
     expect(renderSidebar(false)).not.toContain('property-card--active');
     expect(renderSidebar(true)).toContain('property-card--active');
     expect(renderSidebar(true)).toContain('aria-current="page"');

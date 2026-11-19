@@ -698,23 +698,63 @@
 
 .property-card__overview {
   @include unstyled-button;
-  @include focus-visible-ring;
-  align-self: flex-start;
-  margin-top: $space-6;
-  padding: $space-12 0;
-  border-radius: $radius-badge;
-  color: var(--color-petrol);
-  font-size: $font-size-12;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $space-8;
+  width: 100%;
+  min-height: 36px;
+  margin-top: $space-10;
+  padding: $space-8 $space-12;
+  border-radius: $radius-button-small;
+  // The primary colour with the page colour on it: dark text on light teal in the dark theme, white on teal in the light one.
+  background: var(--color-petrol);
+  color: var(--color-surface);
+  font-size: $font-size-13;
   font-weight: $font-weight-semibold;
-  background: var(--color-surface);
+  letter-spacing: 0.01em;
+  box-shadow: 0 1px 2px rgba(23, 35, 52, 0.14);
+  transition:
+    background-color $duration-fast ease,
+    box-shadow $duration-fast ease,
+    transform $duration-fast ease;
 
-  span {
-    display: inline-block;
-    transition: transform $duration-fast;
+  svg {
+    flex: none;
+    transition: transform $duration-fast ease;
   }
 
-  &:hover span {
-    transform: translateX(3px);
+  &:hover {
+    background: color-mix(in srgb, var(--color-petrol) 86%, var(--color-ink));
+    box-shadow: 0 4px 14px color-mix(in srgb, var(--color-petrol) 35%, transparent);
+
+    svg {
+      transform: translateX(3px);
+    }
+  }
+
+  &:active {
+    transform: translateY(1px);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow:
+      0 0 0 2px var(--color-surface),
+      0 0 0 4px var(--color-violet);
+  }
+
+  // While the overview is open: a quieter, "you are here" version.
+  &[aria-current='page'] {
+    background: var(--color-petrol-soft);
+    // The main text colour keeps the label above 4.5:1 on the soft background in both themes.
+    color: var(--color-ink);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-petrol) 45%, transparent);
+
+    svg {
+      color: var(--color-petrol);
+      transform: none;
+    }
   }
 }
 
