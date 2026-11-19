@@ -104,7 +104,7 @@ describe('GET /api/workspace', () => {
       { topic: 'Channels', question: 'What are OTA commissions costing us this month?' },
       { topic: 'Groups', question: 'Are other group blocks at risk this quarter?' },
     ]);
-    expect(workspace.mcp.toolCount).toBe(8);
+    expect(workspace.mcp.toolCount).toBe(9);
   });
 
   it('answers 404 for an unknown hotel', async () => {

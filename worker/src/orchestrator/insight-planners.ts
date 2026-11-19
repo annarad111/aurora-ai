@@ -15,6 +15,7 @@ import { monthToDate } from './analysis-context';
 import { acceptModelReply, classifyConversation, isAboutTheHotel, type ConversationReason } from './conversation';
 import { focusFromModelArguments, parseDecisionsQuestion, type DecisionsFocus } from './decisions-answer';
 import { isFollowUpQuestion, planFollowUp } from './follow-up';
+import { parsePropertyQuestion, type PropertyFocus } from './property-answer';
 import { dataQuestionPlan, groupBlocksPlan, planFromToolNames, planInsightRun, type InsightPlan } from './insight-plan';
 import { buildPlannerRequest, buildPlannerSystemPrompt } from './prompts';
 import { parseDataQuestion, parseMetric, parsePeriod } from './question-parser';
@@ -48,7 +49,24 @@ export interface DecisionsPlan {
   plannedBy: 'llm' | 'keywords';
 }
 
-export type PlanResult = PlannedRun | ConversationPlan | DecisionsPlan;
+/** A question about the property's rooms tonight (or one night): answered from get_property_status. */
+export interface PropertyPlan {
+  kind: 'property';
+  focus: PropertyFocus;
+  plannedBy: 'llm' | 'keywords';
+}
+
+export type PlanResult = PlannedRun | ConversationPlan | DecisionsPlan | PropertyPlan;
+
+export function isPropertyPlan(plan: PlanResult): plan is PropertyPlan {
+  return 'kind' in plan && plan.kind === 'property';
+}
+
+/** "How many rooms are available?", "which rooms are out of order?": recognised by fixed rules in both planners. */
+function planAsPropertyQuestion(question: string, context: PlanningContext): PropertyPlan | null {
+  const focus = parsePropertyQuestion(question, context.today);
+  return focus ? { kind: 'property', focus, plannedBy: 'keywords' } : null;
+}
 
 export function isConversationPlan(plan: PlanResult): plan is ConversationPlan {
   return 'kind' in plan && plan.kind === 'conversation';
@@ -89,6 +107,8 @@ export class KeywordInsightPlanner implements InsightPlanner {
     if (socialMessage) return socialMessage;
     const decisions = planAsDecisionsQuestion(question);
     if (decisions) return decisions;
+    const property = planAsPropertyQuestion(question, context);
+    if (property) return property;
     const followUp = planAsFollowUp(question, context);
     if (followUp) return followUp;
     if (classifyConversation(question, context.today) === 'off_topic') return { kind: 'conversation', reason: 'off_topic', plannedBy: 'keywords' };
@@ -207,6 +227,8 @@ export class LanguageModelInsightPlanner implements InsightPlanner {
     if (socialMessage) return socialMessage;
     const decisions = planAsDecisionsQuestion(question);
     if (decisions) return decisions;
+    const property = planAsPropertyQuestion(question, context);
+    if (property) return property;
     const followUp = planAsFollowUp(question, context);
     if (followUp) return followUp;
     const previousTurn = context.history?.at(-1);
@@ -239,6 +261,12 @@ export class LanguageModelInsightPlanner implements InsightPlanner {
       const decisionsCall = response.toolCalls.find((call) => call.name === 'get_decisions');
       if (decisionsCall) {
         return { kind: 'decisions', focus: focusFromModelArguments(normalizeModelArguments(decisionsCall.arguments)), plannedBy: 'llm' };
+      }
+      const propertyCall = response.toolCalls.find((call) => call.name === 'get_property_status');
+      if (propertyCall) {
+        const date = normalizeModelArguments(propertyCall.arguments).date;
+        const isDate = typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date);
+        return { kind: 'property', focus: { kind: 'inventory', ...(isDate ? { date } : {}) }, plannedBy: 'llm' };
       }
       const plan = planFromToolCalls(response.toolCalls, question, context.today);
       // The model saw the earlier questions; a short question it answered with their help is a follow-up too.

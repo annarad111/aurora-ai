@@ -10,6 +10,7 @@ import { handleMcp } from './routes/mcp';
 import { handleSimulate } from './routes/simulate';
 import { handleWorkspace } from './routes/workspace';
 import { handleBriefing } from './routes/briefing';
+import { handlePropertyOverview } from './routes/property';
 import { handleDecisions } from './routes/decisions';
 import type { ToolContext } from './tools/tool-context';
 
@@ -45,6 +46,10 @@ export async function handleRequest(request: Request, dependencies: AppDependenc
 
     if (pathname === '/api/workspace') {
       return request.method === 'GET' ? await handleWorkspace(url, dependencies) : methodNotAllowed();
+    }
+
+    if (pathname === '/api/property') {
+      return request.method === 'GET' ? await handlePropertyOverview(url, dependencies) : methodNotAllowed();
     }
 
     if (pathname === '/api/briefing') {

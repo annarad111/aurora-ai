@@ -10,6 +10,7 @@ export const TOOL_NAMES = [
   'get_group_blocks',
   'simulate_scenario',
   'get_decisions',
+  'get_property_status',
 ] as const;
 export const toolNameSchema = z.enum(TOOL_NAMES);
 export type ToolName = z.infer<typeof toolNameSchema>;

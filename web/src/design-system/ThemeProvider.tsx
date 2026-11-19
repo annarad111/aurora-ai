@@ -21,6 +21,8 @@ const ThemeContext = createContext<ThemeContextValue | null>(null);
  * localStorage can throw (private mode, blocked storage), so failures fall back to the system setting.
  */
 function readInitialThemePreference(): ThemePreference {
+  // Rendered without a browser (tests): the default theme.
+  if (typeof window === 'undefined') return 'light';
   try {
     const storedValue = window.localStorage.getItem(THEME_STORAGE_KEY);
     if (storedValue === 'light' || storedValue === 'dark') return storedValue;

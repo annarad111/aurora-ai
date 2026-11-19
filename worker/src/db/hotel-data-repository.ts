@@ -9,6 +9,9 @@ import type {
   Hotel,
   IsoDate,
   OnTheBooks,
+  PropertyProfile,
+  Room,
+  RoomStatusEvent,
   StoredTurn,
 } from '@aurora/shared';
 
@@ -28,6 +31,11 @@ export interface HotelDataRepository {
   listChannelCommissions(): Promise<ChannelCommission[]>;
   /** Bookings for the stay dates in `stayPeriod`, as they were on `snapshotDate`. */
   listOnTheBooks(hotelId: string, snapshotDate: IsoDate, stayPeriod: DateRange): Promise<OnTheBooks[]>;
+  /** The property's (demo) profile, or null when it has none. */
+  findPropertyProfile(hotelId: string): Promise<PropertyProfile | null>;
+  listRooms(hotelId: string): Promise<Room[]>;
+  /** Maintenance with at least one night inside the period. */
+  listRoomStatusEvents(hotelId: string, period: DateRange): Promise<RoomStatusEvent[]>;
   /** Group blocks with at least one night inside the period, any status. */
   listGroupBlocks(hotelId: string, period: DateRange): Promise<GroupBlock[]>;
   /** Conversations with at least one answer, most recently updated first. */

@@ -273,6 +273,7 @@ export function actionsForSelection(selection: InvestigationSelection, options: 
  */
 export function describeInvestigationOrigin(context: InvestigationContext): string | null {
   if (context.origin === 'briefing') return 'From your morning briefing';
+  if (context.origin === 'property') return 'From the property overview';
   const parts = [context.origin === 'chart' ? 'From the chart' : `From the ${context.metric ? METRIC_META[context.metric].label : 'KPI'} card`];
   if (context.date) parts.push(formatWeekdayDate(context.date));
   if (context.metric && context.selectedValue !== undefined) {

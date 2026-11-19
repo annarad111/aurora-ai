@@ -9,8 +9,11 @@ import type {
   Hotel,
   IsoDate,
   OnTheBooks,
+  PropertyProfile,
+  Room,
+  RoomStatusEvent,
 } from '@aurora/shared';
-import { streamEventSchema } from '@aurora/shared';
+import { roomTypeSchema, streamEventSchema } from '@aurora/shared';
 import type { DecisionRecord, HotelDataRepository, NewConversationTurn } from './hotel-data-repository';
 
 // The only file that writes SQL. Columns are snake_case in the database and
@@ -114,6 +117,52 @@ export class D1HotelDataRepository implements HotelDataRepository {
       .bind(hotelId)
       .first<HotelRow>();
     return row ? toHotel(row) : null;
+  }
+
+  async findPropertyProfile(hotelId: string): Promise<PropertyProfile | null> {
+    const row = await this.database
+      .prepare('SELECT hotel_id, country, address_line, property_type, room_types_json, is_demo_data FROM property_profiles WHERE hotel_id = ?')
+      .bind(hotelId)
+      .first<{ hotel_id: string; country: string; address_line: string; property_type: string; room_types_json: string; is_demo_data: number }>();
+    if (!row) return null;
+    return {
+      hotelId: row.hotel_id,
+      country: row.country,
+      addressLine: row.address_line,
+      propertyType: row.property_type,
+      roomTypes: roomTypeSchema.array().parse(JSON.parse(row.room_types_json)),
+      isDemoData: row.is_demo_data === 1,
+    };
+  }
+
+  async listRooms(hotelId: string): Promise<Room[]> {
+    const { results } = await this.database
+      .prepare('SELECT hotel_id, room_number, floor, room_type_code FROM rooms WHERE hotel_id = ? ORDER BY floor, room_number')
+      .bind(hotelId)
+      .all<{ hotel_id: string; room_number: string; floor: number; room_type_code: string }>();
+    return results.map((row) => ({ hotelId: row.hotel_id, roomNumber: row.room_number, floor: row.floor, roomTypeCode: row.room_type_code }));
+  }
+
+  async listRoomStatusEvents(hotelId: string, period: DateRange): Promise<RoomStatusEvent[]> {
+    const { results } = await this.database
+      .prepare(
+        `SELECT id, hotel_id, room_number, kind, reason, description, first_night, last_night
+         FROM room_status_events
+         WHERE hotel_id = ? AND first_night <= ? AND last_night >= ?
+         ORDER BY first_night, room_number`,
+      )
+      .bind(hotelId, period.to, period.from)
+      .all<{ id: string; hotel_id: string; room_number: string; kind: RoomStatusEvent['kind']; reason: string; description: string; first_night: string; last_night: string }>();
+    return results.map((row) => ({
+      id: row.id,
+      hotelId: row.hotel_id,
+      roomNumber: row.room_number,
+      kind: row.kind,
+      reason: row.reason,
+      description: row.description,
+      firstNight: row.first_night,
+      lastNight: row.last_night,
+    }));
   }
 
   async listGroupBlocks(hotelId: string, period: DateRange): Promise<GroupBlock[]> {

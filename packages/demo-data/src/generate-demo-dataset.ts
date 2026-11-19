@@ -10,9 +10,13 @@ import {
   type Hotel,
   type IsoDate,
   type OnTheBooks,
+  type PropertyProfile,
+  type Room,
+  type RoomStatusEvent,
   type Segment,
 } from '@aurora/shared';
 import { allocateByLargestRemainder, balanceIntegerMatrix } from './allocate';
+import { DEMO_PROPERTY_PROFILE, DEMO_ROOM_STATUS_EVENTS, generateDemoRooms } from './property';
 import { createSeededRandom, type SeededRandom } from './seeded-random';
 import {
   BACKGROUND_BASE_RATE,
@@ -58,6 +62,10 @@ export interface DemoDataset {
   dailyTargets: DailyTarget[];
   onTheBooks: OnTheBooks[];
   groupBlocks: GroupBlock[];
+  /** Fictional property details, rooms and maintenance (see property.ts). */
+  propertyProfiles: PropertyProfile[];
+  rooms: Room[];
+  roomStatusEvents: RoomStatusEvent[];
 }
 
 const NON_MICE_SEGMENTS = ['corporate', 'leisure', 'group'] as const satisfies readonly Segment[];
@@ -138,6 +146,9 @@ export function generateDemoDataset(): DemoDataset {
     dailyTargets,
     onTheBooks: generateOnTheBooks(hotelId),
     groupBlocks: DEMO_GROUP_BLOCKS,
+    propertyProfiles: [DEMO_PROPERTY_PROFILE],
+    rooms: generateDemoRooms(hotelId),
+    roomStatusEvents: DEMO_ROOM_STATUS_EVENTS,
   };
 }
 

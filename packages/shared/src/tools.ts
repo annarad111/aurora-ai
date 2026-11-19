@@ -3,7 +3,8 @@ import { breakdownDimensionSchema, dayTypeSchema } from './breakdown';
 import { channelSchema, dateRangeSchema, groupBlockSchema, hotelSchema, isoDateSchema, segmentSchema } from './domain';
 import { findingSchema } from './findings';
 import { getDecisionsInputSchema, getDecisionsOutputSchema } from './decisions';
-import { metricIdSchema, metricStatusSchema } from './metric-meta';
+import { getPropertyStatusInputSchema, getPropertyStatusOutputSchema } from './property';
+import { metricStatusSchema } from './metric-meta';
 
 // ---------------------------------------------------------------------------
 // Input and output contracts of the read-only tools.
@@ -27,14 +28,8 @@ export type PeriodToolInput = z.infer<typeof periodToolInputSchema>;
 
 // --- get_hotel_overview ----------------------------------------------------
 
-export const kpiComparisonSchema = z.object({
-  metric: metricIdSchema,
-  actual: z.number(),
-  target: z.number().nullable(),
-  lastYear: z.number().nullable(),
-  status: metricStatusSchema,
-});
-export type KpiComparison = z.infer<typeof kpiComparisonSchema>;
+export { kpiComparisonSchema, type KpiComparison } from './metric-meta';
+import { kpiComparisonSchema } from './metric-meta';
 
 export const segmentPerformanceSchema = z.object({
   segment: segmentSchema,
@@ -320,4 +315,5 @@ export const TOOL_SCHEMAS = {
   get_group_blocks: { input: periodToolInputSchema, output: groupBlocksOutputSchema },
   simulate_scenario: { input: simulateScenarioInputSchema, output: simulateScenarioOutputSchema },
   get_decisions: { input: getDecisionsInputSchema, output: getDecisionsOutputSchema },
+  get_property_status: { input: getPropertyStatusInputSchema, output: getPropertyStatusOutputSchema },
 } as const;

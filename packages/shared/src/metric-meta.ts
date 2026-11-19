@@ -135,3 +135,13 @@ export const METRIC_META: Record<MetricId, MetricMeta> = {
 export const METRIC_STATUSES = ['on_track', 'watch', 'off_track'] as const;
 export const metricStatusSchema = z.enum(METRIC_STATUSES);
 export type MetricStatus = z.infer<typeof metricStatusSchema>;
+
+/** A KPI against its target and last year, with its status. */
+export const kpiComparisonSchema = z.object({
+  metric: metricIdSchema,
+  actual: z.number(),
+  target: z.number().nullable(),
+  lastYear: z.number().nullable(),
+  status: metricStatusSchema,
+});
+export type KpiComparison = z.infer<typeof kpiComparisonSchema>;

@@ -18,7 +18,7 @@ const noInteraction = { activeFactId: null, focusedFactId: null, hoverFact: () =
 
 function render(run: RunState, isRestored: boolean): string {
   return renderToStaticMarkup(
-    <InsightTrail run={run} interaction={noInteraction} isRestored={isRestored} canOpenView={() => true} onAskQuestion={() => {}} onOpenExplore={() => {}} onOpenDecisions={() => {}} />,
+    <InsightTrail run={run} interaction={noInteraction} isRestored={isRestored} canOpenView={() => true} onAskQuestion={() => {}} onOpenExplore={() => {}} onNavigate={() => {}} />,
   );
 }
 

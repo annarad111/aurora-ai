@@ -1,14 +1,15 @@
-import { queryPerformanceInputSchema, type ConversationTurn, type InvestigationContext, type IsoDate, type ToolName } from '@aurora/shared';
+import { queryPerformanceInputSchema, type ConversationTurn, type InvestigationContext, type IsoDate, type ToolName, type TrailStage } from '@aurora/shared';
 import type { EmitStreamEvent } from '../sse/sse-event-stream';
 import { callTool } from '../tools/registry';
 import { requireHotel, ToolInputError, type ToolContext } from '../tools/tool-context';
-import { monthToDate, paceWindowFor, type AnalysisContext, type ToolResults } from './analysis-context';
+import { monthToDate, paceWindowFor, previousCompletedMonth, type AnalysisContext, type ToolResults } from './analysis-context';
 import { describeAnsweredContext } from './follow-up';
 import { buildInsightTrail } from './insight-trail';
 import { planForInvestigation, type RunStepPlan } from './insight-plan';
 import { buildSuggestions } from './suggestions';
 import { writeConversationReply } from './conversation';
-import { isConversationPlan, isDecisionsPlan, KeywordInsightPlanner, type InsightPlanner, type PlannedRun } from './insight-planners';
+import { isConversationPlan, isDecisionsPlan, isPropertyPlan, KeywordInsightPlanner, type InsightPlanner, type PlannedRun } from './insight-planners';
+import { writePropertyAnswer } from './property-answer';
 import { toolInputFor, writeDecisionsAnswer } from './decisions-answer';
 import type { NarrativeWriter } from './narrative-writer';
 import { pause } from './pause';
@@ -63,6 +64,21 @@ export function withoutPaceForPastPeriods<Plan extends PlannedRun>(plan: Plan, t
   return { ...plan, steps: plan.steps.filter((step) => step.tool !== 'get_booking_pace') };
 }
 
+/**
+ * A data answer about exactly the previous completed month ("revenue last month") is what the
+ * Property Overview's financial snapshot shows: its last step links there.
+ */
+export function withFinancialSnapshotLink(stages: TrailStage[], analysis: AnalysisContext, today: IsoDate): TrailStage[] {
+  const queriedPeriod = analysis.results.queries?.[0]?.output.period;
+  const previousMonth = previousCompletedMonth(today);
+  if (!queriedPeriod || queriedPeriod.from !== previousMonth.from || queriedPeriod.to !== previousMonth.to) return stages;
+  return stages.map((stage) =>
+    stage.stage === 'decision'
+      ? { ...stage, text: 'The property overview shows this month next to the months before it.', action: { kind: 'navigate', label: 'See the financial snapshot', destination: 'property', section: 'financials' } }
+      : stage,
+  );
+}
+
 /** Splits text into words, keeping the trailing spaces, so streamed words join back exactly. */
 export function splitIntoWords(text: string): string[] {
   return text.match(/\S+\s*|\s+/g) ?? [];
@@ -106,17 +122,30 @@ export async function runInsight(options: RunInsightOptions): Promise<void> {
       return;
     }
 
-    // --- The saved decisions: read from the Decisions workspace, answered by fixed rules ---
-    if (isDecisionsPlan(planResult)) {
-      const step = { stepId: 'decisions', label: 'Reading your saved decisions', tool: 'get_decisions' } as const;
-      await emit({ type: 'step', ...step, status: 'pending' });
-      await emit({ type: 'step', ...step, status: 'running' });
+    /** An answer written by fixed rules from one tool: step, finding, trail, text, provenance, follow-ups, done. */
+    async function emitWrittenAnswer(spec: {
+      step: { stepId: string; label: string; tool: ToolName };
+      read: () => Promise<{
+        answer: { headline: string; text: string; trail: TrailStage[]; followups: string[]; contextText: string };
+        factId: string;
+        provenance: { title: string; displayValue: string; formula: string; inputs: Array<{ label: string; value: string }>; sourceQuery: string; contextLabel: string };
+      }>;
+      plannedBy: 'llm' | 'keywords';
+    }) {
+      await emit({ type: 'step', ...spec.step, status: 'pending' });
+      await emit({ type: 'step', ...spec.step, status: 'running' });
       await pause(pacing.stepDelayMs, signal);
       if (signal.aborted) return;
-      const output = await callTool('get_decisions', toolInputFor(hotel.id, planResult.focus), toolContext);
-      await emit({ type: 'step', ...step, status: 'done' });
-      const answer = writeDecisionsAnswer(output, planResult.focus);
-      await emit({ type: 'insight', headline: answer.headline, impactEur: null, factIds: ['decisions'], chips: [] });
+      let result;
+      try {
+        result = await spec.read();
+      } catch (error) {
+        await emit({ type: 'step', ...spec.step, status: 'failed' });
+        throw error;
+      }
+      await emit({ type: 'step', ...spec.step, status: 'done' });
+      const { answer, factId, provenance } = result;
+      await emit({ type: 'insight', headline: answer.headline, impactEur: null, factIds: [factId], chips: [] });
       await emit({ type: 'trail', stages: answer.trail });
       for (const word of splitIntoWords(answer.text)) {
         if (signal.aborted) return;
@@ -125,34 +154,83 @@ export async function runInsight(options: RunInsightOptions): Promise<void> {
       }
       await emit({
         type: 'provenance',
-        factId: 'decisions',
-        title: 'Saved decisions',
-        displayValue: `${output.counts.savedInsights} insights, ${output.counts.todo + output.counts.inProgress} open actions`,
-        tool: 'get_decisions',
-        formula: 'Saved insights and actions, as recorded in the Decisions workspace; overdue = open with a due date before today',
-        inputs: [
-          { label: 'Saved insights', value: String(output.counts.savedInsights) },
-          { label: 'To do', value: String(output.counts.todo) },
-          { label: 'In progress', value: String(output.counts.inProgress) },
-          { label: 'Completed', value: String(output.counts.completed) },
-          { label: 'Dismissed', value: String(output.counts.dismissed) },
-          { label: 'Overdue', value: String(output.counts.overdue) },
-          { label: 'Today', value: output.today },
-        ],
-        sourceQuery: `decision_records WHERE hotel_id = ${hotel.id}`,
-        contextLabel: 'Saved decisions',
+        factId,
+        tool: spec.step.tool,
+        ...provenance,
         contextText: answer.contextText,
         exploreView: null,
         followupQuestions: answer.followups,
       });
       if (answer.followups.length > 0) await emit({ type: 'followups', questions: answer.followups });
-      await emit({
-        type: 'done',
-        durationMs: Date.now() - startedAt,
-        provider: 'scripted',
-        toolsChosenBy: planResult.plannedBy,
-        verifiedFigureCount: 0,
-        answerKind: 'analysis',
+      await emit({ type: 'done', durationMs: Date.now() - startedAt, provider: 'scripted', toolsChosenBy: spec.plannedBy, verifiedFigureCount: 0, answerKind: 'analysis' });
+    }
+
+    // --- The saved decisions: read from the Decisions workspace, answered by fixed rules ---
+    if (isDecisionsPlan(planResult)) {
+      await emitWrittenAnswer({
+        step: { stepId: 'decisions', label: 'Reading your saved decisions', tool: 'get_decisions' },
+        read: async () => {
+          const output = await callTool('get_decisions', toolInputFor(hotel.id, planResult.focus), toolContext);
+          const answer = writeDecisionsAnswer(output, planResult.focus);
+          return {
+            answer,
+            factId: 'decisions',
+            provenance: {
+              title: 'Saved decisions',
+              displayValue: `${output.counts.savedInsights} insights, ${output.counts.todo + output.counts.inProgress} open actions`,
+              formula: 'Saved insights and actions, as recorded in the Decisions workspace; overdue = open with a due date before today',
+              inputs: [
+                { label: 'Saved insights', value: String(output.counts.savedInsights) },
+                { label: 'To do', value: String(output.counts.todo) },
+                { label: 'In progress', value: String(output.counts.inProgress) },
+                { label: 'Completed', value: String(output.counts.completed) },
+                { label: 'Dismissed', value: String(output.counts.dismissed) },
+                { label: 'Overdue', value: String(output.counts.overdue) },
+                { label: 'Today', value: output.today },
+              ],
+              sourceQuery: `decision_records WHERE hotel_id = ${hotel.id}`,
+              contextLabel: 'Saved decisions',
+            },
+          };
+        },
+        plannedBy: planResult.plannedBy,
+      });
+      return;
+    }
+
+    // --- The property's rooms for one night: read from get_property_status, answered by fixed rules ---
+    if (isPropertyPlan(planResult)) {
+      await emitWrittenAnswer({
+        step: { stepId: 'property', label: 'Checking the rooms', tool: 'get_property_status' },
+        read: async () => {
+          const { focus } = planResult;
+          const status = await callTool('get_property_status', { hotelId: hotel.id, ...(focus.date ? { date: focus.date } : {}) }, toolContext);
+          const answer = writePropertyAnswer(status, focus, toolContext.today);
+          const { inventory } = status;
+          return {
+            answer,
+            factId: 'property_rooms',
+            provenance: {
+              title: 'Rooms for the night',
+              displayValue: `${inventory.vacantAvailable} vacant and available`,
+              formula: 'vacant & available = physical rooms − occupied − out of order − out of service',
+              inputs: [
+                { label: 'Night', value: status.date },
+                { label: 'Physical rooms', value: String(inventory.physicalRooms) },
+                { label: status.basis === 'results' ? 'Occupied (rooms sold)' : `Booked so far (as of ${status.asOf})`, value: String(inventory.occupied) },
+                { label: 'Out of order', value: String(inventory.outOfOrder) },
+                { label: 'Out of service', value: String(inventory.outOfService) },
+                { label: 'Vacant and available', value: String(inventory.vacantAvailable) },
+              ],
+              sourceQuery:
+                status.basis === 'results'
+                  ? `daily_stats (rooms sold on ${status.date}) + room_status_events covering ${status.date}`
+                  : `on_the_books (snapshot ${status.asOf}, stay ${status.date}) + room_status_events covering ${status.date}`,
+              contextLabel: 'Rooms for the night',
+            },
+          };
+        },
+        plannedBy: planResult.plannedBy,
       });
       return;
     }
@@ -205,7 +283,7 @@ export async function runInsight(options: RunInsightOptions): Promise<void> {
 
     // --- The insight trail: the reasoning in four plain steps, before the text ---
     const followupQuestions = narrativeWriter.suggestFollowups(plan.intent, analysis);
-    const trailStages = buildInsightTrail(plan.intent, analysis, followupQuestions);
+    const trailStages = withFinancialSnapshotLink(buildInsightTrail(plan.intent, analysis, followupQuestions), analysis, toolContext.today);
     if (trailStages.length > 0) await emit({ type: 'trail', stages: trailStages });
 
     // --- Explanation, word by word --------------------------------------------
@@ -306,6 +384,7 @@ function hasResultFor(tool: ToolName, results: ToolResults): boolean {
     // The chat never plans the what-if (it has its own screen), and decisions have their own answer.
     simulate_scenario: undefined,
     get_decisions: undefined,
+    get_property_status: undefined,
   };
   return resultForTool[tool] !== undefined;
 }

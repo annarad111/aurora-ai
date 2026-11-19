@@ -11,6 +11,9 @@ import type {
   Hotel,
   IsoDate,
   OnTheBooks,
+  PropertyProfile,
+  Room,
+  RoomStatusEvent,
 } from '@aurora/shared';
 import type { DecisionRecord, HotelDataRepository, NewConversationTurn } from './hotel-data-repository';
 
@@ -100,6 +103,20 @@ export class InMemoryHotelDataRepository implements HotelDataRepository {
     const conversation = this.conversations.get(conversationId);
     if (!conversation || conversation.hotelId !== hotelId) return false;
     return this.conversations.delete(conversationId);
+  }
+
+  async findPropertyProfile(hotelId: string): Promise<PropertyProfile | null> {
+    return this.dataset.propertyProfiles.find((profile) => profile.hotelId === hotelId) ?? null;
+  }
+
+  async listRooms(hotelId: string): Promise<Room[]> {
+    return this.dataset.rooms.filter((room) => room.hotelId === hotelId);
+  }
+
+  async listRoomStatusEvents(hotelId: string, period: DateRange): Promise<RoomStatusEvent[]> {
+    return this.dataset.roomStatusEvents
+      .filter((event) => event.hotelId === hotelId && event.firstNight <= period.to && event.lastNight >= period.from)
+      .sort((first, second) => first.firstNight.localeCompare(second.firstNight) || first.roomNumber.localeCompare(second.roomNumber));
   }
 
   async listDecisionRecords(hotelId: string): Promise<DecisionRecord[]> {

@@ -1,3 +1,4 @@
+import type { TrailAction } from '@aurora/shared';
 import type { ReactNode } from 'react';
 import type { RunState } from '../../stream/run-reducer';
 import { isViewAvailable, readExploreData, type InsightView } from '../explore/explore-views';
@@ -23,7 +24,7 @@ interface AnswerViewProps {
   onShowProvenance: (factId: string) => void;
   onClearFocus: () => void;
   onOpenExplore: (view: InsightView) => void;
-  onOpenDecisions: () => void;
+  onNavigate: (action: Extract<TrailAction, { kind: 'navigate' }>) => void;
   /** An investigation action of a selected KPI. */
   onAction: (action: InvestigationAction) => void;
   /** "Save insight" for this answer, shown in the main finding. */
@@ -44,7 +45,7 @@ export function AnswerView({
   onShowProvenance,
   onClearFocus,
   onOpenExplore,
-  onOpenDecisions,
+  onNavigate,
   onAction,
   saveButton,
 }: AnswerViewProps) {
@@ -98,7 +99,7 @@ export function AnswerView({
           canOpenView={(view) => isViewAvailable(view, readExploreData(run))}
           onAskQuestion={onAskQuestion}
           onOpenExplore={onOpenExplore}
-          onOpenDecisions={onOpenDecisions}
+          onNavigate={onNavigate}
         />
       )}
 

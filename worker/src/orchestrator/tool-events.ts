@@ -82,7 +82,8 @@ export function buildEventsAfterTool(tool: ToolName, analysis: AnalysisContext):
       return [];
 
     case 'get_decisions':
-      // Decisions are answered by their own branch (decisions-answer.ts).
+    case 'get_property_status':
+      // Decisions and the property have their own answers (decisions-answer.ts, property-answer.ts).
       return [];
   }
 }

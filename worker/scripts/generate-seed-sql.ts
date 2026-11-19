@@ -101,3 +101,45 @@ const workspaceHeader = [
 ].join('\n');
 writeFileSync(resolve(migrationsDirectory, '0004_seed_workspace.sql'), `${workspaceHeader}\n${workspaceStatements.join('\n\n')}\n`);
 console.log(`Wrote ${workspaceStatements.length} INSERT statements to 0004_seed_workspace.sql`);
+
+// --- 0009: the property (fictional profile, rooms, maintenance) ---------------------
+const propertyStatements = [
+  ...buildInsertStatements(
+    'property_profiles',
+    ['hotel_id', 'country', 'address_line', 'property_type', 'room_types_json', 'is_demo_data'],
+    dataset.propertyProfiles.map((profile) => [
+      profile.hotelId,
+      profile.country,
+      profile.addressLine,
+      profile.propertyType,
+      JSON.stringify(profile.roomTypes),
+      profile.isDemoData ? 1 : 0,
+    ]),
+  ),
+  ...buildInsertStatements(
+    'rooms',
+    ['hotel_id', 'room_number', 'floor', 'room_type_code'],
+    dataset.rooms.map((room) => [room.hotelId, room.roomNumber, room.floor, room.roomTypeCode]),
+  ),
+  ...buildInsertStatements(
+    'room_status_events',
+    ['id', 'hotel_id', 'room_number', 'kind', 'reason', 'description', 'first_night', 'last_night'],
+    dataset.roomStatusEvents.map((event) => [
+      event.id,
+      event.hotelId,
+      event.roomNumber,
+      event.kind,
+      event.reason,
+      event.description,
+      event.firstNight,
+      event.lastNight,
+    ]),
+  ),
+];
+const propertyHeader = [
+  '-- GENERATED FILE, do not edit by hand.',
+  '-- Source: packages/demo-data/src/property.ts (fictional demo data), via worker/scripts/generate-seed-sql.ts',
+  '',
+].join('\n');
+writeFileSync(resolve(migrationsDirectory, '0009_seed_property.sql'), `${propertyHeader}\n${propertyStatements.join('\n\n')}\n`);
+console.log(`Wrote ${propertyStatements.length} INSERT statements to 0009_seed_property.sql`);

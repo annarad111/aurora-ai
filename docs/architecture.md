@@ -135,6 +135,21 @@ Answers are read by people who run a hotel, not by developers, so the chat never
 - **Limitation**: the demo has no sign-in, so decisions are per hotel and shared by everyone who opens the demo.
 - **Asking about decisions**: the read-only tool `get_decisions` returns the saved insights and actions (open first, high priority first, then the earliest due date), with an overdue flag and the outcome of completed actions. Questions like "what decisions are saved?", "which actions are high priority?" or "what is overdue?" are recognised by fixed rules in both planners (`decisions-answer.ts`); the model planner may also choose the tool for other wordings. The answer is written from the records by fixed rules, so titles, owners, dates and statuses are exactly what was saved, and the trail ends with "Open Decisions". MCP agents get the same tool.
 
+## Property overview
+
+- The sidebar's property card has **See overview**: a page about the hotel itself, built from `GET /api/property`. It answers what the hotel is, what its rooms are doing tonight, and how last month went. The detailed analysis stays in the chat: every figure on the page can start an investigation there (`origin: "property"`).
+- **Data** (migrations 0008–0009, `packages/demo-data/src/property.ts`): a property profile (country, type, room types), 111 numbered rooms and a few maintenance events. All of it is **fictional demo data**, labelled as such on the page and in answers. It is built to agree with the results: the room types add up to 111, and on every night of a maintenance event rooms sold (or booked) plus rooms under maintenance never exceed 111 (tested).
+- **Room inventory**, for one night (`get_property_status`):
+  - physical rooms = every room (111)
+  - occupied = rooms sold that night (results); for a future night, rooms **booked so far** as of the bookings snapshot, never called occupied
+  - out of order = broken, out of inventory; out of service = briefly held back
+  - vacant & available = physical − occupied − out of order − out of service; sellable = physical − out of order − out of service
+  - The four statuses are mutually exclusive and add up to the physical rooms; the page shows the sum.
+  - Arrivals and departures need reservations, which the dataset does not have: the page and the chat say so instead of estimating them.
+- **Financial snapshot**: the previous completed calendar month (October 2026 on the demo's today) from `get_hotel_overview`: room revenue, occupancy, ADR and RevPAR against target and last year, each with its definition. Room revenue per month goes back as far as the results do (August 2026); the current month is drawn striped and labelled "so far".
+- **Asking Aurora**: questions like "how many rooms are available?", "which rooms are out of order?", "how many rooms does the hotel have?" or "how many rooms are free on 24 November?" are recognised by fixed rules (`property-answer.ts`), and the model may choose `get_property_status` for other wordings. The answer is written from the tool output and ends with a button to the exact section ("See the room inventory", "See the property"); a data answer about exactly last month links to the financial snapshot. The page then scrolls to the section, focuses it and highlights it once.
+- There is no Performance page yet: the snapshot's "Investigate with Aurora" opens the analysis in the chat instead.
+
 ## What-if simulation
 
 `simulate_scenario` answers "what if we act on the coming nights?" with three levers: win back part of the room nights behind last year's pace, change the rate of the rooms still to sell, and move part of the OTA revenue to direct.

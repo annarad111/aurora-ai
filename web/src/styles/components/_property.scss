@@ -1,0 +1,649 @@
+@use '../abstracts' as *;
+
+// The property overview: who the hotel is, its rooms tonight, last month's
+// results. Calm cards on the page background; colour only where it carries
+// meaning (room statuses, against-target badges).
+
+// Pages other than the chat use the full width: no evidence column, a wider content area.
+.workspace--without-evidence .workspace__conversation {
+  flex-basis: 100%;
+}
+
+.conversation-body__content--wide {
+  max-width: 1120px;
+}
+
+.property-page {
+  display: flex;
+  flex-direction: column;
+  gap: $space-16;
+}
+
+.property-page__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: $space-16;
+  align-items: start;
+}
+
+@include below-breakpoint(1100px) {
+  .property-page__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.property-section {
+  display: flex;
+  flex-direction: column;
+  gap: $space-14;
+  padding: $space-20;
+  border-radius: $radius-panel;
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
+  scroll-margin-top: $space-16;
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--shadow-focus-ring);
+  }
+}
+
+// The section a chat answer pointed to glows once.
+.property-section--spotlight {
+  animation: property-spotlight 1.8s ease-out;
+}
+
+@keyframes property-spotlight {
+  0%,
+  35% {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-petrol) 55%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 3px transparent;
+  }
+}
+
+.property-section--skeleton {
+  min-height: 220px;
+  gap: $space-12;
+}
+
+.property-section__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: $space-4 $space-12;
+}
+
+.property-section__title {
+  margin: 0;
+  font-size: $font-size-16;
+  font-weight: $font-weight-semibold;
+}
+
+.property-section__as-of {
+  font-size: $font-size-12;
+  color: var(--color-ink-tertiary);
+}
+
+// --- Identity ---------------------------------------------------------------------
+
+.property-header {
+  display: flex;
+  align-items: center;
+  gap: $space-16;
+}
+
+// A monogram, not a photo: the demo has no real images of the property.
+.property-header__mark {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 52px;
+  height: 52px;
+  border-radius: $radius-card;
+  background: linear-gradient(135deg, var(--color-trail-observation), var(--color-trail-discovery));
+  color: #fff;
+  font-size: $font-size-18;
+  font-weight: $font-weight-semibold;
+  letter-spacing: 0.02em;
+}
+
+.property-header__name {
+  margin: 0;
+  font-size: $font-size-24;
+  font-weight: $font-weight-semibold;
+  letter-spacing: -0.02em;
+}
+
+.property-header__subtitle {
+  margin: $space-2 0 0;
+  color: var(--color-ink-secondary);
+}
+
+.property-facts {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: $space-12 $space-28;
+
+  div {
+    display: flex;
+    flex-direction: column;
+    gap: $space-2;
+  }
+
+  dt {
+    font-size: $font-size-12;
+    color: var(--color-ink-tertiary);
+  }
+
+  dd {
+    margin: 0;
+    font-weight: $font-weight-medium;
+  }
+}
+
+.room-types {
+  display: flex;
+  flex-direction: column;
+  gap: $space-8;
+}
+
+.room-types__bar {
+  display: flex;
+  height: 8px;
+  gap: 2px;
+  border-radius: $radius-pill;
+  overflow: hidden;
+}
+
+.room-types__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: $space-6 $space-16;
+  font-size: $font-size-13;
+  color: var(--color-ink-secondary);
+
+  li {
+    display: inline-flex;
+    align-items: center;
+    gap: $space-6;
+  }
+
+  strong {
+    @include tabular-numbers;
+    color: var(--color-ink);
+  }
+}
+
+.room-types__swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+.room-types__part--cls {
+  background: var(--color-trail-observation);
+}
+
+.room-types__part--sup {
+  background: var(--color-trail-discovery);
+}
+
+.room-types__part--dlx {
+  background: var(--color-trail-understanding);
+}
+
+.room-types__part--jrs {
+  background: var(--color-trail-decision);
+}
+
+.property-demo-note {
+  margin: 0;
+  font-size: $font-size-12;
+  color: var(--color-ink-tertiary);
+}
+
+// --- Rooms tonight ------------------------------------------------------------------
+
+.operations-tonight {
+  display: flex;
+  flex-direction: column;
+  gap: $space-16;
+}
+
+.operations-tonight__stats {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: $space-10;
+}
+
+.property-stat {
+  display: flex;
+  flex-direction: column;
+  gap: $space-2;
+  padding: $space-10 $space-12;
+  border-radius: $radius-button;
+  background: var(--color-sunken);
+
+  dt {
+    font-size: $font-size-12;
+    color: var(--color-ink-tertiary);
+  }
+
+  dd {
+    @include tabular-numbers;
+    margin: 0;
+    font-size: $font-size-21;
+    font-weight: $font-weight-semibold;
+  }
+}
+
+.property-stat--strong {
+  background: var(--color-sage-soft);
+
+  dd {
+    color: var(--color-sage);
+  }
+}
+
+.property-stat--unavailable {
+  grid-column: span 2;
+
+  dd {
+    font-size: $font-size-12;
+    font-weight: $font-weight-regular;
+  }
+}
+
+.property-stat__note {
+  font-size: $font-size-12;
+  font-weight: $font-weight-medium;
+  color: var(--color-ink-tertiary);
+}
+
+.room-inventory {
+  display: flex;
+  flex-direction: column;
+  gap: $space-8;
+}
+
+.room-inventory__bar {
+  display: flex;
+  height: 34px;
+  gap: 2px;
+}
+
+.room-inventory__segment {
+  @include unstyled-button;
+  flex-basis: 0;
+  min-width: 10px;
+  display: grid;
+  place-items: center;
+  border-radius: $radius-badge;
+  color: #fff;
+  font-size: $font-size-12;
+  font-weight: $font-weight-semibold;
+  cursor: pointer;
+  transition:
+    opacity $duration-fast,
+    transform $duration-fast;
+
+  &:hover {
+    transform: translateY(-1px);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--shadow-focus-ring);
+  }
+}
+
+.room-inventory__segment--selected {
+  box-shadow:
+    0 0 0 2px var(--color-surface),
+    0 0 0 4px var(--color-ink);
+}
+
+.room-inventory__segment--dimmed {
+  opacity: 0.45;
+}
+
+.room-inventory__segment--occupied,
+.room-inventory__swatch--occupied {
+  background: var(--color-petrol);
+}
+
+.room-inventory__segment--vacant,
+.room-inventory__swatch--vacant {
+  background: var(--color-sage);
+}
+
+.room-inventory__segment--out_of_order,
+.room-inventory__swatch--out_of_order {
+  background: var(--color-coral);
+}
+
+.room-inventory__segment--out_of_service,
+.room-inventory__swatch--out_of_service {
+  background: var(--color-amber);
+}
+
+.room-inventory__count {
+  @include tabular-numbers;
+}
+
+.room-inventory__legend {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: $space-6 $space-16;
+  font-size: $font-size-12;
+  color: var(--color-ink-secondary);
+
+  li {
+    display: inline-flex;
+    align-items: center;
+    gap: $space-6;
+  }
+
+  strong {
+    @include tabular-numbers;
+    color: var(--color-ink);
+  }
+}
+
+.room-inventory__swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+.room-inventory__sum {
+  @include tabular-numbers;
+  margin: 0;
+  font-size: $font-size-12;
+  color: var(--color-ink-tertiary);
+}
+
+.room-status-detail {
+  margin-top: 0;
+}
+
+.unavailable-rooms {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: $space-8;
+}
+
+.unavailable-room {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: $space-2 $space-10;
+  padding: $space-10 $space-12;
+  border-radius: $radius-button;
+  background: var(--color-sunken);
+  font-size: $font-size-13;
+}
+
+.unavailable-room__number {
+  font-weight: $font-weight-semibold;
+}
+
+.unavailable-room__type {
+  color: var(--color-ink-tertiary);
+}
+
+.unavailable-room__reason {
+  grid-column: 1 / -1;
+  font-weight: $font-weight-medium;
+}
+
+.unavailable-room__dates,
+.unavailable-room__description {
+  grid-column: 1 / -1;
+  color: var(--color-ink-secondary);
+}
+
+.property-coming-up {
+  padding-top: $space-12;
+  border-top: 1px solid var(--color-line);
+  font-size: $font-size-13;
+
+  ul {
+    margin: $space-6 0 0;
+    padding-left: $space-16;
+    color: var(--color-ink-secondary);
+  }
+}
+
+.property-coming-up__title {
+  @include eyebrow;
+  margin: 0;
+}
+
+// --- Last month ---------------------------------------------------------------------
+
+.financial-snapshot {
+  display: flex;
+  flex-direction: column;
+  gap: $space-16;
+}
+
+.financial-snapshot__kpis {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: $space-10;
+}
+
+.financial-kpi {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: $space-4;
+  padding: $space-12;
+  border-radius: $radius-button;
+  border: 1px solid var(--color-line);
+}
+
+.financial-kpi__label {
+  font-size: $font-size-12;
+  color: var(--color-ink-tertiary);
+}
+
+.financial-kpi__value {
+  @include tabular-numbers;
+  font-size: $font-size-21;
+  font-weight: $font-weight-semibold;
+}
+
+.financial-kpi__comparison,
+.financial-kpi__definition {
+  font-size: $font-size-12;
+  color: var(--color-ink-tertiary);
+}
+
+.financial-kpi__definition {
+  font-size: $font-size-11;
+}
+
+.revenue-months {
+  display: flex;
+  flex-direction: column;
+  gap: $space-10;
+}
+
+.revenue-months__header {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: $space-6;
+  font-size: $font-size-12;
+}
+
+.revenue-months__title {
+  font-weight: $font-weight-semibold;
+}
+
+.revenue-months__legend {
+  display: inline-flex;
+  align-items: center;
+  gap: $space-6;
+  color: var(--color-ink-tertiary);
+}
+
+.revenue-months__swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-left: $space-6;
+  border-radius: 3px;
+}
+
+.revenue-months__swatch--actual {
+  background: var(--color-petrol);
+}
+
+.revenue-months__swatch--target {
+  height: 2px;
+  background: var(--color-ink);
+}
+
+.revenue-months__swatch--last-year {
+  height: 2px;
+  background: var(--color-violet);
+}
+
+.revenue-months__chart {
+  display: flex;
+  gap: $space-12;
+  height: 150px;
+  padding-bottom: $space-4;
+  border-bottom: 1px solid var(--color-line);
+}
+
+.revenue-months__month {
+  @include unstyled-button;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: $space-6;
+  padding: $space-4 $space-4 0;
+  border-radius: $radius-badge;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--color-sunken);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: inset 0 0 0 2px var(--color-petrol);
+  }
+}
+
+.revenue-months__month--selected {
+  background: color-mix(in srgb, var(--color-petrol) 12%, transparent);
+}
+
+.revenue-months__plot {
+  position: relative;
+  flex: 1;
+  display: block;
+}
+
+.revenue-months__bar {
+  position: absolute;
+  left: 22%;
+  right: 22%;
+  bottom: 0;
+  border-radius: $radius-bar $radius-bar 0 0;
+  background: var(--color-petrol);
+}
+
+// The current month is not finished: striped, so it is not read as a full month.
+.revenue-months__month--partial .revenue-months__bar {
+  background: repeating-linear-gradient(135deg, var(--color-petrol) 0 6px, color-mix(in srgb, var(--color-petrol) 55%, transparent) 6px 12px);
+}
+
+.revenue-months__tick {
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  height: 2px;
+  border-radius: 1px;
+}
+
+.revenue-months__tick--target {
+  background: var(--color-ink);
+}
+
+.revenue-months__tick--last-year {
+  background: var(--color-violet);
+}
+
+.revenue-months__label {
+  font-size: $font-size-12;
+  color: var(--color-ink-secondary);
+  text-align: center;
+}
+
+.revenue-months__detail {
+  margin: 0;
+  font-size: $font-size-13;
+  color: var(--color-ink-secondary);
+}
+
+.financial-snapshot__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $space-8;
+}
+
+@include below-breakpoint(560px) {
+  .financial-snapshot__kpis {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .property-stat--unavailable {
+    grid-column: auto;
+  }
+}
+
+// --- The sidebar card ------------------------------------------------------------------
+
+.property-card--active {
+  box-shadow: inset 0 0 0 1.5px var(--color-petrol);
+}
+
+.property-card__overview {
+  @include unstyled-button;
+  @include focus-visible-ring;
+  align-self: flex-start;
+  margin-top: $space-6;
+  padding: $space-2 0;
+  border-radius: $radius-badge;
+  color: var(--color-petrol);
+  font-size: $font-size-12;
+  font-weight: $font-weight-semibold;
+
+  span {
+    display: inline-block;
+    transition: transform $duration-fast;
+  }
+
+  &:hover span {
+    transform: translateX(3px);
+  }
+}

@@ -17,7 +17,7 @@ export const INVESTIGATION_INTENTS = ['revenue_gap', 'channel_cost', 'booking_pa
 export const investigationIntentSchema = z.enum(INVESTIGATION_INTENTS);
 
 /** Where the investigation started. */
-export const INVESTIGATION_ORIGINS = ['briefing', 'chart', 'kpi'] as const;
+export const INVESTIGATION_ORIGINS = ['briefing', 'chart', 'kpi', 'property'] as const;
 export const investigationOriginSchema = z.enum(INVESTIGATION_ORIGINS);
 
 /** What the user asked of the selection. Evidence is shown in the browser and needs no request. */

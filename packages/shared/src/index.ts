@@ -12,3 +12,4 @@ export * from './investigation';
 export * from './briefing';
 export * from './decisions';
 export * from './ids';
+export * from './property';

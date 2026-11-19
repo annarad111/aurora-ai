@@ -154,8 +154,13 @@ export type TrailStageName = z.infer<typeof trailStageNameSchema>;
 export const trailActionSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('ask'), label: z.string(), question: z.string() }),
   z.object({ kind: z.literal('explore'), label: z.string(), view: z.enum(['occupancy', 'bridge', 'channel', 'pace']) }),
-  /** Opens another part of the app (the Decisions workspace). */
-  z.object({ kind: z.literal('navigate'), label: z.string(), destination: z.enum(['decisions']) }),
+  /** Opens another part of the app: the Decisions workspace, or a section of the Property Overview. */
+  z.object({
+    kind: z.literal('navigate'),
+    label: z.string(),
+    destination: z.enum(['decisions', 'property']),
+    section: z.enum(['identity', 'inventory', 'financials']).optional(),
+  }),
 ]);
 export type TrailAction = z.infer<typeof trailActionSchema>;
 

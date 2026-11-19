@@ -45,6 +45,11 @@ export function monthToDate(today: IsoDate): DateRange {
   return { from: calendarMonthOf(today).from, to: today };
 }
 
+/** The calendar month before the one `today` is in ("last month"). */
+export function previousCompletedMonth(today: IsoDate): DateRange {
+  return calendarMonthOf(addDays(calendarMonthOf(today).from, -1));
+}
+
 /**
  * The last 10 nights of the month ("the rest of the month" in the demo: 21–30 Nov).
  * Near the month end, it switches to the next 10 nights.

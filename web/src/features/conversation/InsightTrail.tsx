@@ -51,8 +51,8 @@ interface InsightTrailProps {
   canOpenView: (view: InsightView) => boolean;
   onAskQuestion: (question: string) => void;
   onOpenExplore: (view: InsightView) => void;
-  /** "Open Decisions" in an answer about the saved decisions. */
-  onOpenDecisions: () => void;
+  /** "Open Decisions", "See the room inventory": another part of the app. */
+  onNavigate: (action: Extract<TrailAction, { kind: 'navigate' }>) => void;
 }
 
 function prefersReducedMotion(): boolean {
@@ -110,7 +110,7 @@ function RevealedWords({ text, isAnimated }: { text: string; isAnimated: boolean
   );
 }
 
-export function InsightTrail({ run, interaction, isRestored, canOpenView, onAskQuestion, onOpenExplore, onOpenDecisions }: InsightTrailProps) {
+export function InsightTrail({ run, interaction, isRestored, canOpenView, onAskQuestion, onOpenExplore, onNavigate }: InsightTrailProps) {
   const isWorking = run.phase === 'streaming' && run.trail === null;
   const stagesByName = new Map((run.trail ?? []).map((stage) => [stage.stage, stage]));
   const visibleStages = run.trail ? TRAIL_STAGES.filter((name) => stagesByName.has(name)) : TRAIL_STAGES;
@@ -126,7 +126,7 @@ export function InsightTrail({ run, interaction, isRestored, canOpenView, onAskQ
   function runAction(action: TrailAction) {
     if (action.kind === 'ask') onAskQuestion(action.question);
     else if (action.kind === 'explore') onOpenExplore(action.view);
-    else onOpenDecisions();
+    else onNavigate(action);
   }
 
   return (

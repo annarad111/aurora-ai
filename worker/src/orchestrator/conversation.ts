@@ -30,6 +30,7 @@ const HOTEL_TOPIC = new RegExp(
     'cancell?ations?', 'cancell?ed', 'nights?', 'rooms?', 'guests?', 'stays?', 'weekends?', 'weekdays?',
     'hotel', 'property', 'month', 'week', 'year', 'yoy', 'today', 'yesterday', 'tonight', 'season',
     'decisions?', 'actions?', 'tasks?', 'to-?dos?', 'overdue', 'priority', 'priorities', 'saved',
+    'available', 'vacant', 'maintenance', 'arrivals?', 'departures?', 'suites?',
     'why', 'gap', 'drivers?', 'trend', 'compare', 'comparison', 'split', 'breakdown', 'what if', 'scenario', 'simulat\\w*',
     'recommend\\w*', 'improve', 'increase', 'grow', 'strategy', 'competitors?', 'comp set', 'market',
   ].map((word) => `\\b${word}\\b`).join('|'),
@@ -70,7 +71,8 @@ export function writeConversationReply(reason: ConversationReason, hotel: Hotel)
         `I am Aurora, the revenue analyst for ${hotel.name}. I can explain revenue against target, occupancy, ADR and RevPAR, ` +
         'what channels and commissions cost, how bookings are pacing, how segments and group blocks moved, and what a change ' +
         'in pace, rate or channel mix would be worth. I can also tell you what is saved in Decisions: your insights, actions, ' +
-        'priorities and what is overdue. Ask about any date or period, or start with one of these.'
+        'priorities and what is overdue, and how many rooms are available, occupied or out of order. ' +
+        'Ask about any date or period, or start with one of these.'
       );
     case 'off_topic':
       return (

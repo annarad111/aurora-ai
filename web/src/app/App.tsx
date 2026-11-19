@@ -1,7 +1,7 @@
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { AnswerView } from '../features/conversation/AnswerView';
 import { Composer } from '../features/conversation/Composer';
-import type { BriefingInsight } from '@aurora/shared';
+import type { BriefingInsight, InvestigationContext, TrailAction } from '@aurora/shared';
 import type { InvestigationAction } from '../features/investigation/investigation-actions';
 import { MorningBriefing } from '../features/briefing/MorningBriefing';
 import { useMorningBriefing } from '../features/briefing/useMorningBriefing';
@@ -9,6 +9,8 @@ import { DecisionWorkspace } from '../features/decisions/DecisionWorkspace';
 import { insightFromAnswer, insightFromBriefing } from '../features/decisions/insight-sources';
 import { SaveInsightButton } from '../features/decisions/SaveInsightButton';
 import { useDecisions } from '../features/decisions/useDecisions';
+import { PropertyOverviewPage, type PropertySection } from '../features/property/PropertyOverviewPage';
+import { usePropertyOverview } from '../features/property/usePropertyOverview';
 import { SuggestedQuestions } from '../features/empty-state/SuggestedQuestions';
 import { ExploreOverlay } from '../features/explore/ExploreOverlay';
 import type { InsightView } from '../features/explore/explore-views';
@@ -48,7 +50,11 @@ export function App() {
   // Saved insights and actions, shared by the save buttons and the decision workspace.
   const decisions = useDecisions(hotelId);
   /** The main column shows the chat, or the decision workspace. */
-  const [mainView, setMainView] = useState<'chat' | 'decisions'>('chat');
+  const [mainView, setMainView] = useState<'chat' | 'decisions' | 'property'>('chat');
+  /** The property section a chat answer pointed to ("See the room inventory"). */
+  const [propertyFocus, setPropertyFocus] = useState<{ section: PropertySection; requestId: number } | null>(null);
+  // Loaded when the overview is first opened, then kept; another hotel loads again.
+  const { state: propertyState, retry: retryProperty } = usePropertyOverview(hotelId, mainView === 'property');
   const conversation = useConversation(hotelId, reloadConversations);
   const { turns } = conversation.state;
   const lastTurn = turns.at(-1);
@@ -173,6 +179,40 @@ export function App() {
     [clearSelection, conversation, selectTurn],
   );
 
+  /** Opens the property overview, at a section when a chat answer asked for one. */
+  const openProperty = useCallback(
+    (section: PropertySection | null) => {
+      clearSelection();
+      setMainView('property');
+      setPropertyFocus(section ? { section, requestId: Date.now() } : null);
+    },
+    [clearSelection],
+  );
+
+  /** A trail button that leads to another part of the app. */
+  const handleNavigate = useCallback(
+    (action: Extract<TrailAction, { kind: 'navigate' }>) => {
+      if (action.destination === 'property') {
+        openProperty(action.section ?? null);
+        return;
+      }
+      clearSelection();
+      setMainView('decisions');
+    },
+    [clearSelection, openProperty],
+  );
+
+  /** A question from the property page: a new chat, with the figure as context. */
+  const handleInvestigateFromProperty = useCallback(
+    (question: string, context?: InvestigationContext) => {
+      clearSelection();
+      setMainView('chat');
+      conversation.newChat();
+      conversation.ask(question, context);
+    },
+    [clearSelection, conversation],
+  );
+
   const handleNewChat = useCallback(() => {
     clearSelection();
     setMainView('chat');
@@ -201,7 +241,7 @@ export function App() {
   const openProvenance = provenanceFactId ? (selectedRun.provenanceByFactId[provenanceFactId] ?? null) : null;
 
   return (
-    <div className="workspace">
+    <div className={joinClassNames('workspace', mainView !== 'chat' && 'workspace--without-evidence')}>
       <Sidebar
         workspace={workspace}
         conversations={conversations}
@@ -217,6 +257,8 @@ export function App() {
         }}
         onSelectHotel={handleSelectHotel}
         isDecisionsOpen={mainView === 'decisions'}
+        isPropertyOpen={mainView === 'property'}
+        onOpenProperty={() => openProperty(null)}
         openActionCount={decisions.openActionCount}
         onOpenDecisions={() => {
           clearSelection();
@@ -225,7 +267,19 @@ export function App() {
       />
 
       <main className="workspace__conversation" aria-label="Conversation">
-        {mainView === 'decisions' && workspace ? (
+        {mainView === 'property' && workspace ? (
+          <div className="conversation-body">
+            <div className="conversation-body__content conversation-body__content--wide">
+              <PropertyOverviewPage
+                workspace={workspace}
+                state={propertyState}
+                onRetry={retryProperty}
+                focus={propertyFocus}
+                onInvestigate={handleInvestigateFromProperty}
+              />
+            </div>
+          </div>
+        ) : mainView === 'decisions' && workspace ? (
           <div className="conversation-body">
             <div className="conversation-body__content">
               <DecisionWorkspace
@@ -307,10 +361,7 @@ export function App() {
                         selectTurn(turn.key);
                         setExploreView(view);
                       }}
-                      onOpenDecisions={() => {
-                        clearSelection();
-                        setMainView('decisions');
-                      }}
+                      onNavigate={handleNavigate}
                       onAction={(action) => handleInvestigationAction(turn.key, action)}
                       saveButton={
                         hotelId && (
@@ -332,16 +383,19 @@ export function App() {
         )}
       </main>
 
-      <EvidencePanel
-        run={selectedRun}
-        isRestored={selectedTurn?.isRestored ?? false}
-        interaction={selectedInteraction}
-        openProvenance={openProvenance}
-        onShowProvenance={setProvenanceFactId}
-        onCloseProvenance={() => setProvenanceFactId(null)}
-        onOpenExplore={setExploreView}
-        onAction={(action) => handleInvestigationAction(selectedTurn?.key, action)}
-      />
+      {/* The evidence belongs to the chat's answers; the other pages use the full width. */}
+      {mainView === 'chat' && (
+        <EvidencePanel
+          run={selectedRun}
+          isRestored={selectedTurn?.isRestored ?? false}
+          interaction={selectedInteraction}
+          openProvenance={openProvenance}
+          onShowProvenance={setProvenanceFactId}
+          onCloseProvenance={() => setProvenanceFactId(null)}
+          onOpenExplore={setExploreView}
+          onAction={(action) => handleInvestigationAction(selectedTurn?.key, action)}
+        />
+      )}
 
       {exploreView && (
         <ExploreOverlay

@@ -18,6 +18,9 @@ interface SidebarProps {
   onSelectHotel: (hotelId: string) => void;
   /** True while the decision workspace is open. */
   isDecisionsOpen: boolean;
+  /** True while the property overview is open. */
+  isPropertyOpen: boolean;
+  onOpenProperty: () => void;
   openActionCount: number;
   onOpenDecisions: () => void;
 }
@@ -32,6 +35,8 @@ export function Sidebar({
   onDeleteConversation,
   onSelectHotel,
   isDecisionsOpen,
+  isPropertyOpen,
+  onOpenProperty,
   openActionCount,
   onOpenDecisions,
 }: SidebarProps) {
@@ -73,7 +78,7 @@ export function Sidebar({
           Property
         </h2>
         {hotel ? (
-          <div className="property-card">
+          <div className={joinClassNames('property-card', isPropertyOpen && 'property-card--active')}>
             {workspace.hotels.length > 1 ? (
               <select
                 className="property-card__select"
@@ -93,6 +98,14 @@ export function Sidebar({
             <span className="property-card__details">
               {hotel.city} · {hotel.roomCount} rooms · {hotel.currency}
             </span>
+            <button
+              type="button"
+              className="property-card__overview"
+              aria-current={isPropertyOpen ? 'page' : undefined}
+              onClick={onOpenProperty}
+            >
+              See overview <span aria-hidden="true">→</span>
+            </button>
           </div>
         ) : (
           <div className="property-card property-card--loading" aria-busy="true" />
@@ -108,7 +121,7 @@ export function Sidebar({
           <RecentConversation
             key={summary.id}
             summary={summary}
-            isActive={!isDecisionsOpen && summary.id === activeConversationId}
+            isActive={!isDecisionsOpen && !isPropertyOpen && summary.id === activeConversationId}
             onOpen={() => onOpenConversation(summary.id)}
             onRename={(title) => onRenameConversation(summary.id, title)}
             onDelete={() => onDeleteConversation(summary.id)}

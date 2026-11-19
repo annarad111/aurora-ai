@@ -4,6 +4,7 @@ import { analyzeRevenueDrivers } from './analyze-revenue-drivers';
 import { getBookingPace } from './get-booking-pace';
 import { getChannelMix } from './get-channel-mix';
 import { getDecisions } from './get-decisions';
+import { getPropertyStatus } from './get-property-status';
 import { getGroupBlocks } from './get-group-blocks';
 import { getHotelOverview } from './get-hotel-overview';
 import { queryPerformance } from './query-performance';
@@ -120,6 +121,19 @@ export const TOOL_REGISTRY: { [Name in ToolName]: ToolDefinition<Name> } = {
     inputSchema: TOOL_SCHEMAS.get_decisions.input,
     outputSchema: TOOL_SCHEMAS.get_decisions.output,
     run: getDecisions,
+  },
+  get_property_status: {
+    name: 'get_property_status',
+    title: 'Property status',
+    description:
+      'The rooms of the hotel for one night (default: today): physical rooms, occupied (sold; for a future night, booked ' +
+      'so far), out of order, out of service and vacant available rooms, which add up to the physical rooms; the rooms ' +
+      'that cannot be sold and why (maintenance), maintenance in the next 14 days, confirmed group blocks in the next ' +
+      '30 days, and the property profile with its room types. Use it for "how many rooms are available", "how many ' +
+      'rooms are out of order", "how many rooms does the hotel have". Arrivals and departures are not in the data.',
+    inputSchema: TOOL_SCHEMAS.get_property_status.input,
+    outputSchema: TOOL_SCHEMAS.get_property_status.output,
+    run: getPropertyStatus,
   },
 };
 
