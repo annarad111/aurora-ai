@@ -2,9 +2,10 @@ import { useRef } from 'react';
 import { CloseIcon } from '../../design-system/icons';
 import type { RunState } from '../../stream/run-reducer';
 import type { FactInteraction } from '../insights/fact-links';
+import type { ActionOptions, InvestigationAction } from '../investigation/investigation-actions';
 import { BridgeExploreView } from './BridgeExploreView';
 import { ChannelExploreView } from './ChannelExploreView';
-import { describeView, MAIN_FACT_OF_VIEW, readExploreData, type InsightView } from './explore-views';
+import { describeView, isViewAvailable, MAIN_FACT_OF_VIEW, readExploreData, type InsightView } from './explore-views';
 import { OccupancyExploreView } from './OccupancyExploreView';
 import { PaceExploreView } from './PaceExploreView';
 import { ScenarioSimulator } from './ScenarioSimulator';
@@ -16,17 +17,24 @@ interface ExploreOverlayProps {
   interaction: FactInteraction;
   onClose: () => void;
   onAskQuestion: (question: string) => void;
+  /** A selected night's action: ask with its context, show its evidence, or open another view. */
+  onAction: (action: InvestigationAction) => void;
 }
 
 /**
  * "Explore this insight": a larger, interactive version of one chart, opened
  * from the answer. Esc, the × button or a click on the dimmed background closes it.
  */
-export function ExploreOverlay({ view, run, interaction, onClose, onAskQuestion }: ExploreOverlayProps) {
+export function ExploreOverlay({ view, run, interaction, onClose, onAskQuestion, onAction }: ExploreOverlayProps) {
   const dialogRef = useRef<HTMLElement>(null);
   useDialogFocus(dialogRef, onClose);
 
   const data = readExploreData(run);
+  const actionOptions: ActionOptions = {
+    hasEvidenceFor: (factId) => factId in run.provenanceByFactId,
+    // The view that is already open is not offered again.
+    canOpenView: (otherView) => otherView !== view && isViewAvailable(otherView, data),
+  };
   const { title, subtitle } = describeView(view, data);
   // "Suggested next, based on X" only when the selected figure X belongs to this view; otherwise the
   // questions of the view's main figure. Both are written by the server from the data.
@@ -51,10 +59,12 @@ export function ExploreOverlay({ view, run, interaction, onClose, onAskQuestion 
           </button>
         </header>
 
-        {view === 'occupancy' && data.overview && <OccupancyExploreView overview={data.overview} />}
+        {view === 'occupancy' && data.overview && <OccupancyExploreView overview={data.overview} actionOptions={actionOptions} onAction={onAction} />}
         {view === 'bridge' && data.drivers && <BridgeExploreView drivers={data.drivers} run={run} interaction={interaction} />}
         {view === 'channel' && data.channelMix && <ChannelExploreView channelMix={data.channelMix} />}
-        {view === 'pace' && data.pace && <PaceExploreView pace={data.pace} roomCount={data.overview?.hotel.roomCount ?? null} />}
+        {view === 'pace' && data.pace && (
+          <PaceExploreView pace={data.pace} roomCount={data.overview?.hotel.roomCount ?? null} actionOptions={actionOptions} onAction={onAction} />
+        )}
         {view === 'pace' && data.pace && data.overview && (
           <ScenarioSimulator hotelId={data.overview.hotel.id} stayFrom={data.pace.stayFrom} stayTo={data.pace.stayTo} />
         )}

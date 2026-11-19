@@ -1,0 +1,266 @@
+@use '../abstracts' as *;
+
+// Investigating a selection: selectable chart columns, the panel that opens
+// for the selected night or KPI, and the per-night strip of the pace card.
+
+// --- Selectable chart columns ----------------------------------------------------
+
+.column-chart--selectable .column-chart__column {
+  @include unstyled-button;
+  cursor: pointer;
+  border-radius: $radius-bar $radius-bar 0 0;
+
+  &:focus-visible {
+    outline: none;
+    // Inside the column, so the ring is never clipped by the chart.
+    box-shadow: inset 0 0 0 2px var(--color-petrol);
+  }
+}
+
+// The selected night: a soft band behind the bar, and the bar at full strength.
+.column-chart__column--selected {
+  background: color-mix(in srgb, var(--color-petrol) 12%, transparent);
+}
+
+.column-chart__column--selected .column-chart__bar {
+  box-shadow: 0 0 0 2px var(--color-surface), 0 0 0 4px var(--color-ink);
+}
+
+// --- The investigation panel -------------------------------------------------------
+
+.investigation-panel {
+  @include enters-on-arrival(250ms);
+  display: flex;
+  flex-direction: column;
+  gap: $space-12;
+  margin-top: $space-14;
+  padding: $space-14 $space-16;
+  border-radius: $radius-panel;
+  border: 1px solid var(--color-petrol);
+  background: var(--color-surface);
+}
+
+.investigation-panel__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: $space-12;
+}
+
+.investigation-panel__titles {
+  display: flex;
+  flex-direction: column;
+  gap: $space-2;
+}
+
+.investigation-panel__eyebrow {
+  @include eyebrow(var(--color-petrol));
+}
+
+.investigation-panel__title {
+  margin: 0;
+  font-size: $font-size-16;
+  font-weight: $font-weight-semibold;
+}
+
+.investigation-panel__figures {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: $space-10;
+}
+
+.investigation-panel__figure {
+  display: flex;
+  flex-direction: column;
+  gap: $space-2;
+
+  dt {
+    font-size: $font-size-12;
+    color: var(--color-ink-tertiary);
+  }
+
+  dd {
+    margin: 0;
+    display: flex;
+    align-items: baseline;
+    gap: $space-6;
+  }
+}
+
+.investigation-panel__value {
+  @include tabular-numbers;
+  font-size: $font-size-18;
+  font-weight: $font-weight-semibold;
+}
+
+.investigation-panel__delta {
+  @include tabular-numbers;
+  font-size: $font-size-12;
+  color: var(--color-ink-secondary);
+}
+
+.investigation-panel__note {
+  margin: 0;
+  font-size: $font-size-13;
+  color: var(--color-ink-secondary);
+}
+
+.investigation-panel__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $space-8;
+}
+
+.investigation-panel__source {
+  margin: 0;
+  font-size: $font-size-11;
+  color: var(--color-ink-tertiary);
+
+  span {
+    color: var(--color-sage);
+    font-weight: $font-weight-semibold;
+  }
+}
+
+// In the narrow evidence panel the actions stack.
+.evidence-panel .investigation-panel__actions {
+  flex-direction: column;
+  align-items: stretch;
+
+  .investigation-panel__action {
+    justify-content: center;
+  }
+}
+
+// On a phone the panel is a bottom sheet over the page, so the chart stays visible above it.
+@include below-breakpoint($breakpoint-stacked) {
+  .investigation-panel--sheet {
+    position: fixed;
+    inset: auto 0 0;
+    z-index: 30;
+    max-height: 70dvh;
+    overflow-y: auto;
+    margin: 0;
+    border-radius: $radius-overlay $radius-overlay 0 0;
+    border-width: 1px 0 0;
+    box-shadow: $shadow-overlay;
+    padding-bottom: calc(#{$space-16} + env(safe-area-inset-bottom));
+    animation: investigation-sheet-up 250ms ease-out;
+  }
+}
+
+@keyframes investigation-sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: none;
+  }
+}
+
+// --- Per-night strip of the booking pace card --------------------------------------
+
+.pace-nights {
+  display: flex;
+  flex-direction: column;
+  gap: $space-6;
+  margin-top: $space-12;
+}
+
+.pace-nights__caption {
+  font-size: $font-size-11;
+  color: var(--color-ink-tertiary);
+}
+
+.pace-nights__columns {
+  display: grid;
+  gap: $space-4;
+}
+
+.pace-nights__column {
+  @include unstyled-button;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: $space-4;
+  padding: $space-2;
+  border-radius: $radius-badge;
+  cursor: pointer;
+  transition:
+    background-color $duration-fast,
+    opacity $duration-fast;
+
+  &:hover {
+    background: var(--color-sunken);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: inset 0 0 0 2px var(--color-petrol);
+  }
+}
+
+.pace-nights__plot {
+  position: relative;
+  display: block;
+  height: 44px;
+}
+
+.pace-nights__bar {
+  position: absolute;
+  left: 15%;
+  right: 15%;
+  bottom: 0;
+  border-radius: 3px 3px 0 0;
+  background: var(--color-petrol);
+  transition: height $duration-chart $easing-chart;
+}
+
+.pace-nights__column--behind .pace-nights__bar {
+  background: var(--color-coral);
+}
+
+// Last year at the same point: a short line across the column.
+.pace-nights__last-year {
+  position: absolute;
+  left: 5%;
+  right: 5%;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--color-violet);
+}
+
+.pace-nights__day {
+  @include tabular-numbers;
+  font-size: $font-size-11;
+  color: var(--color-ink-tertiary);
+  text-align: center;
+}
+
+.pace-nights__column--selected {
+  background: color-mix(in srgb, var(--color-petrol) 14%, transparent);
+
+  .pace-nights__day {
+    color: var(--color-ink);
+    font-weight: $font-weight-semibold;
+  }
+}
+
+.pace-nights__column--dimmed {
+  opacity: 0.55;
+}
+
+// --- KPI questions in the contextual card -------------------------------------------
+
+.contextual-insight__investigate {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: $space-8;
+}
+
+.contextual-insight__investigate-label {
+  @include eyebrow;
+  margin-right: $space-4;
+}

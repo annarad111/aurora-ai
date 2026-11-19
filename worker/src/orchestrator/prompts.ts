@@ -37,6 +37,7 @@ export const NARRATIVE_SYSTEM_PROMPT = [
   '7. Mention the 4 to 7 most important figures, not all of them.',
   '8. Names of nights, segments and channels and the period also have placeholders (…_name, …_scope): use them, never spell dates or numbers out in words.',
   '9. Only state causes that are in the list. For a plain data question, describe the numbers; do not explain them.',
+  '10. An event explains only the nights it falls on. Never say a past event (a cancelled block) caused bookings for other or future nights; report figures side by side without linking them.',
 ].join('\n');
 
 export function buildPlannerRequest(question: string, history: ConversationTurn[] = []): string {

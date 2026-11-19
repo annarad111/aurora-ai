@@ -84,7 +84,8 @@ function rankRows(output: QueryPerformanceOutput, metric: BreakdownMetric, rankB
   const score = (row: PerformanceRow) =>
     rankBy === 'change' && row.lastYear ? Math.abs(valueOf(row, metric) - valueOf(row.lastYear, metric)) : valueOf(row, metric);
   // Nights or segments with no sales at all say little; keep them out of "highest/lowest" unless everything is zero.
-  const withSales = output.rows.filter((row) => row.roomsSold > 0);
+  // Ranked by change, a row that sold last year but not this year is the change itself (a cancelled congress).
+  const withSales = output.rows.filter((row) => row.roomsSold > 0 || (rankBy === 'change' && (row.lastYear?.roomsSold ?? 0) > 0));
   return [...(withSales.length > 0 ? withSales : output.rows)].sort((first, second) => score(second) - score(first));
 }
 

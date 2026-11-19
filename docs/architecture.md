@@ -114,6 +114,16 @@ Answers are read by people who run a hotel, not by developers, so the chat never
 - The five tools are read independently. One that fails is listed in `unavailableSources`, and the briefing is built from the rest (the UI says which data is missing).
 - An item's action sends its question **and** an `investigation` context (`intent`, `dateRange`, `metric`, `segment`, `channel`, `insightId`) with the chat request. The server then runs exactly that analysis on those dates (`planForInvestigation`), with no planner and no model choosing tools (`toolsChosenBy: "context"`). `run_started` carries the context, so a reopened conversation still shows where the question came from.
 
+## Investigating a selection
+
+- Charts are entry points: every night of the occupancy chart (Explore), every stay date of the pace chart (Explore, and the per-night strip of the pace card in the evidence panel) is a button. Click, or Tab into the chart and use the arrow keys, Home/End, Enter; Escape clears the selection first and only then closes the dialog.
+- The selected night opens an investigation panel (`web/src/features/investigation/`): the figure, its target and last year, a note from the data (a cancelled block), the source, and actions. Below 900px it is a bottom sheet.
+- A selected KPI card gets the same kind of actions in its contextual card: why it changed, compare with last year, contributing segments (channels for Net RevPAR). "How was this calculated?" is the evidence.
+- Actions are built by one pure function (`actionsForSelection`) from the selection, so they depend on what was selected: a past night is explained by segment, a future night by its bookings, a KPI by the revenue (or channel) analysis.
+- Asking sends the question with an `investigation` context (`origin: chart | kpi`, `interaction`, `metric`, `date`, `dateRange`, `breakdown`, `selectedValue`, `baseline`). The server plans from it (`planForInvestigation`): a data question becomes a validated `query_performance` call on those nights, against last year, ranked by change; dates that do not fit fall back to month to date.
+- The question line keeps the selection readable after the chart is gone ("From the chart · Wed 11 Nov · occupancy 37.8% vs 93.7% target"), also when the conversation is reopened.
+- Stale answers cannot replace newer ones: a new question aborts the previous request, and the reducer ignores events of any other run.
+
 ## What-if simulation
 
 `simulate_scenario` answers "what if we act on the coming nights?" with three levers: win back part of the room nights behind last year's pace, change the rate of the rooms still to sell, and move part of the OTA revenue to direct.

@@ -1,6 +1,8 @@
 import { breakDownPerformance, listCoveredNights, shiftDateByYears, shiftRangeByYears } from '@aurora/analytics';
 import {
   BREAKDOWN_DIMENSION_LABELS,
+  CHANNEL_LABELS,
+  SEGMENT_LABELS,
   formatPeriodLabel,
   type DailyStat,
   type PerformanceRow,
@@ -69,6 +71,30 @@ export async function queryPerformance(input: QueryPerformanceInput, context: To
         dimension: 'none',
       })[0]!;
       lastYearTotal = lastYearValues;
+    }
+  }
+
+  // A segment or channel that sold nothing this year but did last year (a cancelled congress) is
+  // still part of the answer: it gets a row of zeros, so the change vs last year is not lost.
+  if (input.groupBy === 'segment' || input.groupBy === 'channel') {
+    const labels: Record<string, string> = input.groupBy === 'segment' ? SEGMENT_LABELS : CHANNEL_LABELS;
+    const keysThisYear = new Set(rows.map((row) => row.key));
+    for (const key of lastYearByKey.keys()) {
+      if (keysThisYear.has(key)) continue;
+      rows.push({
+        key,
+        label: labels[key] ?? key,
+        nights: total.nights,
+        roomsAvailable: total.roomsAvailable,
+        roomsSold: 0,
+        roomRevenue: 0,
+        cancellations: 0,
+        commissionCost: 0,
+        occupancy: 0,
+        adr: 0,
+        revpar: 0,
+        netRevpar: 0,
+      });
     }
   }
 

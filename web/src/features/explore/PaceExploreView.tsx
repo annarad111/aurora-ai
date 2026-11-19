@@ -2,17 +2,26 @@ import { formatCount, formatPercent, formatPeriodLabel, type BookingPaceOutput }
 import { useState } from 'react';
 import { joinClassNames } from '../../lib/class-names';
 import { dayOfMonth, formatWeekdayDate } from '../../lib/dates';
+import { InvestigationPanel } from '../investigation/InvestigationPanel';
+import type { ActionOptions, InvestigationAction } from '../investigation/investigation-actions';
+import { useColumnSelection } from '../investigation/useColumnSelection';
 import { ChartTooltip } from './ChartTooltip';
 
 interface PaceExploreViewProps {
   pace: BookingPaceOutput;
   /** Rooms in the hotel: the height of a full bar. Falls back to the largest value. */
   roomCount: number | null;
+  actionOptions: ActionOptions;
+  onAction: (action: InvestigationAction) => void;
 }
 
 /** Rooms on the books per stay date, next to the same point last year. */
-export function PaceExploreView({ pace, roomCount }: PaceExploreViewProps) {
+export function PaceExploreView({ pace, roomCount, actionOptions, onAction }: PaceExploreViewProps) {
   const [hoveredDateIndex, setHoveredDateIndex] = useState<number | null>(null);
+  const { selectedIndex, focusedIndex, clearSelection, columnProps } = useColumnSelection(pace.stayDates.length);
+  const selectedDay = selectedIndex === null ? null : pace.stayDates[selectedIndex];
+  const tooltipIndex = hoveredDateIndex ?? focusedIndex;
+  const highlightedIndex = hoveredDateIndex ?? selectedIndex;
   const capacity = roomCount ?? Math.max(...pace.stayDates.flatMap((day) => [day.roomsOnTheBooks, day.roomsOnTheBooksLastYear]), 1);
   const heightOf = (rooms: number) => `${(rooms / capacity) * 100}%`;
   const columnTemplate = { gridTemplateColumns: `repeat(${pace.stayDates.length}, minmax(0, 1fr))` };
@@ -30,26 +39,34 @@ export function PaceExploreView({ pace, roomCount }: PaceExploreViewProps) {
         </span>
       </div>
 
-      <div className="column-chart column-chart--pace" style={columnTemplate}>
+      <div
+        className="column-chart column-chart--pace column-chart--selectable"
+        style={columnTemplate}
+        role="group"
+        aria-label="Bookings by stay date. Use the arrow keys to move and Enter to select a night."
+      >
         {pace.stayDates.map((day, dateIndex) => {
           const difference = day.roomsOnTheBooks - day.roomsOnTheBooksLastYear;
-          const isHovered = hoveredDateIndex === dateIndex;
+          const isSelected = selectedIndex === dateIndex;
           return (
-            <div
+            <button
               key={day.stayDate}
-              className="column-chart__column column-chart__column--paired"
+              type="button"
+              className={joinClassNames('column-chart__column column-chart__column--paired', isSelected && 'column-chart__column--selected')}
+              aria-label={`${formatWeekdayDate(day.stayDate)}: ${formatCount(day.roomsOnTheBooks)} room nights on the books, ${formatCount(day.roomsOnTheBooksLastYear)} last year`}
               onMouseEnter={() => setHoveredDateIndex(dateIndex)}
               onMouseLeave={() => setHoveredDateIndex(null)}
+              {...columnProps(dateIndex)}
             >
               <span
                 className={joinClassNames(
                   'column-chart__bar column-chart__bar--primary column-chart__bar--half',
-                  hoveredDateIndex !== null && !isHovered && 'column-chart__bar--dimmed',
+                  highlightedIndex !== null && highlightedIndex !== dateIndex && !isSelected && 'column-chart__bar--dimmed',
                 )}
                 style={{ height: heightOf(day.roomsOnTheBooks) }}
               />
               <span className="column-chart__bar column-chart__bar--reference column-chart__bar--half" style={{ height: heightOf(day.roomsOnTheBooksLastYear) }} />
-              {isHovered && (
+              {tooltipIndex === dateIndex && (
                 <ChartTooltip
                   columnIndex={dateIndex}
                   columnCount={pace.stayDates.length}
@@ -65,7 +82,7 @@ export function PaceExploreView({ pace, roomCount }: PaceExploreViewProps) {
                   </span>
                 </ChartTooltip>
               )}
-            </div>
+            </button>
           );
         })}
       </div>
@@ -74,6 +91,16 @@ export function PaceExploreView({ pace, roomCount }: PaceExploreViewProps) {
           <span key={day.stayDate}>{dayOfMonth(day.stayDate)}</span>
         ))}
       </div>
+
+      {selectedDay && (
+        <InvestigationPanel
+          selection={{ kind: 'pace_night', date: selectedDay.stayDate, roomsOnTheBooks: selectedDay.roomsOnTheBooks, roomsOnTheBooksLastYear: selectedDay.roomsOnTheBooksLastYear }}
+          options={actionOptions}
+          source={`Bookings on the books, counted ${formatWeekdayDate(pace.snapshotDate)}`}
+          onAction={onAction}
+          onClose={clearSelection}
+        />
+      )}
 
       <p className="explore-view__note">
         Room nights on the books for stay dates {formatPeriodLabel({ from: pace.stayFrom, to: pace.stayTo })}

@@ -1,4 +1,4 @@
-import { investigationContextSchema } from './briefing';
+import { investigationContextSchema } from './investigation';
 import { z } from 'zod';
 import { breakdownMetricSchema } from './breakdown';
 import { dateRangeSchema } from './domain';

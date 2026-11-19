@@ -2,6 +2,7 @@ import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { AnswerView } from '../features/conversation/AnswerView';
 import { Composer } from '../features/conversation/Composer';
 import type { BriefingInsight } from '@aurora/shared';
+import type { InvestigationAction } from '../features/investigation/investigation-actions';
 import { MorningBriefing } from '../features/briefing/MorningBriefing';
 import { useMorningBriefing } from '../features/briefing/useMorningBriefing';
 import { SuggestedQuestions } from '../features/empty-state/SuggestedQuestions';
@@ -133,6 +134,30 @@ export function App() {
     [clearSelection, conversation],
   );
 
+  /**
+   * An action on a selection (a chart night, a KPI) in one answer:
+   *   ask       a new question with the selection as structured context
+   *   evidence  "How was this calculated?" for the figure, in the evidence panel
+   *   explore   another Explore view of the same answer
+   */
+  const handleInvestigationAction = useCallback(
+    (turnKey: string | undefined, action: InvestigationAction) => {
+      if (action.kind === 'ask') {
+        clearSelection();
+        conversation.ask(action.question, action.context);
+        return;
+      }
+      if (turnKey) selectTurn(turnKey);
+      if (action.kind === 'evidence') {
+        setExploreView(null);
+        setProvenanceFactId(action.factId);
+      } else {
+        setExploreView(action.view);
+      }
+    },
+    [clearSelection, conversation, selectTurn],
+  );
+
   const handleNewChat = useCallback(() => {
     clearSelection();
     conversation.newChat();
@@ -229,6 +254,7 @@ export function App() {
                     selectTurn(turn.key);
                     setExploreView(view);
                   }}
+                  onAction={(action) => handleInvestigationAction(turn.key, action)}
                 />
               </article>
             ))}
@@ -250,6 +276,7 @@ export function App() {
         onShowProvenance={setProvenanceFactId}
         onCloseProvenance={() => setProvenanceFactId(null)}
         onOpenExplore={setExploreView}
+        onAction={(action) => handleInvestigationAction(selectedTurn?.key, action)}
       />
 
       {exploreView && (
@@ -262,6 +289,7 @@ export function App() {
             closeExplore();
             handleAskQuestion(question);
           }}
+          onAction={(action) => handleInvestigationAction(selectedTurn?.key, action)}
         />
       )}
     </div>

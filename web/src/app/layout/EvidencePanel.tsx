@@ -3,7 +3,8 @@ import { ChannelMixCard } from '../../features/evidence/ChannelMixCard';
 import { PerformanceTableCard } from '../../features/evidence/PerformanceTableCard';
 import { ProvenanceCard } from '../../features/evidence/ProvenanceCard';
 import { RevenueBridgeCard } from '../../features/evidence/RevenueBridgeCard';
-import type { InsightView } from '../../features/explore/explore-views';
+import { isViewAvailable, readExploreData, type InsightView } from '../../features/explore/explore-views';
+import type { InvestigationAction } from '../../features/investigation/investigation-actions';
 import type { FactInteraction } from '../../features/insights/fact-links';
 import { BREAKDOWN_METRICS, type BreakdownMetric } from '@aurora/shared';
 import type { ProvenanceData, RunState } from '../../stream/run-reducer';
@@ -18,13 +19,23 @@ interface EvidencePanelProps {
   onShowProvenance: (factId: string) => void;
   onCloseProvenance: () => void;
   onOpenExplore: (view: InsightView) => void;
+  onAction: (action: InvestigationAction) => void;
 }
 
 /**
  * Right-hand column: the charts behind the answer, in the order their tools
  * answered. Each card appears as soon as its data arrives.
  */
-export function EvidencePanel({ run, isRestored, interaction, openProvenance, onShowProvenance, onCloseProvenance, onOpenExplore }: EvidencePanelProps) {
+export function EvidencePanel({
+  run,
+  isRestored,
+  interaction,
+  openProvenance,
+  onShowProvenance,
+  onCloseProvenance,
+  onOpenExplore,
+  onAction,
+}: EvidencePanelProps) {
   const revenueBridge = run.charts.revenue_bridge?.kind === 'revenue_bridge' ? run.charts.revenue_bridge.data : null;
   const channelMix = run.charts.channel_mix?.kind === 'channel_mix' ? run.charts.channel_mix.data : null;
   const bookingPace = run.charts.booking_pace?.kind === 'booking_pace' ? run.charts.booking_pace.data : null;
@@ -68,6 +79,13 @@ export function EvidencePanel({ run, isRestored, interaction, openProvenance, on
               interaction={interaction}
               onShowProvenance={onShowProvenance}
               onExpand={() => onOpenExplore('pace')}
+              actionOptions={{
+                hasEvidenceFor: (factId) => factId in run.provenanceByFactId,
+                canOpenView: (view) => isViewAvailable(view, readExploreData(run)),
+              }}
+              onAction={onAction}
+              // A new answer starts without a selected night.
+              key={run.runId ?? 'pace'}
             />
           )}
         </>

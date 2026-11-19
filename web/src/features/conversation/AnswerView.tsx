@@ -1,6 +1,7 @@
 import type { RunState } from '../../stream/run-reducer';
 import { isViewAvailable, readExploreData, type InsightView } from '../explore/explore-views';
 import { ContextualInsightCard } from '../insights/ContextualInsightCard';
+import { actionsForSelection, describeInvestigationOrigin, type InvestigationAction } from '../investigation/investigation-actions';
 import type { FactInteraction } from '../insights/fact-links';
 import { KpiGrid } from '../insights/KpiCard';
 import { MainFinding } from '../insights/MainFinding';
@@ -21,6 +22,8 @@ interface AnswerViewProps {
   onShowProvenance: (factId: string) => void;
   onClearFocus: () => void;
   onOpenExplore: (view: InsightView) => void;
+  /** An investigation action of a selected KPI. */
+  onAction: (action: InvestigationAction) => void;
 }
 
 /**
@@ -37,19 +40,37 @@ export function AnswerView({
   onShowProvenance,
   onClearFocus,
   onOpenExplore,
+  onAction,
 }: AnswerViewProps) {
   const focusedProvenance = interaction.focusedFactId ? run.provenanceByFactId[interaction.focusedFactId] : undefined;
   // Follow-ups and the Explore view of the selected figure come with its provenance, written by the server from the data.
   const followups = focusedProvenance ? focusedProvenance.followupQuestions : run.followups;
   const focusedView = focusedProvenance ? focusedProvenance.exploreView : null;
   const canExploreFocusedFact = focusedView !== null && isViewAvailable(focusedView, readExploreData(run));
+  // A selected KPI card gets questions to investigate it, with the KPI as context.
+  const focusedKpi = run.phase === 'done' ? run.kpis.find((kpi) => kpi.factId === interaction.focusedFactId) : undefined;
+  const kpiActions = focusedKpi
+    ? actionsForSelection(
+        {
+          kind: 'kpi',
+          metric: focusedKpi.metric,
+          factId: focusedKpi.factId,
+          label: focusedKpi.label,
+          actual: focusedKpi.actual,
+          reference: focusedKpi.reference,
+          referenceKind: focusedKpi.referenceKind,
+          period: readExploreData(run).overview?.period ?? null,
+        },
+        { hasEvidenceFor: (factId) => factId in run.provenanceByFactId, canOpenView: () => false },
+      )
+    : [];
   // A greeting or a reply outside the hotel's business has no steps, figures or charts: just words and suggestions.
   const isConversationReply = run.completion?.answerKind === 'conversation' || (run.steps.length === 0 && run.explanation.length > 0);
 
   return (
     <>
       <div className="user-question">
-        {run.investigation?.origin === 'briefing' && <p className="user-question__context">From your morning briefing</p>}
+        {run.investigation && <p className="user-question__context">{describeInvestigationOrigin(run.investigation)}</p>}
         {run.completion?.followUpOf && (
           <p className="user-question__context">
             Follow-up to “{run.completion.followUpOf}”
@@ -94,6 +115,8 @@ export function AnswerView({
           onExplore={canExploreFocusedFact && focusedView ? () => onOpenExplore(focusedView) : null}
           onShowProvenance={() => onShowProvenance(focusedProvenance.factId)}
           onDismiss={onClearFocus}
+          investigationActions={kpiActions}
+          onAction={onAction}
         />
       )}
 

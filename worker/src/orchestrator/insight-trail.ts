@@ -146,7 +146,8 @@ function paceStages(analysis: AnalysisContext): TrailStage[] {
   const weakestNight = [...pace.stayDates].sort(
     (first, second) => first.roomsOnTheBooks - first.roomsOnTheBooksLastYear - (second.roomsOnTheBooks - second.roomsOnTheBooksLastYear),
   )[0];
-  if (weakestNight && weakestNight.roomsOnTheBooks < weakestNight.roomsOnTheBooksLastYear) {
+  // With one night only, "the weakest night" would just repeat the first step.
+  if (pace.stayDates.length > 1 && weakestNight && weakestNight.roomsOnTheBooks < weakestNight.roomsOnTheBooksLastYear) {
     stages.push({
       stage: 'discovery',
       text: `${describeDate(weakestNight.stayDate)} is the weakest night: ${formatCount(weakestNight.roomsOnTheBooksLastYear - weakestNight.roomsOnTheBooks)} rooms fewer than last year.`,

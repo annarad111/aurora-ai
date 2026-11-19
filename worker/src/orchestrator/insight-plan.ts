@@ -4,6 +4,8 @@ import {
   type BreakdownMetric,
   type DateRange,
   type InvestigationContext,
+  type MetricId,
+  queryPerformanceInputSchema,
   type IsoDate,
   type QueryPerformanceInput,
   type ToolName,
@@ -137,10 +139,46 @@ export function planInsightRun(question: string, today: IsoDate): InsightPlan {
 export function planForInvestigation(investigation: InvestigationContext, today: IsoDate): InsightPlan {
   const { intent, dateRange } = investigation;
   if (intent === 'group_blocks') return groupBlocksPlan(dateRange ?? { from: today, to: today });
+  if (intent === 'data_question') return dataQuestionPlanFor(investigation, today);
   const plan = analysisPlan(intent);
   if (!dateRange) return plan;
   if (intent === 'booking_pace') return dateRange.from > today ? { ...plan, paceWindowOverride: dateRange } : plan;
   return dateRange.to <= today ? { ...plan, periodOverride: dateRange } : plan;
+}
+
+/** Investigation metrics that a data query can lead with; the others read as room revenue. */
+const BREAKDOWN_METRIC_OF: Partial<Record<MetricId, BreakdownMetric>> = {
+  occupancy: 'occupancy',
+  adr: 'adr',
+  revpar: 'revpar',
+  net_revpar: 'net_revpar',
+  room_revenue: 'room_revenue',
+  rooms_sold: 'rooms_sold',
+  cancellation_rate: 'cancellations',
+};
+
+/**
+ * A data question from a chart point or a KPI: the selected nights (past only),
+ * split as asked, always next to the same nights last year, ranked by change.
+ * The query is validated like any tool input; one that does not fit falls back
+ * to month to date.
+ */
+function dataQuestionPlanFor(investigation: InvestigationContext, today: IsoDate): InsightPlan {
+  const monthToDateRange = { from: `${today.slice(0, 8)}01`, to: today };
+  const period = investigation.dateRange && investigation.dateRange.to <= today ? investigation.dateRange : monthToDateRange;
+  const candidate = {
+    period,
+    groupBy: investigation.breakdown ?? 'none',
+    compareWithLastYear: true,
+    ...(investigation.segment ? { segments: [investigation.segment] } : {}),
+    ...(investigation.channel ? { channels: [investigation.channel] } : {}),
+  };
+  const parsed = queryPerformanceInputSchema.safeParse({ hotelId: 'check', ...candidate });
+  const { hotelId: _hotelId, ...query } = parsed.success
+    ? parsed.data
+    : queryPerformanceInputSchema.parse({ hotelId: 'check', period: monthToDateRange, groupBy: 'none', compareWithLastYear: true });
+  const primaryMetric = (investigation.metric && BREAKDOWN_METRIC_OF[investigation.metric]) ?? 'room_revenue';
+  return dataQuestionPlan(query, { primaryMetric, rankBy: 'change' });
 }
 
 /** The tools the templates of an analysis cannot do without. */

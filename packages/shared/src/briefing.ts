@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { channelSchema, dateRangeSchema, isoDateSchema, segmentSchema } from './domain';
-import { metricIdSchema } from './metric-meta';
+import { dateRangeSchema, isoDateSchema } from './domain';
+import { investigationContextSchema } from './investigation';
 import { toolNameSchema } from './tools';
 
 // ---------------------------------------------------------------------------
@@ -12,28 +12,6 @@ import { toolNameSchema } from './tools';
 // structured context, so the server runs exactly the analysis the item is
 // about, on exactly its dates, whatever the wording of the question.
 // ---------------------------------------------------------------------------
-
-/** Analyses an investigation can open. Data questions are asked in words. */
-export const INVESTIGATION_INTENTS = ['revenue_gap', 'channel_cost', 'booking_pace', 'segment_shift', 'group_blocks'] as const;
-export const investigationIntentSchema = z.enum(INVESTIGATION_INTENTS);
-
-/** Where an investigation started: a briefing item (later also a chart point or a KPI). */
-export const INVESTIGATION_ORIGINS = ['briefing'] as const;
-export const investigationOriginSchema = z.enum(INVESTIGATION_ORIGINS);
-
-/** What the user is investigating, sent with the question instead of being retyped. */
-export const investigationContextSchema = z.object({
-  origin: investigationOriginSchema,
-  intent: investigationIntentSchema,
-  /** The briefing item this came from, to reopen it or save it later. */
-  insightId: z.string().min(1).max(80).optional(),
-  metric: metricIdSchema.optional(),
-  /** Past nights for analyses, future stay dates for pace. */
-  dateRange: dateRangeSchema.optional(),
-  segment: segmentSchema.optional(),
-  channel: channelSchema.optional(),
-});
-export type InvestigationContext = z.infer<typeof investigationContextSchema>;
 
 /** Critical: hurting results now. Important: worth a look today. Opportunity: something to use. */
 export const BRIEFING_PRIORITIES = ['critical', 'important', 'opportunity'] as const;
