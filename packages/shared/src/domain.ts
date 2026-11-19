@@ -110,24 +110,6 @@ export const groupBlockSchema = z.object({
 });
 export type GroupBlock = z.infer<typeof groupBlockSchema>;
 
-/** Table `suggested_questions`: the starter questions shown on the idle screen, per hotel. */
-export const suggestedQuestionSchema = z.object({
-  hotelId: z.string(),
-  position: z.number().int().nonnegative(),
-  topic: z.string(),
-  question: z.string(),
-});
-export type SuggestedQuestion = z.infer<typeof suggestedQuestionSchema>;
-
-/** Table `asked_questions`: every question asked in the chat, for the "Recent" list. */
-export const askedQuestionSchema = z.object({
-  hotelId: z.string(),
-  question: z.string(),
-  /** ISO timestamp, e.g. 2026-11-18T09:30:00.000Z. */
-  askedAt: z.string(),
-});
-export type AskedQuestion = z.infer<typeof askedQuestionSchema>;
-
 /** Table `on_the_books`: rooms already booked for a future night, as seen on a snapshot date. */
 export const onTheBooksSchema = z.object({
   hotelId: z.string(),

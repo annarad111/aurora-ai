@@ -1,6 +1,7 @@
 import type {
-  AskedQuestion,
   ChannelCommission,
+  Conversation,
+  ConversationSummary,
   DailyStat,
   DailyTarget,
   DateRange,
@@ -8,7 +9,7 @@ import type {
   Hotel,
   IsoDate,
   OnTheBooks,
-  SuggestedQuestion,
+  StoredTurn,
 } from '@aurora/shared';
 
 /**
@@ -29,8 +30,19 @@ export interface HotelDataRepository {
   listOnTheBooks(hotelId: string, snapshotDate: IsoDate, stayPeriod: DateRange): Promise<OnTheBooks[]>;
   /** Group blocks with at least one night inside the period, any status. */
   listGroupBlocks(hotelId: string, period: DateRange): Promise<GroupBlock[]>;
-  listSuggestedQuestions(hotelId: string): Promise<SuggestedQuestion[]>;
-  recordAskedQuestion(askedQuestion: AskedQuestion): Promise<void>;
-  /** The latest distinct questions, newest first. */
-  listRecentQuestions(hotelId: string, limit: number): Promise<Array<{ question: string; askedAt: string }>>;
+  /** Conversations with at least one answer, most recently updated first. */
+  listConversations(hotelId: string, limit: number): Promise<ConversationSummary[]>;
+  /** A conversation with every stored answer, oldest first; null when there is none with this id. */
+  findConversation(conversationId: string): Promise<Conversation | null>;
+  /** Stores a finished answer, creating the conversation with its first one. */
+  saveConversationTurn(turn: NewConversationTurn): Promise<void>;
+}
+
+export interface NewConversationTurn extends StoredTurn {
+  conversationId: string;
+  hotelId: string;
+  /** The conversation's title when it is new, or when it only had greetings so far. */
+  titleCandidate: string;
+  /** True when the answer is about the hotel's data, so it makes a better title than "hello". */
+  isAnalysis: boolean;
 }

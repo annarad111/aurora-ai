@@ -12,6 +12,7 @@ import { z } from 'zod';
 import type { LanguageModel, LanguageModelToolCall } from '../llm/language-model';
 import { CHAT_TOOL_DEFINITIONS } from '../tools/registry';
 import { monthToDate } from './analysis-context';
+import { acceptModelReply, classifyConversation, isAboutTheHotel, type ConversationReason } from './conversation';
 import { isFollowUpQuestion, planFollowUp } from './follow-up';
 import { dataQuestionPlan, groupBlocksPlan, planFromToolNames, planInsightRun, type InsightPlan } from './insight-plan';
 import { buildPlannerRequest, buildPlannerSystemPrompt } from './prompts';
@@ -30,6 +31,21 @@ export interface PlanningContext {
   history?: ConversationTurn[];
 }
 
+/** A message answered with words, not data: a greeting, thanks, or something outside the hotel's business. */
+export interface ConversationPlan {
+  kind: 'conversation';
+  reason: ConversationReason;
+  /** The model's own reply, already checked; without it the fixed reply for the reason is used. */
+  modelReply?: string;
+  plannedBy: 'llm' | 'keywords';
+}
+
+export type PlanResult = PlannedRun | ConversationPlan;
+
+export function isConversationPlan(plan: PlanResult): plan is ConversationPlan {
+  return 'kind' in plan && plan.kind === 'conversation';
+}
+
 /** A follow-up resolved by the deterministic rules, or null. Both planners try this first. */
 function planAsFollowUp(question: string, context: PlanningContext): PlannedRun | null {
   const previousTurn = context.history?.at(-1);
@@ -37,15 +53,26 @@ function planAsFollowUp(question: string, context: PlanningContext): PlannedRun 
   return plan && previousTurn ? { ...plan, plannedBy: 'keywords', followUpOf: previousTurn.question } : null;
 }
 
-/** Decides which tools a question needs, and with which arguments. */
+/** Greetings, small talk, thanks and "what can you do" are answered at once, by both planners. */
+function planAsSocialMessage(question: string, context: PlanningContext): ConversationPlan | null {
+  const reason = classifyConversation(question, context.today);
+  return reason && reason !== 'off_topic' ? { kind: 'conversation', reason, plannedBy: 'keywords' } : null;
+}
+
+/** Decides which tools a question needs, and with which arguments, or that it needs words only. */
 export interface InsightPlanner {
-  plan(question: string, signal: AbortSignal, context: PlanningContext): Promise<PlannedRun>;
+  plan(question: string, signal: AbortSignal, context: PlanningContext): Promise<PlanResult>;
 }
 
 /** Keyword rules. Instant and deterministic; also the fallback of the model planner. */
 export class KeywordInsightPlanner implements InsightPlanner {
-  async plan(question: string, _signal: AbortSignal, context: PlanningContext): Promise<PlannedRun> {
-    return planAsFollowUp(question, context) ?? { ...planInsightRun(question, context.today), plannedBy: 'keywords' };
+  async plan(question: string, _signal: AbortSignal, context: PlanningContext): Promise<PlanResult> {
+    const socialMessage = planAsSocialMessage(question, context);
+    if (socialMessage) return socialMessage;
+    const followUp = planAsFollowUp(question, context);
+    if (followUp) return followUp;
+    if (classifyConversation(question, context.today) === 'off_topic') return { kind: 'conversation', reason: 'off_topic', plannedBy: 'keywords' };
+    return { ...planInsightRun(question, context.today), plannedBy: 'keywords' };
   }
 }
 
@@ -155,7 +182,9 @@ export class LanguageModelInsightPlanner implements InsightPlanner {
     private readonly fallback: InsightPlanner = new KeywordInsightPlanner(),
   ) {}
 
-  async plan(question: string, signal: AbortSignal, context: PlanningContext): Promise<PlannedRun> {
+  async plan(question: string, signal: AbortSignal, context: PlanningContext): Promise<PlanResult> {
+    const socialMessage = planAsSocialMessage(question, context);
+    if (socialMessage) return socialMessage;
     const followUp = planAsFollowUp(question, context);
     if (followUp) return followUp;
     const previousTurn = context.history?.at(-1);
@@ -175,6 +204,12 @@ export class LanguageModelInsightPlanner implements InsightPlanner {
         signal,
       );
       if (response.toolCalls.length === 0) {
+        // A reply in words is fine for a message outside the hotel's business. For a question about the
+        // data it is not (the model may have guessed numbers), so the keyword rules plan the tools instead.
+        if (!isAboutTheHotel(question, context.today)) {
+          const modelReply = acceptModelReply(response.text);
+          return { kind: 'conversation', reason: 'off_topic', plannedBy: 'llm', ...(modelReply ? { modelReply } : {}) };
+        }
         // Include the start of what the model said instead, to diagnose prompt or format problems.
         throw new Error(`The model called no known tool. It answered: ${JSON.stringify(response.text.slice(0, 300))}`);
       }

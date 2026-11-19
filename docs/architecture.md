@@ -80,15 +80,15 @@ over. The `done` event reports who chose the tools, who wrote the text, and why 
 Tested live with `@cf/meta/llama-3.3-70b-instruct-fp8-fast`: the model chose the tools in 8 of 8 runs and
 wrote a guard-passing text in 7 of 8 (one timeout at 15 s fell back to the templates). Answers take 6–10 s.
 
-## Conversation memory
+## Conversations
 
-A short question such as "and November?" or "what about weekends?" builds on the previous answer.
+Aurora is a chat: questions and answers stack in one thread, and every conversation is saved.
 
-- Every `done` event carries a `context`: what the answer covered (intent, period, and for data questions the exact `query_performance` arguments and the main metric). It holds no figures.
-- The browser keeps the last 4 turns (question + context) and sends them as `history` with the next question. Nothing about the conversation is stored on the server; "New analysis" or another hotel starts over.
-- `worker/src/orchestrator/follow-up.ts` decides first, with fixed rules: a question that opens with "and / what about / only…", points back ("the same nights"), or has at most 4 words is a follow-up. It keeps the previous query and changes only what the new question mentions (period, split, filters, metric, vs last year). After an analysis, "and October?" reruns the same analysis for October; "why?" after a data question explains the gap for that period.
-- When the rules don't apply, the model planner sees the earlier questions and what was looked up for them. The narrative writer is told which question a follow-up continues, so "and November?" is answered as "ADR by channel for November".
-- `done.followUpOf` names the earlier question; the UI shows it above the question bubble.
+- **Stored answers.** The browser makes a conversation id when a chat starts and sends it with every question. When an answer finishes, the Worker stores it in D1 (`conversations`, `conversation_turns`) with the exact events it streamed. `GET /api/conversations?hotel=…` lists them for "Recent"; `GET /api/conversations/:id` returns them, and the browser rebuilds each answer from its events at once: no tools, no model, no streaming or animations. A stopped or failed answer is not stored.
+- **Titles.** A conversation is named after its first question about the data ("hello" does not name it).
+- **Follow-ups.** The Worker reads what the earlier answers covered from their stored `done.context` (last 4), so "and November?" or "what about weekends?" keeps everything the previous answer covered and changes only what the new question mentions (`worker/src/orchestrator/follow-up.ts`). When the rules don't apply, the model planner sees the earlier questions, and the writer is told which question a follow-up continues.
+- **Talking, not only analysing.** `worker/src/orchestrator/conversation.ts` recognises greetings, small talk, thanks and "what can you do?" and answers them in words ("Hello, what would you like to see today about your business?"). A message outside the hotel's business is declined politely; with the model on, the model writes that reply, checked to contain no figures. Such replies run no tools, and `done.answerKind` is `conversation`.
+- **Suggestions from the data.** The starter questions and the ones offered after a greeting are written from today's numbers (`worker/src/orchestrator/suggestions.ts`): revenue below or above target, pace behind last year, a rising OTA share, a cancelled group block. Nothing is seeded or typed in by hand.
 
 ## What-if simulation
 

@@ -1,6 +1,7 @@
 import type {
-  AskedQuestion,
   ChannelCommission,
+  Conversation,
+  ConversationSummary,
   DailyStat,
   DailyTarget,
   DateRange,
@@ -8,12 +9,24 @@ import type {
   Hotel,
   IsoDate,
   OnTheBooks,
-  SuggestedQuestion,
 } from '@aurora/shared';
-import type { HotelDataRepository } from './hotel-data-repository';
+import { streamEventSchema } from '@aurora/shared';
+import type { HotelDataRepository, NewConversationTurn } from './hotel-data-repository';
 
 // The only file that writes SQL. Columns are snake_case in the database and
 // mapped to the camelCase domain types here, so nothing else knows about tables.
+
+interface ConversationRow {
+  id: string;
+  hotel_id: string;
+  title: string;
+  created_at: string;
+  updated_at: string;
+}
+
+function toConversationSummary(row: ConversationRow, turnCount: number): ConversationSummary {
+  return { id: row.id, hotelId: row.hotel_id, title: row.title, createdAt: row.created_at, updatedAt: row.updated_at, turnCount };
+}
 
 interface HotelRow {
   id: string;
@@ -68,12 +81,6 @@ interface GroupBlockRow {
   cancelled_on: string | null;
 }
 
-interface SuggestedQuestionRow {
-  hotel_id: string;
-  position: number;
-  topic: string;
-  question: string;
-}
 
 function toHotel(row: HotelRow): Hotel {
   return { id: row.id, name: row.name, city: row.city, roomCount: row.room_count, currency: row.currency, timezone: row.timezone };
@@ -120,34 +127,66 @@ export class D1HotelDataRepository implements HotelDataRepository {
     }));
   }
 
-  async listSuggestedQuestions(hotelId: string): Promise<SuggestedQuestion[]> {
-    const { results } = await this.database
-      .prepare('SELECT hotel_id, position, topic, question FROM suggested_questions WHERE hotel_id = ? ORDER BY position')
-      .bind(hotelId)
-      .all<SuggestedQuestionRow>();
-    return results.map((row) => ({ hotelId: row.hotel_id, position: row.position, topic: row.topic, question: row.question }));
-  }
-
-  async recordAskedQuestion(askedQuestion: AskedQuestion): Promise<void> {
-    await this.database
-      .prepare('INSERT INTO asked_questions (hotel_id, question, asked_at) VALUES (?, ?, ?)')
-      .bind(askedQuestion.hotelId, askedQuestion.question, askedQuestion.askedAt)
-      .run();
-  }
-
-  async listRecentQuestions(hotelId: string, limit: number): Promise<Array<{ question: string; askedAt: string }>> {
+  async listConversations(hotelId: string, limit: number): Promise<ConversationSummary[]> {
     const { results } = await this.database
       .prepare(
-        `SELECT question, MAX(asked_at) AS asked_at
-         FROM asked_questions
-         WHERE hotel_id = ?
-         GROUP BY question
-         ORDER BY asked_at DESC
+        `SELECT conversations.id, conversations.hotel_id, conversations.title, conversations.created_at, conversations.updated_at,
+                COUNT(conversation_turns.position) AS turn_count
+         FROM conversations
+         JOIN conversation_turns ON conversation_turns.conversation_id = conversations.id
+         WHERE conversations.hotel_id = ?
+         GROUP BY conversations.id
+         ORDER BY conversations.updated_at DESC
          LIMIT ?`,
       )
       .bind(hotelId, limit)
-      .all<{ question: string; asked_at: string }>();
-    return results.map((row) => ({ question: row.question, askedAt: row.asked_at }));
+      .all<ConversationRow & { turn_count: number }>();
+    return results.map((row) => toConversationSummary(row, row.turn_count));
+  }
+
+  async findConversation(conversationId: string): Promise<Conversation | null> {
+    const conversation = await this.database
+      .prepare('SELECT id, hotel_id, title, created_at, updated_at FROM conversations WHERE id = ?')
+      .bind(conversationId)
+      .first<ConversationRow>();
+    if (!conversation) return null;
+    const { results } = await this.database
+      .prepare('SELECT question, events_json, created_at FROM conversation_turns WHERE conversation_id = ? ORDER BY position')
+      .bind(conversationId)
+      .all<{ question: string; events_json: string; created_at: string }>();
+    return {
+      ...toConversationSummary(conversation, results.length),
+      turns: results.map((row) => ({
+        question: row.question,
+        events: (JSON.parse(row.events_json) as unknown[]).map((event) => streamEventSchema.parse(event)),
+        createdAt: row.created_at,
+      })),
+    };
+  }
+
+  async saveConversationTurn(turn: NewConversationTurn): Promise<void> {
+    await this.database.batch([
+      this.database
+        .prepare(
+          `INSERT INTO conversations (id, hotel_id, title, created_at, updated_at) VALUES (?, ?, ?, ?, ?)
+           ON CONFLICT (id) DO UPDATE SET updated_at = excluded.updated_at`,
+        )
+        .bind(turn.conversationId, turn.hotelId, turn.titleCandidate, turn.createdAt, turn.createdAt),
+      // A greeting makes a poor title, so the first question about the data replaces it.
+      this.database
+        .prepare(
+          `UPDATE conversations SET title = ?
+           WHERE id = ? AND ? = 1
+             AND NOT EXISTS (SELECT 1 FROM conversation_turns WHERE conversation_id = ? AND is_analysis = 1)`,
+        )
+        .bind(turn.titleCandidate, turn.conversationId, turn.isAnalysis ? 1 : 0, turn.conversationId),
+      this.database
+        .prepare(
+          `INSERT INTO conversation_turns (conversation_id, position, question, events_json, created_at, is_analysis)
+           VALUES (?, (SELECT COUNT(*) FROM conversation_turns WHERE conversation_id = ?), ?, ?, ?, ?)`,
+        )
+        .bind(turn.conversationId, turn.conversationId, turn.question, JSON.stringify(turn.events), turn.createdAt, turn.isAnalysis ? 1 : 0),
+    ]);
   }
 
   async listDailyStats(hotelId: string, period: DateRange): Promise<DailyStat[]> {

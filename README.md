@@ -80,8 +80,10 @@ The headline, chips, KPI cards, charts and provenance are always deterministic; 
 
 | Route | What it does |
 |---|---|
-| `GET /api/workspace?hotel=` | Everything the UI shows before a question: hotels, period, starter and recent questions (all from D1) |
-| `POST /api/chat` | `{ question, hotelId, history? }` → Server-Sent Events: `run_started`, `step`, `kpi`, `chart`, `insight`, `text_delta`, `provenance`, `followups`, `done` (or `error`). `done.context` is what the answer covered; send the last turns back as `history` for follow-ups. |
+| `GET /api/workspace?hotel=` | Everything the UI shows before a question: hotels, period, and starter questions written from the data |
+| `POST /api/chat` | `{ question, hotelId, conversationId }` → Server-Sent Events: `run_started`, `step`, `kpi`, `chart`, `insight`, `text_delta`, `provenance`, `followups`, `done` (or `error`). The finished answer is stored with the conversation; follow-ups use the earlier answers. |
+| `GET /api/conversations?hotel=…` | The hotel's saved conversations, newest first (the "Recent" list) |
+| `GET /api/conversations/:id` | One conversation with the stored events of every answer, to show it again as it was |
 | `POST /api/simulate` | `{ hotelId, stayFrom, stayTo, paceRecovery?, rateChange?, otaToDirect? }` → the what-if result (`simulate_scenario`) |
 | `GET /api/hotels/:id/overview?from=&to=` | The overview tool as plain JSON, no AI. Defaults to month to date. |
 | `GET /api/health` | Worker and database status |
@@ -154,7 +156,7 @@ web/
     stream/
       parse-sse.ts              response body -> validated stream events (fetch + ReadableStream)
       run-reducer.ts            pure reducer: events + Start/Stop/Reset -> the answer on screen
-      useInsightRun.ts          hook: start, stop (AbortController), retry, reset
+      useConversation.ts        hook: the chat thread; ask, stop, retry, new chat, open a saved conversation
     features/
       conversation/             AnswerView, RunTimeline, StreamedExplanation, RunBanner, FollowUps, Composer
       insights/                 MainFinding, KpiCard, ContextualInsightCard, fact-links (which elements light up

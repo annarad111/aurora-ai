@@ -16,11 +16,23 @@ function createTestDependencies(): AppDependencies {
 }
 
 function postChat(body: unknown): Request {
+  // Every question belongs to a conversation; tests that do not care use a fresh one.
+  const withConversation =
+    typeof body === 'object' && body !== null && !('conversationId' in body) ? { ...body, conversationId: crypto.randomUUID() } : body;
   return new Request('http://localhost/api/chat', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: typeof body === 'string' ? body : JSON.stringify(body),
+    body: typeof withConversation === 'string' ? withConversation : JSON.stringify(withConversation),
   });
+}
+
+/** Asks a question and waits until the answer is stored, as the Worker does with waitUntil. */
+async function ask(dependencies: AppDependencies, question: string, conversationId: string) {
+  const pendingWork: Array<Promise<unknown>> = [];
+  dependencies.waitUntil = (work) => pendingWork.push(work);
+  const events = readSseEvents(await (await handleRequest(postChat({ question, hotelId: 'sablon-bru', conversationId }), dependencies)).text());
+  await Promise.all(pendingWork);
+  return events;
 }
 
 /** Splits an SSE body into its `data:` payloads. */
@@ -75,37 +87,85 @@ describe('POST /api/chat', () => {
 });
 
 describe('GET /api/workspace', () => {
-  it('returns the hotel, period and starter questions from the database', async () => {
+  it('returns the hotel, the period and starter questions written from the data', async () => {
     const response = await handleRequest(new Request('http://localhost/api/workspace'), createTestDependencies());
     const workspace = (await response.json()) as {
       hotel: { name: string; roomCount: number };
       period: { from: string; to: string };
-      suggestedQuestions: Array<{ topic: string }>;
+      suggestions: Array<{ topic: string; question: string }>;
       mcp: { toolCount: number };
     };
     expect(workspace.hotel).toMatchObject({ name: 'Hotel Sablon', roomCount: 111 });
     expect(workspace.period).toEqual({ from: '2026-11-01', to: '2026-11-17' });
-    expect(workspace.suggestedQuestions.map((suggestion) => suggestion.topic)).toEqual(['Revenue', 'Channels', 'Pace', 'Segments']);
+    // Revenue is below target, pace is behind, OTA share rose and a congress was cancelled in the demo data.
+    expect(workspace.suggestions).toEqual([
+      { topic: 'Revenue', question: 'Why is revenue below target this month?' },
+      { topic: 'Pace', question: 'Are we on pace for 21–30 Nov 2026?' },
+      { topic: 'Channels', question: 'What are OTA commissions costing us this month?' },
+      { topic: 'Groups', question: 'Are other group blocks at risk this quarter?' },
+    ]);
     expect(workspace.mcp.toolCount).toBe(7);
-  });
-
-  it('lists the questions asked in the chat as "Recent", newest first and without duplicates', async () => {
-    const dependencies = createTestDependencies();
-    const pendingWork: Array<Promise<unknown>> = [];
-    dependencies.waitUntil = (work) => pendingWork.push(work);
-    for (const question of ['First question?', 'Second question?', 'First question?']) {
-      await (await handleRequest(postChat({ question, hotelId: 'sablon-bru' }), dependencies)).text();
-      await Promise.all(pendingWork);
-    }
-    const workspace = (await (await handleRequest(new Request('http://localhost/api/workspace'), dependencies)).json()) as {
-      recentQuestions: Array<{ question: string }>;
-    };
-    expect(workspace.recentQuestions.map((recent) => recent.question)).toEqual(['First question?', 'Second question?']);
   });
 
   it('answers 404 for an unknown hotel', async () => {
     const response = await handleRequest(new Request('http://localhost/api/workspace?hotel=nowhere'), createTestDependencies());
     expect(response.status).toBe(404);
+  });
+});
+
+describe('conversations', () => {
+  it('stores every finished answer and lists the conversation under "Recent"', async () => {
+    const dependencies = createTestDependencies();
+    await ask(dependencies, 'hello', 'conversation-a');
+    await ask(dependencies, 'Why is my hotel revenue below target this month?', 'conversation-a');
+
+    const list = (await (await handleRequest(new Request('http://localhost/api/conversations?hotel=sablon-bru'), dependencies)).json()) as {
+      conversations: Array<{ id: string; title: string; turnCount: number }>;
+    };
+    // The greeting does not name the conversation; the first question about the data does.
+    expect(list.conversations).toEqual([
+      expect.objectContaining({ id: 'conversation-a', title: 'Why is my hotel revenue below target this month?', turnCount: 2 }),
+    ]);
+  });
+
+  it('opens an old conversation with the exact events that were streamed, without running it again', async () => {
+    const dependencies = createTestDependencies();
+    const streamed = await ask(dependencies, 'Why is my hotel revenue below target this month?', 'conversation-b');
+    const conversation = (await (await handleRequest(new Request('http://localhost/api/conversations/conversation-b'), dependencies)).json()) as {
+      turns: Array<{ question: string; events: unknown[] }>;
+    };
+    expect(conversation.turns).toHaveLength(1);
+    expect(conversation.turns[0]?.events).toEqual(streamed);
+  });
+
+  it('answers a follow-up from what the stored answer covered', async () => {
+    const dependencies = createTestDependencies();
+    await ask(dependencies, 'What was ADR by channel in October?', 'conversation-c');
+    const followUp = await ask(dependencies, 'and November?', 'conversation-c');
+    const done = followUp.find((event) => event.type === 'done');
+    expect(done).toMatchObject({ followUpOf: 'What was ADR by channel in October?', context: { query: { groupBy: 'channel' } } });
+  });
+
+  it('answers 404 for a conversation that does not exist', async () => {
+    const response = await handleRequest(new Request('http://localhost/api/conversations/missing-one'), createTestDependencies());
+    expect(response.status).toBe(404);
+  });
+});
+
+describe('talking with Aurora', () => {
+  it('"hello" gets a greeting and suggestions from the data, without running the tools', async () => {
+    const events = await ask(createTestDependencies(), 'hello', crypto.randomUUID());
+    const text = events.flatMap((event) => (event.type === 'text_delta' ? [event.text] : [])).join('');
+    expect(text).toBe('Hello, what would you like to see today about your business?');
+    expect(events.some((event) => event.type === 'step')).toBe(false);
+    expect(events.find((event) => event.type === 'followups')).toMatchObject({ questions: expect.arrayContaining(['Why is revenue below target this month?']) });
+    expect(events.at(-1)).toMatchObject({ type: 'done', answerKind: 'conversation' });
+  });
+
+  it('a question outside the hotel business is declined politely', async () => {
+    const events = await ask(createTestDependencies(), 'What is the capital of France?', crypto.randomUUID());
+    const text = events.flatMap((event) => (event.type === 'text_delta' ? [event.text] : [])).join('');
+    expect(text).toMatch(/^I can only help with the business of Hotel Sablon/);
   });
 });
 

@@ -1,17 +1,21 @@
-import type { Workspace } from '@aurora/shared';
+import type { ConversationSummary, Workspace } from '@aurora/shared';
 import { PlusIcon } from '../../design-system/icons';
+import { joinClassNames } from '../../lib/class-names';
 import { describeWhenAsked } from '../../lib/relative-time';
 import { ThemeSwitch } from './ThemeSwitch';
 
 interface SidebarProps {
   /** Null while the workspace is loading. */
   workspace: Workspace | null;
-  onStartNewAnalysis: () => void;
-  onAskQuestion: (question: string) => void;
+  /** The hotel's stored conversations, newest first. */
+  conversations: ConversationSummary[];
+  activeConversationId: string;
+  onNewChat: () => void;
+  onOpenConversation: (conversationId: string) => void;
   onSelectHotel: (hotelId: string) => void;
 }
 
-export function Sidebar({ workspace, onStartNewAnalysis, onAskQuestion, onSelectHotel }: SidebarProps) {
+export function Sidebar({ workspace, conversations, activeConversationId, onNewChat, onOpenConversation, onSelectHotel }: SidebarProps) {
   const hotel = workspace?.hotel;
 
   return (
@@ -23,12 +27,11 @@ export function Sidebar({ workspace, onStartNewAnalysis, onAskQuestion, onSelect
           </span>
           <span className="sidebar__brand-name">aurora</span>
         </div>
-        <span className="sidebar__brand-subline">Independent concept for the Juyo assessment</span>
       </div>
 
-      <button type="button" className="sidebar__new-analysis" onClick={onStartNewAnalysis}>
+      <button type="button" className="sidebar__new-analysis" onClick={onNewChat}>
         <PlusIcon />
-        New analysis
+        New chat
       </button>
 
       <section className="sidebar__section" aria-labelledby="sidebar-property-title">
@@ -66,16 +69,20 @@ export function Sidebar({ workspace, onStartNewAnalysis, onAskQuestion, onSelect
         <h2 id="sidebar-recent-title" className="sidebar__section-title">
           Recent
         </h2>
-        {workspace && workspace.recentQuestions.length === 0 && <p className="sidebar__empty-note">Questions you ask appear here.</p>}
-        {workspace?.recentQuestions.map((recentQuestion) => (
+        {workspace && conversations.length === 0 && <p className="sidebar__empty-note">Your conversations appear here.</p>}
+        {conversations.map((summary) => (
           <button
-            key={recentQuestion.question}
+            key={summary.id}
             type="button"
-            className="recent-question"
-            onClick={() => onAskQuestion(recentQuestion.question)}
+            className={joinClassNames('recent-question', summary.id === activeConversationId && 'recent-question--active')}
+            aria-current={summary.id === activeConversationId ? 'true' : undefined}
+            onClick={() => onOpenConversation(summary.id)}
           >
-            <span className="recent-question__text">{recentQuestion.question}</span>
-            <span className="recent-question__date">{describeWhenAsked(recentQuestion.askedAt)}</span>
+            <span className="recent-question__text">{summary.title}</span>
+            <span className="recent-question__date">
+              {describeWhenAsked(summary.updatedAt)}
+              {summary.turnCount > 1 && ` · ${summary.turnCount} messages`}
+            </span>
           </button>
         ))}
       </section>

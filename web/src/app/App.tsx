@@ -1,140 +1,234 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { AnswerView } from '../features/conversation/AnswerView';
 import { Composer } from '../features/conversation/Composer';
 import { SuggestedQuestions } from '../features/empty-state/SuggestedQuestions';
 import { ExploreOverlay } from '../features/explore/ExploreOverlay';
 import type { InsightView } from '../features/explore/explore-views';
 import type { FactInteraction } from '../features/insights/fact-links';
-import { useInsightRun } from '../stream/useInsightRun';
+import { joinClassNames } from '../lib/class-names';
+import { initialRunState } from '../stream/run-reducer';
+import { useConversation, type ConversationTurnState } from '../stream/useConversation';
 import { ConversationHeader } from './layout/ConversationHeader';
 import { EvidencePanel } from './layout/EvidencePanel';
 import { Sidebar } from './layout/Sidebar';
+import { useConversationList } from './useConversationList';
 import { useWorkspace } from './useWorkspace';
 
+/** How close to the bottom (px) still counts as "following" the answer while it streams. */
+const FOLLOW_STREAM_DISTANCE = 160;
+
+/** The answer the evidence panel shows when none is selected: the latest one with charts or KPIs. */
+function latestTurnWithEvidence(turns: ConversationTurnState[]): ConversationTurnState | undefined {
+  return [...turns].reverse().find((turn) => turn.run.kpis.length > 0 || Object.keys(turn.run.charts).length > 0) ?? turns.at(-1);
+}
+
 export function App() {
-  // The hotel, period and questions all come from the database through /api/workspace.
+  // The hotel, period and starter questions all come from the database through /api/workspace.
   const [selectedHotelId, setSelectedHotelId] = useState<string | null>(null);
   const { state: workspaceState, reload: reloadWorkspace } = useWorkspace(selectedHotelId);
   const workspace = workspaceState.status === 'ready' ? workspaceState.workspace : null;
+  const hotelId = workspace?.hotel.id ?? null;
 
-  const insightRun = useInsightRun(workspace?.hotel.id ?? null);
-  const { state: run } = insightRun;
+  const { conversations, reload: reloadConversations } = useConversationList(hotelId);
+  const conversation = useConversation(hotelId, reloadConversations);
+  const { turns } = conversation.state;
+  const lastTurn = turns.at(-1);
+  const isStreaming = lastTurn?.run.phase === 'streaming';
 
-  // A finished answer adds its question to "Recent", so refresh the workspace then.
-  useEffect(() => {
-    if (run.phase === 'done' || run.phase === 'cancelled' || run.phase === 'error') reloadWorkspace();
-  }, [run.phase, reloadWorkspace]);
-  const conversationBody = useRef<HTMLDivElement>(null);
-
-  // Three kinds of selection, as in the design:
-  //   hovered     what the pointer is over (temporary highlight)
-  //   focused     the figure the user clicked (contextual card + follow-ups)
-  //   provenance  the figure whose calculation is open in the evidence panel
+  // Selection, as in the design, inside one answer of the thread:
+  //   selectedTurnKey  the answer the evidence panel and Explore show (default: the latest with evidence)
+  //   hovered          what the pointer is over (temporary highlight)
+  //   focused          the figure the user clicked (contextual card + follow-ups)
+  //   provenance       the figure whose calculation is open in the evidence panel
+  const [selectedTurnKey, setSelectedTurnKey] = useState<string | null>(null);
   const [hoveredFactId, setHoveredFactId] = useState<string | null>(null);
   const [focusedFactId, setFocusedFactId] = useState<string | null>(null);
   const [provenanceFactId, setProvenanceFactId] = useState<string | null>(null);
-  // The open Explore overlay, if any.
   const [exploreView, setExploreView] = useState<InsightView | null>(null);
-  // Stable, so the dialog's keyboard handling is not reset on every hover.
   const closeExplore = useCallback(() => setExploreView(null), []);
 
-  const factInteraction = useMemo<FactInteraction>(
-    () => ({
-      activeFactId: hoveredFactId ?? focusedFactId,
-      focusedFactId,
-      hoverFact: setHoveredFactId,
-      focusFact: (factId) => {
-        // Selecting a figure shows the charts again, so its bar can light up.
-        setProvenanceFactId(null);
-        // Clicking the selected figure again clears the selection.
-        setFocusedFactId((currentFactId) => (currentFactId === factId ? null : factId));
-      },
-    }),
-    [hoveredFactId, focusedFactId],
-  );
+  const selectedTurn = turns.find((turn) => turn.key === selectedTurnKey) ?? latestTurnWithEvidence(turns);
+  const selectedRun = selectedTurn?.run ?? initialRunState;
 
   const clearSelection = useCallback(() => {
+    setSelectedTurnKey(null);
     setHoveredFactId(null);
     setFocusedFactId(null);
     setProvenanceFactId(null);
     setExploreView(null);
   }, []);
 
+  /** Makes this answer the selected one, clearing the selection inside the previous one. */
+  const selectTurn = useCallback(
+    (turnKey: string) => {
+      if (turnKey === selectedTurn?.key) return;
+      setSelectedTurnKey(turnKey);
+      setHoveredFactId(null);
+      setFocusedFactId(null);
+      setProvenanceFactId(null);
+    },
+    [selectedTurn?.key],
+  );
+
+  const interactionFor = useCallback(
+    (turnKey: string): FactInteraction => {
+      const isSelected = turnKey === selectedTurn?.key;
+      return {
+        activeFactId: isSelected ? (hoveredFactId ?? focusedFactId) : null,
+        focusedFactId: isSelected ? focusedFactId : null,
+        // Hovering only highlights inside the answer the evidence panel shows.
+        hoverFact: (factId) => {
+          if (isSelected) setHoveredFactId(factId);
+        },
+        focusFact: (factId) => {
+          selectTurn(turnKey);
+          // Selecting a figure shows the charts again, so its bar can light up.
+          setProvenanceFactId(null);
+          // Clicking the selected figure again clears the selection.
+          setFocusedFactId((currentFactId) => (isSelected && currentFactId === factId ? null : factId));
+        },
+      };
+    },
+    [selectedTurn?.key, hoveredFactId, focusedFactId, selectTurn],
+  );
+  const selectedInteraction = useMemo(() => interactionFor(selectedTurn?.key ?? ''), [interactionFor, selectedTurn?.key]);
+
+  // --- Scrolling like a chat: a new question goes to the bottom, and a streaming answer is followed
+  // as long as the reader stays near the bottom.
+  const conversationBody = useRef<HTMLDivElement>(null);
+  const isFollowingStream = useRef(true);
+  const previousTurnCount = useRef(0);
+  const handleScroll = useCallback(() => {
+    const body = conversationBody.current;
+    if (body) isFollowingStream.current = body.scrollHeight - body.scrollTop - body.clientHeight < FOLLOW_STREAM_DISTANCE;
+  }, []);
+  useLayoutEffect(() => {
+    const body = conversationBody.current;
+    if (!body) return;
+    const turnWasAdded = turns.length > previousTurnCount.current;
+    previousTurnCount.current = turns.length;
+    if (turnWasAdded) isFollowingStream.current = true;
+    if (isFollowingStream.current) body.scrollTo({ top: body.scrollHeight });
+  }, [turns]);
+
   const handleAskQuestion = useCallback(
     (question: string) => {
       clearSelection();
-      insightRun.start(question);
-      conversationBody.current?.scrollTo({ top: 0 });
+      conversation.ask(question);
     },
-    [clearSelection, insightRun],
+    [clearSelection, conversation],
   );
 
-  const handleStartNewAnalysis = useCallback(() => {
+  const handleNewChat = useCallback(() => {
     clearSelection();
-    insightRun.reset();
-  }, [clearSelection, insightRun]);
+    conversation.newChat();
+  }, [clearSelection, conversation]);
+
+  const handleOpenConversation = useCallback(
+    (conversationId: string) => {
+      clearSelection();
+      conversation.open(conversationId);
+    },
+    [clearSelection, conversation],
+  );
 
   const handleSelectHotel = useCallback(
-    (hotelId: string) => {
-      handleStartNewAnalysis();
-      setSelectedHotelId(hotelId);
+    (nextHotelId: string) => {
+      clearSelection();
+      setSelectedHotelId(nextHotelId);
     },
-    [handleStartNewAnalysis],
+    [clearSelection],
   );
 
-  const openProvenance = provenanceFactId ? (run.provenanceByFactId[provenanceFactId] ?? null) : null;
+  const conversationTitle =
+    conversations.find((summary) => summary.id === conversation.state.conversationId)?.title ?? turns[0]?.run.question ?? null;
+  const openProvenance = provenanceFactId ? (selectedRun.provenanceByFactId[provenanceFactId] ?? null) : null;
 
   return (
     <div className="workspace">
       <Sidebar
         workspace={workspace}
-        onStartNewAnalysis={handleStartNewAnalysis}
-        onAskQuestion={handleAskQuestion}
+        conversations={conversations}
+        activeConversationId={conversation.state.conversationId}
+        onNewChat={handleNewChat}
+        onOpenConversation={handleOpenConversation}
         onSelectHotel={handleSelectHotel}
       />
 
       <main className="workspace__conversation" aria-label="Conversation">
-        <ConversationHeader runPhase={run.phase} period={workspace?.period ?? null} />
-        <div className="conversation-body" ref={conversationBody}>
+        <ConversationHeader title={conversationTitle} runPhase={lastTurn?.run.phase ?? 'idle'} period={workspace?.period ?? null} />
+        <div className="conversation-body" ref={conversationBody} onScroll={handleScroll}>
           <div className="conversation-body__content">
-            {run.phase !== 'idle' ? null : workspaceState.status === 'failed' ? (
+            {workspaceState.status === 'failed' && (
               <div className="run-banner run-banner--error" role="alert">
                 <span>{workspaceState.message}</span>
                 <button type="button" className="run-banner__action" onClick={reloadWorkspace}>
                   Retry
                 </button>
               </div>
-            ) : workspace ? (
-              <SuggestedQuestions workspace={workspace} onAskQuestion={handleAskQuestion} />
-            ) : (
+            )}
+            {conversation.state.openError && (
+              <div className="run-banner run-banner--error" role="alert">
+                <span>{conversation.state.openError}</span>
+              </div>
+            )}
+            {conversation.state.isOpening && (
               <p className="idle-state__loading" aria-busy="true">
-                Loading the workspace…
+                Opening the conversation…
               </p>
             )}
-            {run.phase !== 'idle' && (
-              <AnswerView
-                run={run}
-                interaction={factInteraction}
-                onAskQuestion={handleAskQuestion}
-                onRetry={insightRun.retry}
-                onShowProvenance={setProvenanceFactId}
-                onClearFocus={() => setFocusedFactId(null)}
-                onOpenExplore={setExploreView}
-              />
-            )}
+            {turns.length === 0 && !conversation.state.isOpening && workspaceState.status !== 'failed' &&
+              (workspace ? (
+                <SuggestedQuestions workspace={workspace} onAskQuestion={handleAskQuestion} />
+              ) : (
+                <p className="idle-state__loading" aria-busy="true">
+                  Loading the workspace…
+                </p>
+              ))}
+
+            {turns.map((turn, turnIndex) => (
+              <article
+                key={turn.key}
+                className={joinClassNames(
+                  'conversation-turn',
+                  turn.isRestored && 'conversation-turn--restored',
+                  turn.key === selectedTurn?.key && turns.length > 1 && 'conversation-turn--selected',
+                )}
+                aria-label={`Question ${turnIndex + 1}`}
+              >
+                <AnswerView
+                  run={turn.run}
+                  isRestored={turn.isRestored}
+                  isLatest={turnIndex === turns.length - 1}
+                  interaction={interactionFor(turn.key)}
+                  onAskQuestion={handleAskQuestion}
+                  onRetry={conversation.retry}
+                  onShowProvenance={(factId) => {
+                    selectTurn(turn.key);
+                    setProvenanceFactId(factId);
+                  }}
+                  onClearFocus={() => setFocusedFactId(null)}
+                  onOpenExplore={(view) => {
+                    selectTurn(turn.key);
+                    setExploreView(view);
+                  }}
+                />
+              </article>
+            ))}
           </div>
         </div>
         <Composer
-          isStreaming={run.phase === 'streaming'}
-          isDisabled={!workspace}
+          isStreaming={isStreaming}
+          isDisabled={!workspace || conversation.state.isOpening || (conversation.isBusy && !isStreaming)}
           onAskQuestion={handleAskQuestion}
-          onStop={insightRun.stop}
+          onStop={conversation.stop}
         />
       </main>
 
       <EvidencePanel
-        run={run}
-        interaction={factInteraction}
+        run={selectedRun}
+        isRestored={selectedTurn?.isRestored ?? false}
+        interaction={selectedInteraction}
         openProvenance={openProvenance}
         onShowProvenance={setProvenanceFactId}
         onCloseProvenance={() => setProvenanceFactId(null)}
@@ -144,10 +238,13 @@ export function App() {
       {exploreView && (
         <ExploreOverlay
           view={exploreView}
-          run={run}
-          interaction={factInteraction}
+          run={selectedRun}
+          interaction={selectedInteraction}
           onClose={closeExplore}
-          onAskQuestion={handleAskQuestion}
+          onAskQuestion={(question) => {
+            closeExplore();
+            handleAskQuestion(question);
+          }}
         />
       )}
     </div>

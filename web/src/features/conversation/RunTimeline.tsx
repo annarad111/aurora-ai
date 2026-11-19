@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { CheckIcon } from '../../design-system/icons';
 import type { RunCompletion, RunPhase, RunStep } from '../../stream/run-reducer';
 
@@ -60,7 +60,10 @@ function describeProgress(steps: RunStep[], phase: RunPhase, completion: RunComp
 
 /** The collapsible list of what Aurora is doing. Collapses by itself when the answer is complete. */
 export function RunTimeline({ steps, phase, completion }: RunTimelineProps) {
-  const [isExpanded, setIsExpanded] = useState(true);
+  // Restored answers arrive already done, so they start collapsed.
+  const [isExpanded, setIsExpanded] = useState(phase !== 'done');
+  // Unique per answer: a conversation has many timelines.
+  const stepsListId = useId();
 
   useEffect(() => {
     if (phase === 'streaming') setIsExpanded(true);
@@ -73,7 +76,7 @@ export function RunTimeline({ steps, phase, completion }: RunTimelineProps) {
         type="button"
         className="run-timeline__header"
         aria-expanded={isExpanded}
-        aria-controls="run-timeline-steps"
+        aria-controls={stepsListId}
         onClick={() => setIsExpanded((wasExpanded) => !wasExpanded)}
       >
         <span className="run-timeline__title-group">
@@ -85,7 +88,7 @@ export function RunTimeline({ steps, phase, completion }: RunTimelineProps) {
 
       {isExpanded && (
         // Announces step changes to screen readers, not every word of the text.
-        <ol id="run-timeline-steps" className="run-timeline__steps" aria-live="polite">
+        <ol id={stepsListId} className="run-timeline__steps" aria-live="polite">
           {steps.map((step) => (
             <li key={step.stepId} className={`run-timeline__step run-timeline__step--${step.status}`}>
               <span className="run-timeline__status" aria-label={STEP_STATUS_LABELS[step.status]}>

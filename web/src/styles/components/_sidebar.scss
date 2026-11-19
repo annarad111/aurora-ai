@@ -52,12 +52,6 @@
   text-transform: lowercase;
 }
 
-.sidebar__brand-subline {
-  font-size: $font-size-12;
-  line-height: 1.4;
-  color: var(--color-ink-tertiary);
-}
-
 // --- New analysis ----------------------------------------------------------
 
 .sidebar__new-analysis {
@@ -134,6 +128,11 @@
   }
 }
 
+// The conversation that is open.
+.recent-question--active {
+  background: var(--color-sunken);
+}
+
 .recent-question__text {
   font-size: $font-size-13;
   line-height: 1.35;
@@ -192,7 +191,6 @@
     padding: 0;
   }
 
-  .sidebar__brand-subline,
   .sidebar__section,
   .mcp-status {
     display: none;

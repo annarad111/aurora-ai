@@ -1,8 +1,9 @@
 import { isDateInRange } from '@aurora/analytics';
 import type { DemoDataset } from '@aurora/demo-data';
 import type {
-  AskedQuestion,
   ChannelCommission,
+  Conversation,
+  ConversationSummary,
   DailyStat,
   DailyTarget,
   DateRange,
@@ -10,13 +11,12 @@ import type {
   Hotel,
   IsoDate,
   OnTheBooks,
-  SuggestedQuestion,
 } from '@aurora/shared';
-import type { HotelDataRepository } from './hotel-data-repository';
+import type { HotelDataRepository, NewConversationTurn } from './hotel-data-repository';
 
 /** Serves a dataset held in memory. Same behaviour as the D1 version, without a database. */
 export class InMemoryHotelDataRepository implements HotelDataRepository {
-  private readonly askedQuestions: AskedQuestion[] = [];
+  private readonly conversations = new Map<string, Conversation & { hasAnalysis: boolean }>();
 
   constructor(private readonly dataset: DemoDataset) {}
 
@@ -52,25 +52,37 @@ export class InMemoryHotelDataRepository implements HotelDataRepository {
     );
   }
 
-  async listSuggestedQuestions(hotelId: string): Promise<SuggestedQuestion[]> {
-    return this.dataset.suggestedQuestions
-      .filter((suggestion) => suggestion.hotelId === hotelId)
-      .sort((first, second) => first.position - second.position);
+  async listConversations(hotelId: string, limit: number): Promise<ConversationSummary[]> {
+    return [...this.conversations.values()]
+      .filter((conversation) => conversation.hotelId === hotelId && conversation.turns.length > 0)
+      .sort((first, second) => second.updatedAt.localeCompare(first.updatedAt))
+      .slice(0, limit)
+      .map(({ turns, hasAnalysis: _hasAnalysis, ...summary }) => ({ ...summary, turnCount: turns.length }));
   }
 
-  async recordAskedQuestion(askedQuestion: AskedQuestion): Promise<void> {
-    this.askedQuestions.push(askedQuestion);
+  async findConversation(conversationId: string): Promise<Conversation | null> {
+    const conversation = this.conversations.get(conversationId);
+    if (!conversation) return null;
+    const { hasAnalysis: _hasAnalysis, ...rest } = conversation;
+    return { ...rest, turns: [...rest.turns], turnCount: rest.turns.length };
   }
 
-  async listRecentQuestions(hotelId: string, limit: number): Promise<Array<{ question: string; askedAt: string }>> {
-    const latestByQuestion = new Map<string, string>();
-    for (const asked of this.askedQuestions.filter((candidate) => candidate.hotelId === hotelId)) {
-      const previous = latestByQuestion.get(asked.question);
-      if (!previous || asked.askedAt > previous) latestByQuestion.set(asked.question, asked.askedAt);
-    }
-    return [...latestByQuestion.entries()]
-      .map(([question, askedAt]) => ({ question, askedAt }))
-      .sort((first, second) => second.askedAt.localeCompare(first.askedAt))
-      .slice(0, limit);
+  async saveConversationTurn(turn: NewConversationTurn): Promise<void> {
+    const conversation = this.conversations.get(turn.conversationId) ?? {
+      id: turn.conversationId,
+      hotelId: turn.hotelId,
+      title: turn.titleCandidate,
+      createdAt: turn.createdAt,
+      updatedAt: turn.createdAt,
+      turnCount: 0,
+      turns: [],
+      hasAnalysis: false,
+    };
+    // A greeting makes a poor title, so the first question about the data replaces it.
+    if (turn.isAnalysis && !conversation.hasAnalysis) conversation.title = turn.titleCandidate;
+    conversation.hasAnalysis ||= turn.isAnalysis;
+    conversation.updatedAt = turn.createdAt;
+    conversation.turns.push({ question: turn.question, events: turn.events, createdAt: turn.createdAt });
+    this.conversations.set(conversation.id, conversation);
   }
 }

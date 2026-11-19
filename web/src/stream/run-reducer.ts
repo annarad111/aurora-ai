@@ -44,6 +44,8 @@ export interface RunCompletion {
   fallbackReason?: string;
   /** The earlier question this one was read as a follow-up to. */
   followUpOf?: string;
+  /** "conversation" for a reply in words only (a greeting, thanks, a message outside the hotel's business). */
+  answerKind: 'analysis' | 'conversation';
 }
 
 export interface RunError {
@@ -175,6 +177,7 @@ function applyStreamEvent(state: RunState, event: StreamEvent): RunState {
           ...(event.toolsChosenBy ? { toolsChosenBy: event.toolsChosenBy } : {}),
           ...(event.fallbackReason ? { fallbackReason: event.fallbackReason } : {}),
           ...(event.followUpOf ? { followUpOf: event.followUpOf } : {}),
+          answerKind: event.answerKind,
         },
       };
 

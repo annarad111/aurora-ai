@@ -45,7 +45,11 @@ export class SseEventStream {
   private nextSequence = 0;
   private isClosed = false;
 
-  constructor(private readonly runId: string) {
+  /** `onEvent` sees every event exactly as it was sent, so the answer can be stored afterwards. */
+  constructor(
+    private readonly runId: string,
+    private readonly onEvent?: (event: StreamEvent) => void,
+  ) {
     const { readable, writable } = new TransformStream<Uint8Array, Uint8Array>();
     this.readable = readable;
     this.writer = writable.getWriter();
@@ -65,6 +69,7 @@ export class SseEventStream {
     if (this.isClosed) return;
     const event = streamEventSchema.parse({ ...payload, runId: this.runId, sequence: this.nextSequence });
     this.nextSequence += 1;
+    this.onEvent?.(event);
     await this.writeText(formatSseMessage(event));
   };
 

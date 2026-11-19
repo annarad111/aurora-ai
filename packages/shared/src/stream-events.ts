@@ -170,6 +170,8 @@ export type ConversationTurn = z.infer<typeof conversationTurnSchema>;
 /** How many earlier turns the browser sends. Only the last one is used for planning; the rest give the model context. */
 export const MAXIMUM_HISTORY_TURNS = 4;
 
+export const conversationIdSchema = z.string().regex(/^[A-Za-z0-9-]{8,64}$/, 'A conversation id is 8 to 64 letters, digits or dashes');
+
 export const doneEventSchema = z.object({
   ...eventEnvelope,
   type: z.literal('done'),
@@ -186,6 +188,8 @@ export const doneEventSchema = z.object({
   context: answeredContextSchema.optional(),
   /** Set when the question was read as a follow-up to this earlier question. */
   followUpOf: z.string().optional(),
+  /** "conversation" for a reply without data (a greeting, thanks, a question outside the hotel's business). */
+  answerKind: z.enum(['analysis', 'conversation']).default('analysis'),
 });
 
 export const errorEventSchema = z.object({
@@ -219,7 +223,11 @@ export type StreamEventOfType<EventType extends StreamEventType> = Extract<Strea
 export const chatRequestSchema = z.object({
   question: z.string().trim().min(1).max(280),
   hotelId: z.string().min(1).max(64),
-  /** Earlier questions of this conversation, oldest first. */
-  history: z.array(conversationTurnSchema).max(MAXIMUM_HISTORY_TURNS).default([]),
+  /**
+   * The conversation this question belongs to. The browser makes the id when a
+   * new chat starts; the server stores every finished answer under it and reads
+   * the earlier ones back for follow-ups.
+   */
+  conversationId: conversationIdSchema,
 });
 export type ChatRequest = z.infer<typeof chatRequestSchema>;

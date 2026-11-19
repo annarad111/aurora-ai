@@ -44,7 +44,12 @@ describe('stream event schema', () => {
 
 describe('chat request schema', () => {
   it('trims the question', () => {
-    expect(chatRequestSchema.parse({ question: '  Why?  ', hotelId: 'sablon-bru' }).question).toBe('Why?');
+    expect(chatRequestSchema.parse({ question: '  Why?  ', hotelId: 'sablon-bru', conversationId: 'conversation-1' }).question).toBe('Why?');
+  });
+
+  it('needs a conversation id of letters, digits and dashes', () => {
+    expect(chatRequestSchema.safeParse({ question: 'Why?', hotelId: 'sablon-bru' }).success).toBe(false);
+    expect(chatRequestSchema.safeParse({ question: 'Why?', hotelId: 'sablon-bru', conversationId: 'bad id!' }).success).toBe(false);
   });
 
   it('rejects empty and overly long questions', () => {

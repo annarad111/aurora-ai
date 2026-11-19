@@ -5,7 +5,9 @@ import { requireHotel, ToolInputError, type ToolContext } from '../tools/tool-co
 import { monthToDate, paceWindowFor, type AnalysisContext, type ToolResults } from './analysis-context';
 import { describeAnsweredContext } from './follow-up';
 import type { RunStepPlan } from './insight-plan';
-import { KeywordInsightPlanner, type InsightPlanner, type PlannedRun } from './insight-planners';
+import { buildSuggestions } from './suggestions';
+import { writeConversationReply } from './conversation';
+import { isConversationPlan, KeywordInsightPlanner, type InsightPlanner, type PlannedRun } from './insight-planners';
 import type { NarrativeWriter } from './narrative-writer';
 import { pause } from './pause';
 import { buildProvenance, listKnownFactIds } from './provenance';
@@ -72,11 +74,32 @@ export async function runInsight(options: RunInsightOptions): Promise<void> {
 
   try {
     const hotel = await requireHotel(toolContext, hotelId);
-    const plan = withoutPaceForPastPeriods(
-      await planner.plan(question, signal, { today: toolContext.today, history: options.history ?? [] }),
-      toolContext.today,
-    );
+    const planResult = await planner.plan(question, signal, { today: toolContext.today, history: options.history ?? [] });
     if (signal.aborted) return;
+
+    // --- A reply in words: a greeting, thanks, or a message outside the hotel's business ---
+    if (isConversationPlan(planResult)) {
+      const reply = planResult.modelReply ?? writeConversationReply(planResult.reason, hotel);
+      for (const word of splitIntoWords(reply)) {
+        if (signal.aborted) return;
+        await emit({ type: 'text_delta', text: word });
+        await pause(pacing.textTokenDelayMs, signal);
+      }
+      const suggestions = await buildSuggestions(toolContext, hotel);
+      if (signal.aborted) return;
+      await emit({ type: 'followups', questions: suggestions.map((suggestion) => suggestion.question) });
+      await emit({
+        type: 'done',
+        durationMs: Date.now() - startedAt,
+        provider: planResult.modelReply ? 'llm' : 'scripted',
+        toolsChosenBy: planResult.plannedBy,
+        verifiedFigureCount: 0,
+        answerKind: 'conversation',
+      });
+      return;
+    }
+
+    const plan = withoutPaceForPastPeriods(planResult, toolContext.today);
     const analysis: AnalysisContext = {
       question,
       hotel,
@@ -161,6 +184,7 @@ export async function runInsight(options: RunInsightOptions): Promise<void> {
       toolsChosenBy: plan.plannedBy,
       ...(narrative.fallbackReason ? { fallbackReason: narrative.fallbackReason } : {}),
       verifiedFigureCount,
+      answerKind: 'analysis',
       context: describeAnsweredContext(plan, analysis),
       ...(plan.followUpOf ? { followUpOf: plan.followUpOf } : {}),
     });

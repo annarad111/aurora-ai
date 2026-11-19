@@ -3,6 +3,7 @@ import type { LanguageModel } from './llm/language-model';
 import { errorResponse } from './http/json-response';
 import type { RequestRateLimiter } from './http/rate-limit';
 import { handleChat } from './routes/chat';
+import { handleGetConversation, handleListConversations } from './routes/conversations';
 import { handleHealth } from './routes/health';
 import { handleHotelOverview } from './routes/hotels';
 import { handleMcp } from './routes/mcp';
@@ -46,6 +47,15 @@ export async function handleRequest(request: Request, dependencies: AppDependenc
 
     if (pathname === '/api/chat') {
       return request.method === 'POST' ? await handleChat(request, dependencies) : methodNotAllowed();
+    }
+
+    if (pathname === '/api/conversations') {
+      return request.method === 'GET' ? await handleListConversations(url, dependencies) : methodNotAllowed();
+    }
+
+    const conversationMatch = /^\/api\/conversations\/([^/]+)$/.exec(pathname);
+    if (conversationMatch) {
+      return request.method === 'GET' ? await handleGetConversation(decodeURIComponent(conversationMatch[1]!), dependencies) : methodNotAllowed();
     }
 
     if (pathname === '/api/simulate') {

@@ -1,4 +1,4 @@
-import type { Channel, ChannelCommission, DateRange, GroupBlock, Hotel, IsoDate, Segment, SuggestedQuestion } from '@aurora/shared';
+import type { Channel, ChannelCommission, DateRange, GroupBlock, Hotel, IsoDate, Segment } from '@aurora/shared';
 
 // ---------------------------------------------------------------------------
 // THE PLANTED STORY
@@ -104,14 +104,6 @@ export const DEMO_GROUP_BLOCKS: GroupBlock[] = [
     status: 'confirmed',
     cancelledOn: null,
   },
-];
-
-/** The starter questions on the idle screen. */
-export const DEMO_SUGGESTED_QUESTIONS: SuggestedQuestion[] = [
-  { hotelId: 'sablon-bru', position: 1, topic: 'Revenue', question: 'Why is my hotel revenue below target this month?' },
-  { hotelId: 'sablon-bru', position: 2, topic: 'Channels', question: 'What are OTA commissions costing us this month?' },
-  { hotelId: 'sablon-bru', position: 3, topic: 'Pace', question: 'Are we on pace for the last 10 days of November?' },
-  { hotelId: 'sablon-bru', position: 4, topic: 'Segments', question: 'Which segment moved most vs last year?' },
 ];
 
 export const CURRENT_PERIOD_MICE_TARGET_BY_DATE: Record<IsoDate, number> = {

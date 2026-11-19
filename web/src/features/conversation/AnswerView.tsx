@@ -11,6 +11,10 @@ import { StreamedExplanation } from './StreamedExplanation';
 
 interface AnswerViewProps {
   run: RunState;
+  /** Opened from history: shown as it was, without streaming. */
+  isRestored: boolean;
+  /** Only the latest answer offers Retry. */
+  isLatest: boolean;
   interaction: FactInteraction;
   onAskQuestion: (question: string) => void;
   onRetry: () => void;
@@ -23,12 +27,24 @@ interface AnswerViewProps {
  * One answer, top to bottom, in the order of the design. Each block appears
  * as soon as its data has arrived.
  */
-export function AnswerView({ run, interaction, onAskQuestion, onRetry, onShowProvenance, onClearFocus, onOpenExplore }: AnswerViewProps) {
+export function AnswerView({
+  run,
+  isRestored,
+  isLatest,
+  interaction,
+  onAskQuestion,
+  onRetry,
+  onShowProvenance,
+  onClearFocus,
+  onOpenExplore,
+}: AnswerViewProps) {
   const focusedProvenance = interaction.focusedFactId ? run.provenanceByFactId[interaction.focusedFactId] : undefined;
   // Follow-ups and the Explore view of the selected figure come with its provenance, written by the server from the data.
   const followups = focusedProvenance ? focusedProvenance.followupQuestions : run.followups;
   const focusedView = focusedProvenance ? focusedProvenance.exploreView : null;
   const canExploreFocusedFact = focusedView !== null && isViewAvailable(focusedView, readExploreData(run));
+  // A greeting or a reply outside the hotel's business has no steps, figures or charts: just words and suggestions.
+  const isConversationReply = run.completion?.answerKind === 'conversation' || (run.steps.length === 0 && run.explanation.length > 0);
 
   return (
     <>
@@ -41,7 +57,12 @@ export function AnswerView({ run, interaction, onAskQuestion, onRetry, onShowPro
         <p className="user-question__bubble">{run.question}</p>
       </div>
 
-      <RunTimeline steps={run.steps} phase={run.phase} completion={run.completion} />
+      <div className="assistant-message">
+        <span className="assistant-message__avatar" aria-hidden="true">
+          <img src="/aurora-mark.png" alt="" />
+        </span>
+        <div className="assistant-message__content">
+      {!isConversationReply && <RunTimeline steps={run.steps} phase={run.phase} completion={run.completion} />}
 
       {run.insight && (
         <MainFinding
@@ -54,7 +75,7 @@ export function AnswerView({ run, interaction, onAskQuestion, onRetry, onShowPro
       {run.kpis.length > 0 && <KpiGrid kpis={run.kpis} interaction={interaction} />}
 
       {run.explanation.length > 0 && (
-        <StreamedExplanation segments={run.explanation} isStreaming={run.phase === 'streaming'} interaction={interaction} />
+        <StreamedExplanation segments={run.explanation} isStreaming={run.phase === 'streaming' && !isRestored} interaction={interaction} />
       )}
 
       {focusedProvenance && (
@@ -67,16 +88,19 @@ export function AnswerView({ run, interaction, onAskQuestion, onRetry, onShowPro
         />
       )}
 
-      <RunBanner phase={run.phase} error={run.error} onRetry={onRetry} />
+      <RunBanner phase={run.phase} error={run.error} onRetry={isLatest ? onRetry : null} />
 
       {run.phase === 'done' && followups.length > 0 && (
         <FollowUps
           questions={followups}
           basedOnLabel={focusedProvenance?.contextLabel ?? null}
-          completion={run.completion}
+          completion={isConversationReply ? null : run.completion}
+          label={isConversationReply ? 'You could ask' : undefined}
           onAskQuestion={onAskQuestion}
         />
       )}
+        </div>
+      </div>
     </>
   );
 }

@@ -1,0 +1,66 @@
+@use '../abstracts' as *;
+
+// One message of the chat: the user's question, then Aurora's answer next to
+// its avatar, as in a chat between two people. Messages stack and scroll.
+
+.conversation-turn {
+  display: flex;
+  flex-direction: column;
+  gap: $space-16;
+
+  // Space and a hairline between messages, like separate chat bubbles.
+  & + & {
+    padding-top: $space-24;
+    border-top: 1px solid var(--color-line);
+  }
+}
+
+// An answer opened from history is shown as it was: nothing streams, grows or fades in.
+.conversation-turn--restored,
+.evidence-panel--restored {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+.assistant-message {
+  display: flex;
+  gap: $space-12;
+  align-items: flex-start;
+}
+
+.assistant-message__avatar {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  margin-top: 2px;
+  overflow: hidden;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    transform: scale(1.5);
+  }
+}
+
+.assistant-message__content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: $space-20;
+}
+
+@include below-breakpoint($breakpoint-stacked) {
+  .assistant-message__avatar {
+    display: none;
+  }
+}

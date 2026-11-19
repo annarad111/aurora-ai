@@ -1,6 +1,6 @@
 // Writes the seed migrations from the deterministic demo dataset:
 //   0002_seed.sql            hotels, channels, daily_stats, targets, on_the_books
-//   0004_seed_workspace.sql  group_blocks, suggested_questions (added in step 12)
+//   0004_seed_workspace.sql  group_blocks (added in step 12)
 // A migration runs once per database, so new data goes into a new file instead of
 // changing one that is already applied.
 //
@@ -93,15 +93,10 @@ const workspaceStatements = [
       block.cancelledOn,
     ]),
   ),
-  ...buildInsertStatements(
-    'suggested_questions',
-    ['hotel_id', 'position', 'topic', 'question'],
-    dataset.suggestedQuestions.map((suggestion) => [suggestion.hotelId, suggestion.position, suggestion.topic, suggestion.question]),
-  ),
 ];
 const workspaceHeader = [
   '-- GENERATED FILE, do not edit by hand.',
-  '-- Source: packages/demo-data (group blocks and starter questions), via worker/scripts/generate-seed-sql.ts',
+  '-- Source: packages/demo-data (group blocks), via worker/scripts/generate-seed-sql.ts',
   '',
 ].join('\n');
 writeFileSync(resolve(migrationsDirectory, '0004_seed_workspace.sql'), `${workspaceHeader}\n${workspaceStatements.join('\n\n')}\n`);

@@ -18,6 +18,7 @@ export function buildPlannerSystemPrompt(today: IsoDate, monthToDatePeriod: Date
     '- Bookings for future nights: call get_booking_pace with stayFrom and stayTo.',
     '- Group blocks, congresses or events: call get_group_blocks with the period.',
     '- Any other question about past performance (a date, a period, weekends, a split by night, weekday, segment or channel, a comparison with last year): call query_performance once with the right arguments.',
+    'If the message is not about this hotel or its business, call no tool. Reply in one or two short, friendly sentences without any numbers: say you only help with the hotel\'s revenue, occupancy, rates, channels, booking pace, segments and group blocks, and invite a question.',
     'If earlier questions are listed and the new one builds on them ("and October?", "only OTA"), keep everything from the last one that the new question does not change.',
   ].join('\n');
 }
