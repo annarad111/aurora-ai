@@ -99,6 +99,8 @@ function storeWith(state: DecisionsState): DecisionsStore {
     reload: async () => {},
     savedBySourceKey: new Map(),
     openActionCount: 0,
+    overdueActionCount: 0,
+    savedInsightCount: 0,
     saveInsight: unused,
     removeInsight: unused,
     createAction: unused,

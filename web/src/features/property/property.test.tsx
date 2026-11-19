@@ -171,7 +171,7 @@ describe('the sidebar property card', () => {
           isDecisionsOpen={false}
           isPropertyOpen={isPropertyOpen}
           onOpenProperty={() => {}}
-          openActionCount={0}
+          decisionsSummary={{ open: 2, overdue: 1, saved: 3 }}
           onOpenDecisions={() => {}}
         />
       </ThemeProvider>,
@@ -184,6 +184,14 @@ describe('the sidebar property card', () => {
     expect(renderSidebar(false)).not.toContain('property-card--active');
     expect(renderSidebar(true)).toContain('property-card--active');
     expect(renderSidebar(true)).toContain('aria-current="page"');
+  });
+
+  it('shows what is waiting in Decisions, with overdue actions marked', () => {
+    const html = renderSidebar(false);
+    expect(html).toContain('2 open');
+    expect(html).toContain('sidebar__decisions-overdue');
+    expect(html).toContain('1 overdue');
+    expect(html).toContain('sidebar__decisions-count--overdue');
   });
 });
 

@@ -1,5 +1,5 @@
 import type { ConversationSummary, Workspace } from '@aurora/shared';
-import { ArrowRightIcon, PlusIcon } from '../../design-system/icons';
+import { ArrowRightIcon, ChecklistIcon, PlusIcon } from '../../design-system/icons';
 import { joinClassNames } from '../../lib/class-names';
 import type { ConversationChangeError } from '../useConversationList';
 import { RecentConversation } from './RecentConversation';
@@ -21,7 +21,8 @@ interface SidebarProps {
   /** True while the property overview is open. */
   isPropertyOpen: boolean;
   onOpenProperty: () => void;
-  openActionCount: number;
+  /** What is waiting in Decisions; null while it loads. */
+  decisionsSummary: { open: number; overdue: number; saved: number } | null;
   onOpenDecisions: () => void;
 }
 
@@ -37,7 +38,7 @@ export function Sidebar({
   isDecisionsOpen,
   isPropertyOpen,
   onOpenProperty,
-  openActionCount,
+  decisionsSummary,
   onOpenDecisions,
 }: SidebarProps) {
   const hotel = workspace?.hotel;
@@ -64,11 +65,18 @@ export function Sidebar({
         aria-current={isDecisionsOpen ? 'page' : undefined}
         onClick={onOpenDecisions}
       >
-        <span>Decisions</span>
-        {openActionCount > 0 && (
-          <span className="sidebar__decisions-count">
-            {openActionCount}
-            <span className="visually-hidden"> open action{openActionCount === 1 ? '' : 's'}</span>
+        <span className="sidebar__decisions-icon" aria-hidden="true">
+          <ChecklistIcon />
+        </span>
+        <span className="sidebar__decisions-text">
+          <span className="sidebar__decisions-label">Decisions</span>
+          <span className="sidebar__decisions-summary">
+            <DecisionsSummary summary={decisionsSummary} />
+          </span>
+        </span>
+        {decisionsSummary && decisionsSummary.open > 0 && (
+          <span className={joinClassNames('sidebar__decisions-count', decisionsSummary.overdue > 0 && 'sidebar__decisions-count--overdue')} aria-hidden="true">
+            {decisionsSummary.open}
           </span>
         )}
       </button>
@@ -141,5 +149,17 @@ export function Sidebar({
         <ThemeSwitch />
       </div>
     </aside>
+  );
+}
+
+/** "2 open · 1 overdue", or how to start: what is waiting, readable without opening the page. */
+function DecisionsSummary({ summary }: { summary: SidebarProps['decisionsSummary'] }) {
+  if (!summary) return <>Saved insights and actions</>;
+  if (summary.open === 0) return <>{summary.saved === 0 ? 'Save an insight to start' : `${summary.saved} saved · nothing open`}</>;
+  return (
+    <>
+      {summary.open} open
+      {summary.overdue > 0 && <span className="sidebar__decisions-overdue"> · {summary.overdue} overdue</span>}
+    </>
   );
 }

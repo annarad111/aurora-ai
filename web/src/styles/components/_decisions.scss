@@ -76,36 +76,95 @@
 
 .sidebar__decisions {
   @include unstyled-button;
-  @include focus-visible-ring;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  height: 36px;
-  padding: 0 $space-12;
+  gap: $space-10;
+  padding: $space-10 $space-12;
   border-radius: $radius-button;
-  font-weight: $font-weight-medium;
-  color: var(--color-ink-secondary);
+  border: 1px solid var(--color-line);
+  // The same ground as "New chat", so the two entries read as a pair and stand out from the sidebar.
+  background: var(--color-background);
+  text-align: left;
+  transition:
+    border-color $duration-fast ease,
+    background-color $duration-fast ease,
+    box-shadow $duration-fast ease;
 
   &:hover {
-    background: var(--color-sunken);
+    border-color: var(--color-petrol);
+    box-shadow: 0 2px 10px color-mix(in srgb, var(--color-petrol) 18%, transparent);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow:
+      0 0 0 2px var(--color-surface),
+      0 0 0 4px var(--color-violet);
   }
 }
 
+// While Decisions is open: the same "you are here" look as the property card.
 .sidebar__decisions--active {
-  background: var(--color-sunken);
+  border-color: var(--color-petrol);
+  background: var(--color-petrol-soft);
+}
+
+// A small tile, so the entry is found at a glance and reads as a place, not a line of text.
+.sidebar__decisions-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: $radius-button-small;
+  background: var(--color-petrol-soft);
+  color: var(--color-petrol);
+}
+
+.sidebar__decisions--active .sidebar__decisions-icon {
+  background: var(--color-petrol);
+  color: var(--color-surface);
+}
+
+.sidebar__decisions-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.sidebar__decisions-label {
+  font-size: $font-size-14;
+  font-weight: $font-weight-semibold;
   color: var(--color-ink);
+}
+
+.sidebar__decisions-summary {
+  @include text-meta;
+  font-variant-numeric: tabular-nums;
+}
+
+.sidebar__decisions-overdue {
+  color: var(--color-coral);
+  font-weight: $font-weight-semibold;
 }
 
 .sidebar__decisions-count {
   @include tabular-numbers;
-  min-width: 20px;
-  padding: 1px $space-6;
+  flex: none;
+  min-width: 22px;
+  padding: 2px $space-6;
   border-radius: $radius-pill;
   background: var(--color-petrol);
   color: var(--color-surface);
-  font-size: $font-size-11;
+  font-size: $font-size-12;
   font-weight: $font-weight-semibold;
   text-align: center;
+}
+
+// Something is overdue: the badge says so too.
+.sidebar__decisions-count--overdue {
+  background: var(--color-coral);
 }
 
 // --- The workspace -----------------------------------------------------------------

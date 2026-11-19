@@ -35,7 +35,8 @@ async function readError(response: Response): Promise<string> {
  * (measured on the server) are always current. A slower, older response
  * never replaces a newer one.
  */
-export function useDecisions(hotelId: string | null) {
+/** `today` is the hotel's today (the demo's date), for overdue actions. */
+export function useDecisions(hotelId: string | null, today: string | null = null) {
   const [state, setState] = useState<DecisionsState>({ status: 'loading' });
   const latestRequest = useRef(0);
 
@@ -105,9 +106,25 @@ export function useDecisions(hotelId: string | null) {
 
   const decisions = state.status === 'ready' ? state.decisions : null;
   const savedBySourceKey = useMemo(() => new Map((decisions?.insights ?? []).map((insight) => [insight.sourceKey, insight])), [decisions]);
-  const openActionCount = (decisions?.actions ?? []).filter((action) => action.status === 'todo' || action.status === 'in_progress').length;
+  const openActions = (decisions?.actions ?? []).filter((action) => action.status === 'todo' || action.status === 'in_progress');
+  const openActionCount = openActions.length;
+  /** Open actions whose due date has passed. */
+  const overdueActionCount = today ? openActions.filter((action) => action.dueDate !== null && action.dueDate < today).length : 0;
+  const savedInsightCount = decisions?.insights.length ?? 0;
 
-  return { state, reload, savedBySourceKey, openActionCount, saveInsight, removeInsight, createAction, updateAction, deleteAction };
+  return {
+    state,
+    reload,
+    savedBySourceKey,
+    openActionCount,
+    overdueActionCount,
+    savedInsightCount,
+    saveInsight,
+    removeInsight,
+    createAction,
+    updateAction,
+    deleteAction,
+  };
 }
 
 export type DecisionsStore = ReturnType<typeof useDecisions>;

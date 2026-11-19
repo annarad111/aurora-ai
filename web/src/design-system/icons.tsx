@@ -68,3 +68,11 @@ export function TrashIcon({ size = 13 }: IconProps) {
     </svg>
   );
 }
+
+export function ChecklistIcon({ size = 16 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M2.5 4.2l1.2 1.2 2.1-2.2M2.5 9.7l1.2 1.2 2.1-2.2M8 4.5h5.5M8 10h5.5" />
+    </svg>
+  );
+}

@@ -48,7 +48,7 @@ export function App() {
   // Loaded once per hotel, not per chat: a new chat shows the same briefing without asking again.
   const { state: briefingState, retry: retryBriefing } = useMorningBriefing(hotelId);
   // Saved insights and actions, shared by the save buttons and the decision workspace.
-  const decisions = useDecisions(hotelId);
+  const decisions = useDecisions(hotelId, workspace?.today ?? null);
   /** The main column shows the chat, or the decision workspace. */
   const [mainView, setMainView] = useState<'chat' | 'decisions' | 'property'>('chat');
   /** The property section a chat answer pointed to ("See the room inventory"). */
@@ -259,7 +259,11 @@ export function App() {
         isDecisionsOpen={mainView === 'decisions'}
         isPropertyOpen={mainView === 'property'}
         onOpenProperty={() => openProperty(null)}
-        openActionCount={decisions.openActionCount}
+        decisionsSummary={
+          decisions.state.status === 'ready'
+            ? { open: decisions.openActionCount, overdue: decisions.overdueActionCount, saved: decisions.savedInsightCount }
+            : null
+        }
         onOpenDecisions={() => {
           clearSelection();
           setMainView('decisions');
