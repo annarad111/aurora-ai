@@ -18,7 +18,7 @@ import type { FactInteraction } from '../features/insights/fact-links';
 import { joinClassNames } from '../lib/class-names';
 import { initialRunState } from '../stream/run-reducer';
 import { useConversation, type ConversationTurnState } from '../stream/useConversation';
-import { ConversationHeader } from './layout/ConversationHeader';
+import { ConversationHeader, periodOfAnswer } from './layout/ConversationHeader';
 import { EvidencePanel } from './layout/EvidencePanel';
 import { Sidebar } from './layout/Sidebar';
 import { useConversationList } from './useConversationList';
@@ -303,7 +303,12 @@ export function App() {
           </div>
         ) : (
           <>
-            <ConversationHeader title={conversationTitle} runPhase={lastTurn?.run.phase ?? 'idle'} period={workspace?.period ?? null} />
+            <ConversationHeader
+              title={conversationTitle}
+              runPhase={lastTurn?.run.phase ?? 'idle'}
+              answerPeriod={periodOfAnswer(lastTurn?.run)}
+              today={workspace?.today ?? null}
+            />
             <div className="conversation-body" ref={conversationBody} onScroll={handleScroll}>
               <div className="conversation-body__content">
                 {workspaceState.status === 'failed' && (

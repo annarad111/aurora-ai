@@ -26,7 +26,14 @@
   border-radius: $radius-pill;
   background: var(--color-sunken);
   font-size: $font-size-12;
+  font-variant-numeric: tabular-nums;
   color: var(--color-ink-secondary);
+}
+
+// The demo's date: quiet, but always there, so "today" is never read as the real date.
+.conversation-header__demo-date {
+  font-size: $font-size-12;
+  color: var(--color-ink-tertiary);
 }
 
 // Run status on the right: coloured dot + label (never colour alone).
@@ -49,17 +56,8 @@
   background: var(--color-violet);
 }
 
-.run-status--done .run-status__dot {
-  background: var(--color-sage);
-}
 
-.run-status--cancelled .run-status__dot {
-  background: var(--color-amber);
-}
 
-.run-status--error .run-status__dot {
-  background: var(--color-coral);
-}
 
 @include below-breakpoint($breakpoint-stacked) {
   .conversation-header {
